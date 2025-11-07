@@ -1,0 +1,8 @@
+{
+  "/not-found": "app/not-found.js",
+  "/(dashboard)/medico/page": "app/(dashboard)/medico/page.js",
+  "/(dashboard)/medico/certificados/page": "app/(dashboard)/medico/certificados/page.js",
+  "/(dashboard)/medico/mensajes/page": "app/(dashboard)/medico/mensajes/page.js",
+  "/(dashboard)/medico/agenda/page": "app/(dashboard)/medico/agenda/page.js",
+  "/(dashboard)/medico/pacientes/page": "app/(dashboard)/medico/pacientes/page.js"
+}
