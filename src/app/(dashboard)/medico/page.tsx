@@ -1,8 +1,8 @@
-//frontend\src\app\(dashboard)\medico\page.tsx
+// frontend/src/app/(dashboard)/medico/page.tsx
 
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo } from "react";
 import {
   Activity,
   AlertCircle,
@@ -11,10 +11,8 @@ import {
   BarChart3,
   Bell,
   BellOff,
-  Briefcase,
   Calendar,
   Calculator,
-  CalendarCheck,
   Check,
   CheckCircle2,
   ChevronDown,
@@ -22,47 +20,35 @@ import {
   Clock,
   ClipboardCheck,
   ClipboardList,
-  Cloud,
   CreditCard,
   Database,
   DollarSign,
   Download,
-  Eye,
-  EyeOff,
   FileSpreadsheet,
   FileText,
   Filter,
-  Flame,
-  Gift,
   Globe,
   Heart,
   HeartPulse,
   Home,
-  Layers,
   Lightbulb,
   LineChart,
-  Loader2,
-  Lock,
   LogOut,
   Mail,
   MapPin,
   MessageSquare,
-  Mic,
   Moon,
   MoreVertical,
   Paperclip,
   Percent,
   Phone,
-  PhoneCall,
   PieChart,
   Pill,
   Plus,
-  Printer,
   RefreshCw,
   Search,
   Send,
   Settings,
-  Share2,
   Shield,
   ShieldCheck,
   Star,
@@ -77,13 +63,11 @@ import {
   Users,
   Video,
   Wifi,
-  WifiOff,
   X,
   Zap,
   Sparkles,
   ArrowUpRight,
   ArrowDownRight,
-  BrainCircuit,
   Microscope,
   TestTube,
   Syringe,
@@ -91,24 +75,11 @@ import {
   Building2,
   GraduationCap,
   Handshake,
-  TrendingUpIcon,
-  Rocket,
   BookOpen,
   Clipboard,
   FileCheck,
   Headphones,
   Info,
-  Maximize2,
-  Minimize2,
-  Pause,
-  Play,
-  RotateCcw,
-  Save,
-  Smartphone,
-  Volume2,
-  Wifi as WifiIcon,
-  ZoomIn,
-  ZoomOut,
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -134,13 +105,10 @@ import {
   PolarRadiusAxis,
   Radar,
   ComposedChart,
-  Scatter,
-  ScatterChart,
-  ZAxis,
 } from "recharts";
 
 // ========================================
-// TIPOS DE DATOS
+// TIPOS
 // ========================================
 
 type TemaColor = "light" | "dark" | "blue" | "purple" | "green";
@@ -374,7 +342,7 @@ interface DatosGraficos {
 }
 
 // ========================================
-// CONFIGURACIONES DE TEMAS PREMIUM
+// TEMAS
 // ========================================
 
 const TEMAS: Record<TemaColor, ConfiguracionTema> = {
@@ -2648,90 +2616,94 @@ export default function DashboardMedicoPremiumPage() {
               </div>
 
               {/* GRÁFICO DE ESPECIALIDADES DINÁMICO */}
+<div
+  className={`rounded-2xl p-6 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} animate-fadeIn`}
+  style={{ animationDelay: "0.1s" }}
+>
+  <div className="flex items-center justify-between mb-6">
+    <div className="flex items-center gap-3">
+      <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl flex items-center justify-center shadow-lg">
+        <PieChart className="w-6 h-6 text-white" />
+      </div>
+      <div>
+        <h3 className={`text-xl font-black ${tema.colores.texto}`}>
+          Distribución por Especialidad
+        </h3>
+        <p className={`text-sm font-semibold ${tema.colores.textoSecundario}`}>
+          Consultas atendidas en tiempo real
+        </p>
+      </div>
+    </div>
+  </div>
+
+  {datosGraficos.especialidades.length === 0 ? (
+    <div className="flex items-center justify-center h-[300px]">
+      <div className="text-center">
+        <Target
+          className={`w-12 h-12 mx-auto mb-3 ${tema.colores.textoSecundario} animate-pulse`}
+        />
+        <p className={`text-sm font-semibold ${tema.colores.textoSecundario}`}>
+          Sin datos de especialidades
+        </p>
+        <p className={`text-xs ${tema.colores.textoSecundario} mt-1`}>
+          Los datos se actualizarán automáticamente
+        </p>
+      </div>
+    </div>
+  ) : (
+    <div className="flex items-center gap-8">
+      <ResponsiveContainer width="60%" height={250}>
+        <RechartsPieChart>
+          <Pie
+            //data={datosGraficos.especialidades}
+            cx="50%"
+            cy="50%"
+            labelLine={false}
+            outerRadius={80}
+            innerRadius={40}
+            fill="#8884d8"
+            dataKey="valor"
+            animationDuration={1000}
+          >
+            {datosGraficos.especialidades.map((entry, index) => (
+              <Cell key={`cell-${index}`} fill={entry.color} />
+            ))}
+          </Pie>
+          <Tooltip content={<CustomTooltip />} />
+        </RechartsPieChart>
+      </ResponsiveContainer>
+
+      <div className="flex-1 space-y-3">
+        {datosGraficos.especialidades.map((item, index) => (
+          <div
+            key={index}
+            className={`flex items-center justify-between p-3 rounded-lg ${tema.colores.secundario} hover:scale-105 transition-all duration-300 cursor-pointer`}
+          >
+            <div className="flex items-center gap-2 flex-1">
               <div
-                className={`rounded-2xl p-6 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} animate-fadeIn`}
-                style={{ animationDelay: "0.1s" }}
+                className="w-4 h-4 rounded-full flex-shrink-0"
+                style={{ backgroundColor: item.color }}
+              />
+              <span
+                className={`text-sm font-semibold ${tema.colores.texto} truncate`}
               >
-                <div className="flex items-center justify-between mb-6">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-12 h-12 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl flex items-center justify-center shadow-lg`}>
-                      <PieChart className="w-6 h-6 text-white" />
-                    </div>
-                    <div>
-                      <h3 className={`text-xl font-black ${tema.colores.texto}`}>
-                        Distribución por Especialidad
-                      </h3>
-                      <p className={`text-sm font-semibold ${tema.colores.textoSecundario}`}>
-                        Consultas atendidas en tiempo real
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {datosGraficos.especialidades.length === 0 ? (
-                  <div className="flex items-center justify-center h-[300px]">
-                    <div className="text-center">
-                      <Target className={`w-12 h-12 mx-auto mb-3 ${tema.colores.textoSecundario} animate-pulse`} />
-                      <p className={`text-sm font-semibold ${tema.colores.textoSecundario}`}>
-                        Sin datos de especialidades
-                      </p>
-                      <p className={`text-xs ${tema.colores.textoSecundario} mt-1`}>
-                        Los datos se actualizarán automáticamente
-                      </p>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="flex items-center gap-8">
-                    <ResponsiveContainer width="60%" height={250}>
-                      <RechartsPieChart>
-                        <Pie
-                          data={datosGraficos.especialidades}
-                          cx="50%"
-                          cy="50%"
-                          labelLine={false}
-                          outerRadius={80}
-                          innerRadius={40}
-                          fill="#8884d8"
-                          dataKey="valor"
-                          animationDuration={1000}
-                        >
-                          {datosGraficos.especialidades.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={entry.color} />
-                          ))}
-                        </Pie>
-                        <Tooltip content={<CustomTooltip />} />
-                      </RechartsPieChart>
-                    </ResponsiveContainer>
-
-                    <div className="flex-1 space-y-3">
-                      {datosGraficos.especialidades.map((item, index) => (
-                        <div
-                          key={index}
-                          className={`flex items-center justify-between p-3 rounded-lg ${tema.colores.secundario} hover:scale-105 transition-all duration-300 cursor-pointer`}
-                        >
-                          <div className="flex items-center gap-2 flex-1">
-                            <div
-                              className="w-4 h-4 rounded-full flex-shrink-0"
-                              style={{ backgroundColor: item.color }}
-                            ></div>
-                            <span className={`text-sm font-semibold ${tema.colores.texto} truncate`}>
-                              {item.nombre}
-                            </span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className={`text-sm font-bold ${tema.colores.acento}`}>
-                              {item.porcentaje}%
-                            </span>
-                            <span className={`text-xs ${tema.colores.textoSecundario}`}>
-                              ({item.total_consultas})
-                            </span>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
+                {item.nombre}
+              </span>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className={`text-sm font-bold ${tema.colores.acento}`}>
+                {item.porcentaje}%
+              </span>
+              <span className={`text-xs ${tema.colores.textoSecundario}`}>
+                ({item.total_consultas})
+              </span>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  )}
+</div>
 
               {/* GRÁFICO DE INGRESOS DINÁMICO */}
               <div

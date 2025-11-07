@@ -61,6 +61,11 @@
       "static/chunks/main-app.js",
       "static/chunks/app/(dashboard)/medico/mensajes/page.js"
     ],
+    "/(dashboard)/medico/telemedicina/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/(dashboard)/medico/telemedicina/page.js"
+    ],
     "/not-found": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",

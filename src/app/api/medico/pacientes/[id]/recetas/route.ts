@@ -1,4 +1,4 @@
-// app/api/medico/pacientes/[id]/recetas/route.ts
+// frontend\src\app\api\medico\pacientes\[id]\recetas\route.ts
 import { NextRequest, NextResponse } from "next/server";
 import pool from "@/lib/db";
 import { RowDataPacket } from "mysql2";

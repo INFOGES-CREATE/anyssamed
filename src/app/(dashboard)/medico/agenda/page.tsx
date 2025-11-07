@@ -296,6 +296,49 @@ interface FormularioCita {
   enviar_confirmacion: boolean;
 }
 
+interface Paciente {
+  id_paciente: number;
+  nombre: string;
+  apellido_paterno: string;
+  apellido_materno: string | null;
+  nombre_completo: string;
+  rut: string;
+  telefono: string | null;
+  celular: string | null;
+  email: string | null;
+  fecha_nacimiento: string;
+  edad: number;
+  genero: string;
+  grupo_sanguineo: string;
+  foto_url: string | null;
+  alergias_criticas: number;
+  estado: string;
+}
+
+interface Sala {
+  id_sala: number;
+  nombre: string;
+  tipo: string;
+  descripcion: string | null;
+  capacidad: number | null;
+  piso: string | null;
+  numero: string | null;
+  estado: string;
+  id_centro: number;
+  id_sucursal: number | null;
+}
+
+interface Especialidad {
+  id_especialidad: number;
+  nombre: string;
+  descripcion: string | null;
+  codigo: string;
+  area_medica: string | null;
+  activo: boolean;
+  icono_url: string | null;
+  color: string | null;
+}
+
 // ========================================
 // CONFIGURACIONES DE TEMAS
 // ========================================
@@ -459,33 +502,6 @@ const COLORES_TIPO: Record<TipoCita, string> = {
 };
 
 // ========================================
-// DATOS MOCK PARA PACIENTES Y SALAS
-// ========================================
-
-const PACIENTES_MOCK = [
-  { id: 1, nombre: "Juan Pérez González", telefono: "+56912345678", email: "juan@email.com" },
-  { id: 2, nombre: "María Silva Rojas", telefono: "+56987654321", email: "maria@email.com" },
-  { id: 3, nombre: "Carlos Muñoz López", telefono: "+56911111111", email: "carlos@email.com" },
-  { id: 4, nombre: "Ana Torres Vargas", telefono: "+56922222222", email: "ana@email.com" },
-  { id: 5, nombre: "Pedro Soto Díaz", telefono: "+56933333333", email: "pedro@email.com" },
-];
-
-const SALAS_MOCK = [
-  { id: 1, nombre: "Consulta 1", tipo: "Consulta General" },
-  { id: 2, nombre: "Consulta 2", tipo: "Consulta General" },
-  { id: 3, nombre: "Procedimientos", tipo: "Sala de Procedimientos" },
-  { id: 4, nombre: "Urgencias", tipo: "Sala de Urgencias" },
-];
-
-const ESPECIALIDADES_MOCK = [
-  { id: 1, nombre: "Medicina General" },
-  { id: 2, nombre: "Cardiología" },
-  { id: 3, nombre: "Pediatría" },
-  { id: 4, nombre: "Dermatología" },
-  { id: 5, nombre: "Traumatología" },
-];
-
-// ========================================
 // COMPONENTE PRINCIPAL
 // ========================================
 
@@ -503,6 +519,12 @@ export default function AgendaMedicaPage() {
   const [citas, setCitas] = useState<Cita[]>([]);
   const [bloquesHorarios, setBloquesHorarios] = useState<BloqueHorario[]>([]);
   const [estadisticas, setEstadisticas] = useState<EstadisticasAgenda | null>(null);
+
+  // Datos dinámicos del sistema
+  const [pacientes, setPacientes] = useState<Paciente[]>([]);
+  const [salas, setSalas] = useState<Sala[]>([]);
+  const [especialidades, setEspecialidades] = useState<Especialidad[]>([]);
+  const [loadingCatalogos, setLoadingCatalogos] = useState(false);
 
   // UI States
   const [temaActual, setTemaActual] = useState<TemaColor>("light");
@@ -556,7 +578,12 @@ export default function AgendaMedicaPage() {
 
   // Búsqueda de pacientes
   const [busquedaPaciente, setBusquedaPaciente] = useState("");
-  const [pacientesFiltrados, setPacientesFiltrados] = useState(PACIENTES_MOCK);
+  const [pacientesFiltrados, setPacientesFiltrados] = useState<Paciente[]>([]);
+  const [mostrarResultadosPacientes, setMostrarResultadosPacientes] = useState(false);
+
+  // Estados de guardado
+  const [guardando, setGuardando] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   // ========================================
   // TEMA ACTUAL
@@ -577,6 +604,12 @@ export default function AgendaMedicaPage() {
       cargarDatosAgenda();
     }
   }, [usuario, fechaSeleccionada, vistaCalendario, filtros]);
+
+  useEffect(() => {
+    if (usuario?.medico) {
+      cargarCatalogos();
+    }
+  }, [usuario]);
 
   useEffect(() => {
     document.body.className = `bg-gradient-to-br ${tema.colores.fondo} min-h-screen transition-all duration-500`;
@@ -614,11 +647,19 @@ export default function AgendaMedicaPage() {
   }, []);
 
   useEffect(() => {
-    const resultados = PACIENTES_MOCK.filter((p) =>
-      p.nombre.toLowerCase().includes(busquedaPaciente.toLowerCase())
-    );
-    setPacientesFiltrados(resultados);
-  }, [busquedaPaciente]);
+    if (busquedaPaciente.length >= 2) {
+      const resultados = pacientes.filter((p) =>
+        p.nombre_completo.toLowerCase().includes(busquedaPaciente.toLowerCase()) ||
+        p.rut.includes(busquedaPaciente) ||
+        p.email?.toLowerCase().includes(busquedaPaciente.toLowerCase())
+      );
+      setPacientesFiltrados(resultados);
+      setMostrarResultadosPacientes(true);
+    } else {
+      setPacientesFiltrados([]);
+      setMostrarResultadosPacientes(false);
+    }
+  }, [busquedaPaciente, pacientes]);
 
   // ========================================
   // FUNCIONES DE CARGA DE DATOS
@@ -695,49 +736,163 @@ export default function AgendaMedicaPage() {
   };
 
   const cargarDatosAgenda = async () => {
-    if (!usuario?.medico?.id_medico) return;
+  if (!usuario?.medico?.id_medico) return;
+
+  try {
+    setLoadingData(true);
+    setError(null);
+
+    const url = new URL("/api/medico/agenda", window.location.origin);
+    url.searchParams.append("id_medico", usuario.medico.id_medico.toString());
+    url.searchParams.append("fecha_inicio", calcularFechaInicio());
+    url.searchParams.append("fecha_fin", calcularFechaFin());
+
+    if (vistaCalendario) url.searchParams.append("vista", vistaCalendario);
+    if (filtros.estados.length > 0) url.searchParams.append("estados", filtros.estados.join(","));
+    if (filtros.tipos.length > 0) url.searchParams.append("tipos", filtros.tipos.join(","));
+    if (filtros.paciente) url.searchParams.append("paciente", filtros.paciente);
+    if (filtros.especialidades.length > 0) url.searchParams.append("especialidades", filtros.especialidades.join(","));
+    if (filtros.salas.length > 0) url.searchParams.append("salas", filtros.salas.join(","));
+    if (filtros.confirmadas !== null) url.searchParams.append("confirmadas", filtros.confirmadas.toString());
+    if (filtros.pagadas !== null) url.searchParams.append("pagadas", filtros.pagadas.toString());
+
+    const res = await fetch(url.toString(), {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+    });
+
+    const raw = await res.text();
+    let data: any = null;
+    try {
+      data = JSON.parse(raw);
+    } catch {
+      // no era JSON
+    }
+
+    // 👇 aquí detectamos tu error específico del backend
+    if (
+      data &&
+      data.success === false &&
+      typeof data.details === "string" &&
+      data.details.includes("toFixed is not a function")
+    ) {
+      // armamos stats de respaldo
+      const fallbackStats: EstadisticasAgenda = {
+        total_citas: Array.isArray(data.citas) ? data.citas.length : 0,
+        confirmadas: 0,
+        pendientes: 0,
+        completadas: 0,
+        canceladas: 0,
+        no_asistio: 0,
+        en_sala_espera: 0,
+        tasa_asistencia: 0,
+        tasa_confirmacion: 0,
+        duracion_promedio: 0,
+        tiempo_promedio_espera: 0,
+        horas_agendadas: 0,
+        horas_disponibles: 0,
+        ocupacion: 0,
+        ingresos_estimados: 0,
+        ingresos_reales: 0,
+      };
+
+      setCitas(Array.isArray(data.citas) ? data.citas : []);
+      setBloquesHorarios(Array.isArray(data.bloques_horarios) ? data.bloques_horarios : []);
+      setEstadisticas(fallbackStats);
+      return; // salimos aquí, ya mostramos algo
+    }
+
+    // si la respuesta no fue OK y no era el error anterior
+    if (!res.ok || !data?.success) {
+      throw new Error(
+        data?.message ||
+          data?.error ||
+          raw ||
+          `Error HTTP: ${res.status}`
+      );
+    }
+
+    // respuesta buena
+    setCitas(data.citas || []);
+    setBloquesHorarios(data.bloques_horarios || []);
+
+    // normalizamos estadisticas por si llegan strings
+    if (data.estadisticas) {
+      const st = data.estadisticas;
+      setEstadisticas({
+        ...st,
+        tasa_asistencia: Number(st.tasa_asistencia) || 0,
+        ocupacion: Number(st.ocupacion) || 0,
+        duracion_promedio: Number(st.duracion_promedio) || 0,
+      });
+    } else {
+      setEstadisticas(null);
+    }
+  } catch (err: any) {
+    console.error("Error al cargar agenda:", err);
+    setError(err.message || "Error al cargar la agenda");
+  } finally {
+    setLoadingData(false);
+  }
+};
+
+
+
+  const cargarCatalogos = async () => {
+    if (!usuario?.medico) return;
 
     try {
-      setLoadingData(true);
+      setLoadingCatalogos(true);
 
-      const params = new URLSearchParams({
-        id_medico: usuario.medico.id_medico.toString(),
-        fecha_inicio: calcularFechaInicio(),
-        fecha_fin: calcularFechaFin(),
-        vista: vistaCalendario,
-      });
+      // Cargar pacientes
+      const resPacientes = await fetch(
+        `/api/medico/pacientes?id_medico=${usuario.medico.id_medico}`,
+        {
+          method: "GET",
+          credentials: "include",
+        }
+      );
 
-      // Agregar filtros si están activos
-      if (filtros.estados.length > 0) {
-        params.append("estados", filtros.estados.join(","));
-      }
-      if (filtros.tipos.length > 0) {
-        params.append("tipos", filtros.tipos.join(","));
-      }
-      if (filtros.paciente) {
-        params.append("paciente", filtros.paciente);
+      if (resPacientes.ok) {
+        const dataPacientes = await resPacientes.json();
+        if (dataPacientes.success && Array.isArray(dataPacientes.pacientes)) {
+          setPacientes(dataPacientes.pacientes);
+        }
       }
 
-      const res = await fetch(`/api/medico/agenda?${params.toString()}`, {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-      });
+      // Cargar salas del centro
+      const resSalas = await fetch(
+        `/api/centros/${usuario.medico.centro_principal.id_centro}/salas`,
+        {
+          method: "GET",
+          credentials: "include",
+        }
+      );
 
-      const data = await res.json().catch(() => ({}));
-
-      if (!res.ok || !data.success) {
-        console.error("Respuesta de la agenda:", data);
-        return;
+      if (resSalas.ok) {
+        const dataSalas = await resSalas.json();
+        if (dataSalas.success && Array.isArray(dataSalas.salas)) {
+          setSalas(dataSalas.salas.filter((s: Sala) => s.estado === "activa"));
+        }
       }
 
-      setCitas(data.citas || []);
-      setBloquesHorarios(data.bloques_horarios || []);
-      setEstadisticas(data.estadisticas || null);
+      const resEspecialidades = await fetch(
+  `/api/centros/${usuario.medico.centro_principal.id_centro}/especialidades`,
+  { credentials: "include" }
+);
+
+
+      if (resEspecialidades.ok) {
+        const dataEspecialidades = await resEspecialidades.json();
+        if (dataEspecialidades.success && Array.isArray(dataEspecialidades.especialidades)) {
+          setEspecialidades(dataEspecialidades.especialidades);
+        }
+      }
     } catch (err) {
-      console.error("Error al cargar agenda:", err);
+      console.error("Error al cargar catálogos:", err);
     } finally {
-      setLoadingData(false);
+      setLoadingCatalogos(false);
     }
   };
 
@@ -931,6 +1086,18 @@ export default function AgendaMedicaPage() {
       );
     }
 
+    if (filtros.especialidades.length > 0) {
+      resultado = resultado.filter((cita) =>
+        cita.id_especialidad && filtros.especialidades.includes(cita.id_especialidad)
+      );
+    }
+
+    if (filtros.salas.length > 0) {
+      resultado = resultado.filter((cita) =>
+        cita.id_sala && filtros.salas.includes(cita.id_sala)
+      );
+    }
+
     if (filtros.confirmadas !== null) {
       resultado = resultado.filter(
         (cita) => cita.confirmado_por_paciente === filtros.confirmadas
@@ -1001,7 +1168,7 @@ export default function AgendaMedicaPage() {
       duracion_minutos: 30,
       tipo_cita: "control",
       motivo: "",
-      id_especialidad: null,
+      id_especialidad: usuario?.medico?.especialidades.find(e => e.es_principal)?.id_especialidad || null,
       id_sala: null,
       tipo_atencion: "presencial",
       prioridad: "normal",
@@ -1011,6 +1178,8 @@ export default function AgendaMedicaPage() {
       enviar_recordatorio: true,
       enviar_confirmacion: true,
     });
+    setBusquedaPaciente("");
+    setMostrarResultadosPacientes(false);
     setModalNuevaCita(true);
   };
 
@@ -1033,6 +1202,12 @@ export default function AgendaMedicaPage() {
       enviar_recordatorio: false,
       enviar_confirmacion: false,
     });
+    
+    const paciente = pacientes.find(p => p.id_paciente === cita.id_paciente);
+    if (paciente) {
+      setBusquedaPaciente(paciente.nombre_completo);
+    }
+    
     setModalEditarCita(true);
   };
 
@@ -1042,82 +1217,87 @@ export default function AgendaMedicaPage() {
   };
 
   const handleGuardarCita = async () => {
-  if (!formularioCita.id_paciente) {
-    alert("Debe seleccionar un paciente");
-    return;
-  }
-
-  try {
-    // 1. armar fecha/hora inicio
-    const fechaHoraInicio = `${formularioCita.fecha}T${formularioCita.hora_inicio}:00`;
-
-    // 2. calcular fecha/hora fin
-    const inicioDate = new Date(fechaHoraInicio);
-    const finDate = new Date(inicioDate.getTime() + formularioCita.duracion_minutos * 60_000);
-    const fechaHoraFin = finDate.toISOString();
-
-    const endpoint =
-      modalEditarCita && citaSeleccionada
-        ? `/api/medico/agenda/${citaSeleccionada.id_cita}`
-        : "/api/medico/agenda";
-
-    const method = modalEditarCita ? "PUT" : "POST";
-
-    const payload = {
-      // lo que el backend suele necesitar:
-      id_medico: usuario?.medico?.id_medico,
-      id_centro: usuario?.medico?.centro_principal.id_centro,
-
-      // fechas completas
-      fecha_hora_inicio: fechaHoraInicio,
-      fecha_hora_fin: fechaHoraFin,
-      duracion_minutos: formularioCita.duracion_minutos,
-
-      // datos de la cita
-      id_paciente: formularioCita.id_paciente,
-      tipo_cita: formularioCita.tipo_cita,
-      motivo: formularioCita.motivo,
-      id_especialidad: formularioCita.id_especialidad,
-      id_sala: formularioCita.id_sala,
-      prioridad: formularioCita.prioridad,
-      notas: formularioCita.notas,
-      notas_privadas: formularioCita.notas_privadas,
-      monto: formularioCita.monto,
-      // si tu API los admite:
-      enviar_recordatorio: formularioCita.enviar_recordatorio,
-      enviar_confirmacion: formularioCita.enviar_confirmacion,
-      // forma de atención
-      tipo_atencion: formularioCita.tipo_atencion,
-    };
-
-    const response = await fetch(endpoint, {
-      method,
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify(payload),
-    });
-
-    if (response.ok) {
-      await cargarDatosAgenda();
-      setModalNuevaCita(false);
-      setModalEditarCita(false);
-      setCitaSeleccionada(null);
-    } else {
-      // intentar leer el json, pero sin romper si viene HTML
-      let errorMsg = "Error al guardar la cita";
-      try {
-        const error = await response.json();
-        if (error?.message) errorMsg = error.message;
-      } catch (_) {}
-      alert(errorMsg);
-      console.error("Guardar cita - payload enviado:", payload);
+    if (!formularioCita.id_paciente) {
+      alert("Debe seleccionar un paciente");
+      return;
     }
-  } catch (error) {
-    console.error("Error al guardar cita:", error);
-    alert("Error al guardar la cita");
-  }
-};
 
+    if (!formularioCita.motivo.trim()) {
+      alert("Debe ingresar el motivo de la consulta");
+      return;
+    }
+
+    try {
+      setGuardando(true);
+      setError(null);
+
+      // 1. armar fecha/hora inicio
+      const fechaHoraInicio = `${formularioCita.fecha}T${formularioCita.hora_inicio}:00`;
+
+      // 2. calcular fecha/hora fin
+      const inicioDate = new Date(fechaHoraInicio);
+      const finDate = new Date(inicioDate.getTime() + formularioCita.duracion_minutos * 60_000);
+      const fechaHoraFin = finDate.toISOString();
+
+      const endpoint =
+        modalEditarCita && citaSeleccionada
+          ? `/api/medico/agenda/${citaSeleccionada.id_cita}`
+          : "/api/medico/agenda";
+
+      const method = modalEditarCita ? "PUT" : "POST";
+
+      const payload = {
+        id_medico: usuario?.medico?.id_medico,
+        id_centro: usuario?.medico?.centro_principal.id_centro,
+        fecha_hora_inicio: fechaHoraInicio,
+        fecha_hora_fin: fechaHoraFin,
+        duracion_minutos: formularioCita.duracion_minutos,
+        id_paciente: formularioCita.id_paciente,
+        tipo_cita: formularioCita.tipo_cita,
+        motivo: formularioCita.motivo,
+        id_especialidad: formularioCita.id_especialidad,
+        id_sala: formularioCita.id_sala,
+        prioridad: formularioCita.prioridad,
+        notas: formularioCita.notas,
+        notas_privadas: formularioCita.notas_privadas,
+        monto: formularioCita.monto,
+        enviar_recordatorio: formularioCita.enviar_recordatorio,
+        enviar_confirmacion: formularioCita.enviar_confirmacion,
+        tipo_atencion: formularioCita.tipo_atencion,
+        origen: "web",
+      };
+
+      const response = await fetch(endpoint, {
+        method,
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify(payload),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        await cargarDatosAgenda();
+        setModalNuevaCita(false);
+        setModalEditarCita(false);
+        setCitaSeleccionada(null);
+        setBusquedaPaciente("");
+        setMostrarResultadosPacientes(false);
+        
+        // Mostrar mensaje de éxito
+        alert(modalEditarCita ? "Cita actualizada exitosamente" : "Cita creada exitosamente");
+      } else {
+        throw new Error(data.message || "Error al guardar la cita");
+      }
+    } catch (error) {
+      console.error("Error al guardar cita:", error);
+      const errorMsg = error instanceof Error ? error.message : "Error al guardar la cita";
+      setError(errorMsg);
+      alert(errorMsg);
+    } finally {
+      setGuardando(false);
+    }
+  };
 
   const handleConfirmarCita = async (idCita: number) => {
     try {
@@ -1127,11 +1307,17 @@ export default function AgendaMedicaPage() {
         credentials: "include",
       });
 
-      if (response.ok) {
+      const data = await response.json();
+
+      if (response.ok && data.success) {
         await cargarDatosAgenda();
+        alert("Cita confirmada exitosamente");
+      } else {
+        throw new Error(data.message || "Error al confirmar cita");
       }
     } catch (error) {
       console.error("Error al confirmar cita:", error);
+      alert(error instanceof Error ? error.message : "Error al confirmar cita");
     }
   };
 
@@ -1144,11 +1330,17 @@ export default function AgendaMedicaPage() {
         body: JSON.stringify({ motivo }),
       });
 
-      if (response.ok) {
+      const data = await response.json();
+
+      if (response.ok && data.success) {
         await cargarDatosAgenda();
+        alert("Cita cancelada exitosamente");
+      } else {
+        throw new Error(data.message || "Error al cancelar cita");
       }
     } catch (error) {
       console.error("Error al cancelar cita:", error);
+      alert(error instanceof Error ? error.message : "Error al cancelar cita");
     }
   };
 
@@ -1161,11 +1353,16 @@ export default function AgendaMedicaPage() {
         body: JSON.stringify({ asistio }),
       });
 
-      if (response.ok) {
+      const data = await response.json();
+
+      if (response.ok && data.success) {
         await cargarDatosAgenda();
+      } else {
+        throw new Error(data.message || "Error al marcar asistencia");
       }
     } catch (error) {
       console.error("Error al marcar asistencia:", error);
+      alert(error instanceof Error ? error.message : "Error al marcar asistencia");
     }
   };
 
@@ -1177,12 +1374,17 @@ export default function AgendaMedicaPage() {
         credentials: "include",
       });
 
-      if (response.ok) {
+      const data = await response.json();
+
+      if (response.ok && data.success) {
         await cargarDatosAgenda();
         window.location.href = `/medico/consultas/nueva/${idCita}`;
+      } else {
+        throw new Error(data.message || "Error al iniciar atención");
       }
     } catch (error) {
       console.error("Error al iniciar atención:", error);
+      alert(error instanceof Error ? error.message : "Error al iniciar atención");
     }
   };
 
@@ -1194,11 +1396,17 @@ export default function AgendaMedicaPage() {
         credentials: "include",
       });
 
-      if (response.ok) {
+      const data = await response.json();
+
+      if (response.ok && data.success) {
         await cargarDatosAgenda();
+        alert("Cita completada exitosamente");
+      } else {
+        throw new Error(data.message || "Error al completar cita");
       }
     } catch (error) {
       console.error("Error al completar cita:", error);
+      alert(error instanceof Error ? error.message : "Error al completar cita");
     }
   };
 
@@ -1210,11 +1418,17 @@ export default function AgendaMedicaPage() {
         credentials: "include",
       });
 
-      if (response.ok) {
+      const data = await response.json();
+
+      if (response.ok && data.success) {
         await cargarDatosAgenda();
+        alert("Recordatorio enviado exitosamente");
+      } else {
+        throw new Error(data.message || "Error al enviar recordatorio");
       }
     } catch (error) {
       console.error("Error al enviar recordatorio:", error);
+      alert(error instanceof Error ? error.message : "Error al enviar recordatorio");
     }
   };
 
@@ -1237,14 +1451,17 @@ export default function AgendaMedicaPage() {
         const url = window.URL.createObjectURL(blob);
         const a = document.createElement("a");
         a.href = url;
-        a.download = `agenda-${new Date().toISOString()}.${formato}`;
+        a.download = `agenda-${new Date().toISOString().split('T')[0]}.${formato}`;
         document.body.appendChild(a);
         a.click();
         window.URL.revokeObjectURL(url);
         document.body.removeChild(a);
+      } else {
+        throw new Error("Error al exportar agenda");
       }
     } catch (error) {
       console.error("Error al exportar agenda:", error);
+      alert("Error al exportar la agenda");
     }
   };
 
@@ -1255,8 +1472,13 @@ export default function AgendaMedicaPage() {
     const [reorderedItem] = items.splice(result.source.index, 1);
     items.splice(result.destination.index, 0, reorderedItem);
 
-    // Aquí puedes actualizar el orden en el backend si lo necesitas
     setCitas(items);
+  };
+
+  const handleSeleccionarPaciente = (paciente: Paciente) => {
+    setFormularioCita({ ...formularioCita, id_paciente: paciente.id_paciente });
+    setBusquedaPaciente(paciente.nombre_completo);
+    setMostrarResultadosPacientes(false);
   };
 
   // ========================================
@@ -1376,107 +1598,128 @@ export default function AgendaMedicaPage() {
     );
   }
 
-  if (!usuario || !usuario.medico) {
-    return (
-      <div className={`min-h-screen flex items-center justify-center bg-gradient-to-br ${tema.colores.fondo}`}>
-        <div className={`text-center max-w-md mx-auto p-8 rounded-3xl ${tema.colores.card} ${tema.colores.sombra} ${tema.colores.borde} border`}>
-          <div className={`w-24 h-24 bg-gradient-to-br ${tema.colores.gradiente} rounded-3xl flex items-center justify-center mx-auto mb-6 animate-pulse`}>
-            <AlertTriangle className="w-12 h-12 text-white" />
-          </div>
-          <h2 className={`text-3xl font-black mb-4 ${tema.colores.texto}`}>
-            Acceso No Autorizado
-          </h2>
-          <p className={`text-lg mb-8 ${tema.colores.textoSecundario}`}>
-            No tienes permisos para acceder a la agenda médica
-          </p>
-          <Link
-            href="/login"
-            className={`inline-flex items-center gap-3 px-8 py-4 ${tema.colores.primario} text-white rounded-2xl font-bold text-lg transition-all duration-300 hover:scale-105 ${tema.colores.sombra}`}
-          >
-            <LogOut className="w-5 h-5" />
-            Ir al Login
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
-  // ========================================
-  // RENDER - AGENDA COMPLETA
-  // ========================================
-
+ // ========================================
+// VALIDACIÓN DE USUARIO
+// ========================================
+if (!usuario || !usuario.medico) {
   return (
-    <div className={`min-h-screen transition-all duration-500 bg-gradient-to-br ${tema.colores.fondo}`}>
-      {/* SIDEBAR */}
-      <aside
-        className={`fixed left-0 top-0 h-full z-50 transition-all duration-300 ${
-          sidebarAbierto ? "w-20" : "w-0"
-        } ${tema.colores.sidebar} ${tema.colores.borde} border-r ${tema.colores.sombra}`}
+    <div
+      className={`min-h-screen flex items-center justify-center bg-gradient-to-br ${tema.colores.fondo}`}
+    >
+      <div
+        className={`text-center max-w-md mx-auto p-8 rounded-3xl ${tema.colores.card} ${tema.colores.sombra} ${tema.colores.borde} border`}
       >
-        {sidebarAbierto && (
-          <div className="flex flex-col h-full items-center py-6 gap-4">
+        <div
+          className={`w-24 h-24 bg-gradient-to-br ${tema.colores.gradiente} rounded-3xl flex items-center justify-center mx-auto mb-6 animate-pulse`}
+        >
+          <AlertTriangle className="w-12 h-12 text-white" />
+        </div>
+
+        <h2 className={`text-3xl font-black mb-4 ${tema.colores.texto}`}>
+          Acceso No Autorizado
+        </h2>
+
+        <p className={`text-lg mb-8 ${tema.colores.textoSecundario}`}>
+          No tienes permisos para acceder a la agenda médica
+        </p>
+
+        <Link
+          href="/login"
+          className={`inline-flex items-center gap-3 px-8 py-4 ${tema.colores.primario} text-white rounded-2xl font-bold text-lg transition-all duration-300 hover:scale-105 ${tema.colores.sombra}`}
+        >
+          <LogOut className="w-5 h-5" />
+          Ir al Login
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+// ========================================
+// RENDER - AGENDA COMPLETA
+// ========================================
+// ========================================
+// RENDER - AGENDA COMPLETA
+// ========================================
+return (
+  <div className={`min-h-screen transition-all duration-500 bg-gradient-to-br ${tema.colores.fondo}`}>
+    {/* SIDEBAR */}
+    <aside
+      className={`fixed left-0 top-0 h-full z-50 transition-all duration-300 ${
+        sidebarAbierto ? "w-20" : "w-0"
+      } ${tema.colores.sidebar} ${tema.colores.borde} border-r ${tema.colores.sombra}`}
+    >
+      {sidebarAbierto && (
+        <div className="flex flex-col h-full items-center py-6 gap-4">
+          {/* Logo */}
+          <Link
+            href="/medico"
+            className={`w-12 h-12 bg-gradient-to-br ${tema.colores.gradiente} rounded-xl flex items-center justify-center shadow-lg transition-all duration-300 hover:scale-110`}
+          >
+            <Stethoscope className="w-6 h-6 text-white" />
+          </Link>
+
+          {/* Menú lateral */}
+          <div className="flex-1 flex flex-col gap-2 w-full px-2">
             <Link
               href="/medico"
-              className={`w-12 h-12 bg-gradient-to-br ${tema.colores.gradiente} rounded-xl flex items-center justify-center shadow-lg transition-all duration-300 hover:scale-110`}
+              className={`w-full h-12 rounded-xl flex items-center justify-center transition-all duration-300 ${tema.colores.hover} group`}
             >
-              <Stethoscope className="w-6 h-6 text-white" />
+              <Home className={`w-6 h-6 ${tema.colores.texto} group-hover:scale-110 transition-transform`} />
             </Link>
 
-            <div className="flex-1 flex flex-col gap-2 w-full px-2">
-              <Link
-                href="/medico"
-                className={`w-full h-12 rounded-xl flex items-center justify-center transition-all duration-300 ${tema.colores.hover} group`}
-              >
-                <Home className={`w-6 h-6 ${tema.colores.texto} group-hover:scale-110 transition-transform`} />
-              </Link>
+            <Link
+              href="/medico/agenda"
+              className={`w-full h-12 rounded-xl flex items-center justify-center transition-all duration-300 bg-gradient-to-r ${tema.colores.gradiente} shadow-lg`}
+            >
+              <Calendar className="w-6 h-6 text-white" />
+            </Link>
 
-              <Link
-                href="/medico/agenda"
-                className={`w-full h-12 rounded-xl flex items-center justify-center transition-all duration-300 bg-gradient-to-r ${tema.colores.gradiente} shadow-lg`}
-              >
-                <Calendar className="w-6 h-6 text-white" />
-              </Link>
+            <Link
+              href="/medico/pacientes"
+              className={`w-full h-12 rounded-xl flex items-center justify-center transition-all duration-300 ${tema.colores.hover} group`}
+            >
+              <Users className={`w-6 h-6 ${tema.colores.texto} group-hover:scale-110 transition-transform`} />
+            </Link>
 
-              <Link
-                href="/medico/pacientes"
-                className={`w-full h-12 rounded-xl flex items-center justify-center transition-all duration-300 ${tema.colores.hover} group`}
-              >
-                <Users className={`w-6 h-6 ${tema.colores.texto} group-hover:scale-110 transition-transform`} />
-              </Link>
-
-              <Link
-                href="/medico/mensajes"
-                className={`w-full h-12 rounded-xl flex items-center justify-center transition-all duration-300 ${tema.colores.hover} group`}
-              >
-                <MessageSquare className={`w-6 h-6 ${tema.colores.texto} group-hover:scale-110 transition-transform`} />
-              </Link>
-
-              <button
-                onClick={() => setModalSelectorTema(true)}
-                className={`w-full h-12 rounded-xl flex items-center justify-center transition-all duration-300 ${tema.colores.hover} group`}
-              >
-                {React.createElement(tema.icono, {
-                  className: `w-6 h-6 ${tema.colores.texto} group-hover:scale-110 transition-transform`,
-                })}
-              </button>
-
-              <Link
-                href="/medico/configuracion"
-                className={`w-full h-12 rounded-xl flex items-center justify-center transition-all duration-300 ${tema.colores.hover} group`}
-              >
-                <Settings className={`w-6 h-6 ${tema.colores.texto} group-hover:scale-110 transition-transform`} />
-              </Link>
-            </div>
+            <Link
+              href="/medico/mensajes"
+              className={`w-full h-12 rounded-xl flex items-center justify-center transition-all duration-300 ${tema.colores.hover} group`}
+            >
+              <MessageSquare className={`w-6 h-6 ${tema.colores.texto} group-hover:scale-110 transition-transform`} />
+            </Link>
 
             <button
-              onClick={cerrarSesion}
-              className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300 hover:bg-red-500/20 group`}
+              onClick={() => setModalSelectorTema(true)}
+              className={`w-full h-12 rounded-xl flex items-center justify-center transition-all duration-300 ${tema.colores.hover} group`}
             >
-              <LogOut className="w-6 h-6 text-red-400 group-hover:scale-110 transition-transform" />
+              {React.createElement(tema.icono, {
+                className: `w-6 h-6 ${tema.colores.texto} group-hover:scale-110 transition-transform`,
+              })}
             </button>
+
+            <Link
+              href="/medico/configuracion"
+              className={`w-full h-12 rounded-xl flex items-center justify-center transition-all duration-300 ${tema.colores.hover} group`}
+            >
+              <Settings className={`w-6 h-6 ${tema.colores.texto} group-hover:scale-110 transition-transform`} />
+            </Link>
           </div>
-        )}
-      </aside>
+
+          {/* Botón de cierre de sesión */}
+          <button
+            onClick={cerrarSesion}
+            className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all duration-300 hover:bg-red-500/20 group`}
+          >
+            <LogOut className="w-6 h-6 text-red-400 group-hover:scale-110 transition-transform" />
+          </button>
+        </div>
+      )}
+    </aside>  
+    
+
+
+  
 
       {/* CONTENIDO PRINCIPAL */}
       <main
@@ -1546,7 +1789,8 @@ export default function AgendaMedicaPage() {
             <div className="flex items-center gap-3">
               <button
                 onClick={() => cargarDatosAgenda()}
-                className={`flex items-center gap-2 px-6 py-3 ${tema.colores.secundario} ${tema.colores.texto} rounded-xl font-bold transition-all duration-300 hover:scale-105`}
+                disabled={loadingData}
+                className={`flex items-center gap-2 px-6 py-3 ${tema.colores.secundario} ${tema.colores.texto} rounded-xl font-bold transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed`}
               >
                 <RefreshCw className={`w-5 h-5 ${loadingData ? "animate-spin" : ""}`} />
                 Actualizar
@@ -2087,2081 +2331,1810 @@ export default function AgendaMedicaPage() {
           )}
         </div>
 
+
         {/* CONTENIDO - VISTAS */}
-        {loadingData ? (
-          <div className="flex items-center justify-center py-20">
-            <div className="text-center">
-              <Loader2 className="w-16 h-16 animate-spin text-indigo-500 mx-auto mb-4" />
-              <p className={`text-lg font-semibold ${tema.colores.textoSecundario}`}>
-                Cargando agenda...
-              </p>
-            </div>
-          </div>
-        ) : (
-          <>
-            {/* VISTA DE LISTA */}
-            {vistaModo === "lista" && (
-              <DragDropContext onDragEnd={handleDragEnd}>
-                <Droppable droppableId="citas-list">
-                  {(provided) => (
-                    <div
-                      {...provided.droppableProps}
-                      ref={provided.innerRef}
-                      className="space-y-4"
-                    >
-                      {citasFiltradas.length === 0 ? (
-                        <div className={`rounded-2xl p-12 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} text-center`}>
-                          <div className={`w-24 h-24 bg-gradient-to-br ${tema.colores.gradiente} rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse`}>
-                            <Calendar className="w-12 h-12 text-white" />
-                          </div>
-                          <h3 className={`text-2xl font-black mb-2 ${tema.colores.texto}`}>
-                            No hay citas programadas
-                          </h3>
-                          <p className={`text-lg ${tema.colores.textoSecundario} mb-6`}>
-                            Agenda tu primera cita del día
-                          </p>
-                          <button
-                            onClick={handleNuevaCita}
-                            className={`px-8 py-4 ${tema.colores.primario} text-white rounded-xl font-bold transition-all duration-300 hover:scale-105 ${tema.colores.sombra}`}
-                          >
-                            <Plus className="w-5 h-5 inline-block mr-2" />
-                            Nueva Cita
-                          </button>
-                        </div>
-                      ) : (
-                        citasFiltradas.map((cita, index) => (
-                          <Draggable
-                            key={cita.id_cita}
-                            draggableId={cita.id_cita.toString()}
-                            index={index}
-                          >
-                            {(provided, snapshot) => (
-                              <div
-                                ref={provided.innerRef}
-                                {...provided.draggableProps}
-                                {...provided.dragHandleProps}
-                                className={`rounded-2xl p-6 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} transition-all duration-300 ${
-                                  snapshot.isDragging ? "scale-105 rotate-2" : "hover:scale-[1.01] hover:-translate-y-1"
-                                }`}
-                              >
-                                <div className="flex items-start gap-6">
-                                  <div className="flex flex-col items-center gap-3">
-                                    <div
-                                      className={`relative w-20 h-20 rounded-xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center text-white font-bold text-2xl shadow-lg`}
-                                    >
-                                      {cita.paciente.foto_url ? (
-                                        <Image
-                                          src={cita.paciente.foto_url}
-                                          alt={cita.paciente.nombre_completo}
-                                          width={80}
-                                          height={80}
-                                          className="rounded-xl object-cover"
-                                        />
-                                      ) : (
-                                        cita.paciente.nombre_completo
-                                          .split(" ")
-                                          .map((n) => n[0])
-                                          .join("")
-                                          .substring(0, 2)
-                                      )}
-                                      {cita.tipo_cita === "telemedicina" && (
-                                        <div className="absolute -top-2 -right-2 w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center shadow-lg animate-pulse">
-                                          <Video className="w-4 h-4 text-white" />
-                                        </div>
-                                      )}
-                                      {cita.prioridad === "urgente" && (
-                                        <div className="absolute -top-2 -left-2 w-8 h-8 bg-red-500 rounded-full flex items-center justify-center shadow-lg animate-pulse">
-                                          <AlertTriangle className="w-4 h-4 text-white" />
-                                        </div>
-                                      )}
-                                    </div>
-
-                                    <div className="text-center">
-                                      <div className={`text-2xl font-black ${tema.colores.texto}`}>
-                                        {formatearHora(cita.fecha_hora_inicio)}
-                                      </div>
-                                      <div className={`text-xs font-bold ${tema.colores.textoSecundario}`}>
-                                        {cita.duracion_minutos} min
-                                      </div>
-                                    </div>
-                                  </div>
-
-                                  <div className="flex-1 min-w-0">
-                                    <div className="flex items-start justify-between mb-3">
-                                      <div>
-                                        <h3 className={`text-2xl font-black ${tema.colores.texto} mb-1`}>
-                                          {cita.paciente.nombre_completo}
-                                        </h3>
-                                        <p className={`text-sm font-semibold ${tema.colores.textoSecundario} flex items-center gap-2 flex-wrap`}>
-                                          <span>
-                                            {cita.paciente.edad} años · {cita.paciente.genero}
-                                          </span>
-                                          <span>·</span>
-                                          <span>{cita.paciente.grupo_sanguineo}</span>
-                                          {cita.paciente.alergias_criticas > 0 && (
-                                            <>
-                                              <span>·</span>
-                                              <span className="flex items-center gap-1 text-red-400 font-bold">
-                                                <AlertTriangle className="w-3 h-3" />
-                                                {cita.paciente.alergias_criticas} alergias
-                                              </span>
-                                            </>
-                                          )}
-                                        </p>
-                                      </div>
-
-                                      <div className="flex items-center gap-2">
-                                        <span
-                                          className={`px-3 py-1 rounded-full text-xs font-bold border ${
-                                            COLORES_ESTADO[cita.estado].bg
-                                          } ${COLORES_ESTADO[cita.estado].text} ${
-                                            COLORES_ESTADO[cita.estado].border
-                                          }`}
-                                        >
-                                          {cita.estado.replace("_", " ")}
-                                        </span>
-
-                                        <span
-                                          className={`px-3 py-1 rounded-full text-xs font-bold`}
-                                          style={{
-                                            backgroundColor: `${COLORES_TIPO[cita.tipo_cita]}20`,
-                                            color: COLORES_TIPO[cita.tipo_cita],
-                                          }}
-                                        >
-                                          {cita.tipo_cita.replace("_", " ")}
-                                        </span>
-                                      </div>
-                                    </div>
-
-                                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
-                                      {cita.motivo && (
-                                        <div className={`flex items-center gap-2 px-3 py-2 rounded-lg ${tema.colores.secundario}`}>
-                                          <FileText className={`w-4 h-4 ${tema.colores.acento}`} />
-                                          <span className={`text-sm font-bold ${tema.colores.texto} truncate`}>
-                                            {cita.motivo}
-                                          </span>
-                                        </div>
-                                      )}
-
-                                      {cita.sala && (
-                                        <div className={`flex items-center gap-2 px-3 py-2 rounded-lg ${tema.colores.secundario}`}>
-                                          <MapPin className={`w-4 h-4 ${tema.colores.acento}`} />
-                                          <span className={`text-sm font-bold ${tema.colores.texto} truncate`}>
-                                            {cita.sala.nombre}
-                                          </span>
-                                        </div>
-                                      )}
-
-                                      {cita.especialidad && (
-                                        <div className={`flex items-center gap-2 px-3 py-2 rounded-lg ${tema.colores.secundario}`}>
-                                          <Stethoscope className={`w-4 h-4 ${tema.colores.acento}`} />
-                                          <span className={`text-sm font-bold ${tema.colores.texto} truncate`}>
-                                            {cita.especialidad.nombre}
-                                          </span>
-                                        </div>
-                                      )}
-
-                                      {cita.paciente.telefono && (
-                                        <div className={`flex items-center gap-2 px-3 py-2 rounded-lg ${tema.colores.secundario}`}>
-                                          <Phone className={`w-4 h-4 ${tema.colores.acento}`} />
-                                          <span className={`text-sm font-bold ${tema.colores.texto} truncate`}>
-                                            {cita.paciente.telefono}
-                                          </span>
-                                        </div>
-                                      )}
-                                    </div>
-
-                                    <div className="flex items-center gap-2 flex-wrap mb-4">
-                                      {cita.confirmado_por_paciente ? (
-                                        <span className="flex items-center gap-1 px-3 py-1 bg-green-500/20 text-green-400 rounded-full text-xs font-bold">
-                                          <CheckCircle2 className="w-3 h-3" />
-                                          Confirmada
-                                        </span>
-                                      ) : (
-                                        <span className="flex items-center gap-1 px-3 py-1 bg-yellow-500/20 text-yellow-400 rounded-full text-xs font-bold">
-                                          <Clock className="w-3 h-3" />
-                                          Sin Confirmar
-                                        </span>
-                                      )}
-
-                                      {cita.pagada ? (
-                                        <span className="flex items-center gap-1 px-3 py-1 bg-green-500/20 text-green-400 rounded-full text-xs font-bold">
-                                          <CheckCircle2 className="w-3 h-3" />
-                                          Pagada
-                                        </span>
-                                      ) : (
-                                        <span className="flex items-center gap-1 px-3 py-1 bg-orange-500/20 text-orange-400 rounded-full text-xs font-bold">
-                                          <AlertCircle className="w-3 h-3" />
-                                          Pago Pendiente
-                                        </span>
-                                      )}
-
-                                      {cita.recordatorio_enviado && (
-                                        <span className="flex items-center gap-1 px-3 py-1 bg-blue-500/20 text-blue-400 rounded-full text-xs font-bold">
-                                          <Bell className="w-3 h-3" />
-                                          Recordatorio Enviado
-                                        </span>
-                                      )}
-                                    </div>
-
-                                    <div className="flex items-center gap-2 flex-wrap">
-                                      {cita.estado === "programada" && !cita.confirmado_por_paciente && (
-                                        <button
-                                          onClick={() => handleConfirmarCita(cita.id_cita)}
-                                          className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-xl font-semibold text-sm transition-all duration-300 hover:scale-105 flex items-center gap-2"
-                                        >
-                                          <CheckCircle2 className="w-4 h-4" />
-                                          Confirmar
-                                        </button>
-                                      )}
-
-                                      {["programada", "confirmada"].includes(cita.estado) && (
-                                        <button
-                                          onClick={() => handleMarcarAsistencia(cita.id_cita, true)}
-                                          className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold text-sm transition-all duration-300 hover:scale-105 flex items-center gap-2"
-                                        >
-                                          <UserCheck className="w-4 h-4" />
-                                          En Sala Espera
-                                        </button>
-                                      )}
-
-                                      {cita.estado === "en_sala_espera" && (
-                                        <button
-                                          onClick={() => handleIniciarAtencion(cita.id_cita)}
-                                          className={`px-4 py-2 ${tema.colores.primario} text-white rounded-xl font-semibold text-sm transition-all duration-300 hover:scale-105 flex items-center gap-2`}
-                                        >
-                                          <Activity className="w-4 h-4" />
-                                          Iniciar Atención
-                                        </button>
-                                      )}
-
-                                      {cita.estado === "en_atencion" && (
-                                        <button
-                                          onClick={() => handleCompletarCita(cita.id_cita)}
-                                          className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-semibold text-sm transition-all duration-300 hover:scale-105 flex items-center gap-2"
-                                        >
-                                          <CheckCircle2 className="w-4 h-4" />
-                                          Completar
-                                        </button>
-                                      )}
-
-                                      <Link
-                                        href={`/medico/pacientes/${cita.id_paciente}`}
-                                        className={`px-4 py-2 rounded-xl font-semibold text-sm transition-all duration-300 hover:scale-105 flex items-center gap-2 ${tema.colores.secundario} ${tema.colores.texto}`}
-                                      >
-                                        <FileText className="w-4 h-4" />
-                                        Ver Ficha
-                                      </Link>
-
-                                      {!cita.recordatorio_enviado && (
-                                        <button
-                                          onClick={() => handleEnviarRecordatorio(cita.id_cita)}
-                                          className={`px-4 py-2 rounded-xl font-semibold text-sm transition-all duration-300 hover:scale-105 flex items-center gap-2 ${tema.colores.secundario} ${tema.colores.texto}`}
-                                        >
-                                          <Send className="w-4 h-4" />
-                                          Recordatorio
-                                        </button>
-                                      )}
-
-                                      <button
-                                        onClick={() => handleEditarCita(cita)}
-                                        className={`px-4 py-2 rounded-xl font-semibold text-sm transition-all duration-300 hover:scale-105 flex items-center gap-2 ${tema.colores.secundario} ${tema.colores.texto}`}
-                                      >
-                                        <Edit className="w-4 h-4" />
-                                        Editar
-                                      </button>
-
-                                      <button
-                                        onClick={() => handleVerDetalles(cita)}
-                                        className={`p-2 rounded-xl transition-all duration-300 hover:scale-105 ${tema.colores.secundario} ${tema.colores.texto}`}
-                                      >
-                                        <MoreVertical className="w-5 h-5" />
-                                      </button>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-                          </Draggable>
-                        ))
-                      )}
-                      {provided.placeholder}
-                    </div>
-                  )}
-                </Droppable>
-              </DragDropContext>
-            )}
-
-            {/* VISTA DE CALENDARIO */}
-            {vistaModo === "calendario" && (
-              <div className={`rounded-2xl p-8 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra}`}>
-                {vistaCalendario === "mes" && (
-                  <>
-                    <div className="grid grid-cols-7 gap-2 mb-4">
-                      {["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"].map((dia) => (
-                        <div
-                          key={dia}
-                          className={`text-center py-3 font-black text-sm ${tema.colores.texto}`}
-                        >
-                          {dia}
-                        </div>
-                      ))}
-                    </div>
-
-                    <div className="grid grid-cols-7 gap-2">
-                      {generarCalendarioMensual().map((dia, index) => {
-                        const fechaStr = dia.fecha.toISOString().split("T")[0];
-                        const citasDelDia = citasPorDia[fechaStr] || [];
-                        const esHoy =
-                          fechaStr === new Date().toISOString().split("T")[0];
-
-                        return (
-                          <div
-                            key={index}
-                            className={`min-h-[120px] p-3 rounded-xl ${
-                              dia.mesActual
-                                ? `${tema.colores.card} ${tema.colores.borde} border`
-                                : `${tema.colores.secundario} opacity-50`
-                            } ${esHoy ? "ring-2 ring-indigo-500" : ""} transition-all duration-300 hover:scale-105 cursor-pointer`}
-                            onClick={() => {
-                              setFechaSeleccionada(dia.fecha);
-                              setVistaCalendario("dia");
-                            }}
-                          >
+{loadingData ? (
+  <div className="flex items-center justify-center py-20">
+    <div className="text-center">
+      <Loader2 className="w-16 h-16 animate-spin text-indigo-500 mx-auto mb-4" />
+      <p className={`text-lg font-semibold ${tema.colores.textoSecundario}`}>
+        Cargando agenda...
+      </p>
+    </div>
+  </div>
+) : error ? (
+  <div
+    className={`rounded-2xl p-12 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} text-center`}
+  >
+    <div
+      className={`w-24 h-24 bg-gradient-to-br from-red-500 to-pink-500 rounded-full flex items-center justify-center mx-auto mb-4`}
+    >
+      <AlertTriangle className="w-12 h-12 text-white" />
+    </div>
+    <h3 className={`text-2xl font-black mb-2 ${tema.colores.texto}`}>
+      Error al cargar la agenda
+    </h3>
+    <p className={`text-lg ${tema.colores.textoSecundario} mb-6`}>
+      {error}
+    </p>
+    <button
+      onClick={() => cargarDatosAgenda()}
+      className={`px-8 py-4 ${tema.colores.primario} text-white rounded-xl font-bold transition-all duration-300 hover:scale-105 ${tema.colores.sombra}`}
+    >
+      <RefreshCw className="w-5 h-5 inline-block mr-2" />
+      Reintentar
+    </button>
+  </div>
+) : (
+  <>
+    {/* VISTA DE LISTA */}
+    {vistaModo === "lista" && (
+      <DragDropContext onDragEnd={handleDragEnd}>
+        <Droppable droppableId="citas-list">
+          {(provided) => (
+            <div
+              {...provided.droppableProps}
+              ref={provided.innerRef}
+              className="space-y-4"
+            >
+              {citasFiltradas.length === 0 ? (
+                <div
+                  className={`rounded-2xl p-12 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} text-center`}
+                >
+                  <div
+                    className={`w-24 h-24 bg-gradient-to-br ${tema.colores.gradiente} rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse`}
+                  >
+                    <Calendar className="w-12 h-12 text-white" />
+                  </div>
+                  <h3
+                    className={`text-2xl font-black mb-2 ${tema.colores.texto}`}
+                  >
+                    No hay citas programadas
+                  </h3>
+                  <p
+                    className={`text-lg ${tema.colores.textoSecundario} mb-6`}
+                  >
+                    Agenda tu primera cita del día
+                  </p>
+                  <button
+                    onClick={handleNuevaCita}
+                    className={`px-8 py-4 ${tema.colores.primario} text-white rounded-xl font-bold transition-all duration-300 hover:scale-105 ${tema.colores.sombra}`}
+                  >
+                    <Plus className="w-5 h-5 inline-block mr-2" />
+                    Nueva Cita
+                  </button>
+                </div>
+              ) : (
+                citasFiltradas.map((cita, index) => (
+                  <Draggable
+                    key={cita.id_cita}
+                    draggableId={cita.id_cita.toString()}
+                    index={index}
+                  >
+                    {(provided, snapshot) => (
+                      <div
+                        ref={provided.innerRef}
+                        {...provided.draggableProps}
+                        {...provided.dragHandleProps}
+                        className={`rounded-2xl p-6 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} transition-all duration-300 ${
+                          snapshot.isDragging
+                            ? "scale-105 rotate-2"
+                            : "hover:scale-[1.01] hover:-translate-y-1"
+                        }`}
+                      >
+                        <div className="flex items-start gap-6">
+                          {/* Avatar / hora */}
+                          <div className="flex flex-col items-center gap-3">
                             <div
-                              className={`text-right mb-2 font-bold ${
-                                esHoy ? "text-indigo-500" : tema.colores.texto
-                              }`}
+                              className={`relative w-20 h-20 rounded-xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center text-white font-bold text-2xl shadow-lg`}
                             >
-                              {dia.dia}
-                            </div>
-
-                            <div className="space-y-1">
-                              {citasDelDia.slice(0, 3).map((cita) => (
-                                <div
-                                  key={cita.id_cita}
-                                  className={`px-2 py-1 rounded-lg text-xs font-bold truncate ${
-                                    COLORES_ESTADO[cita.estado].bg
-                                  } ${COLORES_ESTADO[cita.estado].text}`}
-                                  title={`${formatearHora(cita.fecha_hora_inicio)} - ${cita.paciente.nombre_completo}`}
-                                >
-                                  {formatearHora(cita.fecha_hora_inicio).substring(0, 5)}{" "}
-                                  {cita.paciente.nombre_completo.split(" ")[0]}
+                              {cita.paciente.foto_url ? (
+                                <Image
+                                  src={cita.paciente.foto_url}
+                                  alt={cita.paciente.nombre_completo}
+                                  width={80}
+                                  height={80}
+                                  className="rounded-xl object-cover"
+                                />
+                              ) : (
+                                cita.paciente.nombre_completo
+                                  .split(" ")
+                                  .map((n) => n[0])
+                                  .join("")
+                                  .substring(0, 2)
+                              )}
+                              {cita.tipo_cita === "telemedicina" && (
+                                <div className="absolute -top-2 -right-2 w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center shadow-lg animate-pulse">
+                                  <Video className="w-4 h-4 text-white" />
                                 </div>
-                              ))}
-
-                              {citasDelDia.length > 3 && (
-                                <div className={`text-xs font-bold text-center ${tema.colores.acento}`}>
-                                  +{citasDelDia.length - 3} más
+                              )}
+                              {cita.prioridad === "urgente" && (
+                                <div className="absolute -top-2 -left-2 w-8 h-8 bg-red-500 rounded-full flex items-center justify-center shadow-lg animate-pulse">
+                                  <AlertTriangle className="w-4 h-4 text-white" />
                                 </div>
                               )}
                             </div>
+
+                            <div className="text-center">
+                              <div
+                                className={`text-2xl font-black ${tema.colores.texto}`}
+                              >
+                                {formatearHora(cita.fecha_hora_inicio)}
+                              </div>
+                              <div
+                                className={`text-xs font-bold ${tema.colores.textoSecundario}`}
+                              >
+                                {cita.duracion_minutos} min
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Contenido cita */}
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-start justify-between mb-3 gap-4">
+                              <div>
+                                <h3
+                                  className={`text-2xl font-black ${tema.colores.texto} mb-1`}
+                                >
+                                  {cita.paciente.nombre_completo}
+                                </h3>
+                                <p
+                                  className={`text-sm font-semibold ${tema.colores.textoSecundario} flex items-center gap-2 flex-wrap`}
+                                >
+                                  <span>
+                                    {cita.paciente.edad} años ·{" "}
+                                    {cita.paciente.genero}
+                                  </span>
+                                  <span>·</span>
+                                  <span>
+                                    {cita.paciente.grupo_sanguineo}
+                                  </span>
+                                  {cita.paciente.alergias_criticas > 0 && (
+                                    <>
+                                      <span>·</span>
+                                      <span className="flex items-center gap-1 text-red-400 font-bold">
+                                        <AlertTriangle className="w-3 h-3" />
+                                        {cita.paciente.alergias_criticas}{" "}
+                                        alergias
+                                      </span>
+                                    </>
+                                  )}
+                                </p>
+                              </div>
+
+                              <div className="flex items-center gap-2">
+                                <span
+                                  className={`px-3 py-1 rounded-full text-xs font-bold border ${
+                                    COLORES_ESTADO[cita.estado].bg
+                                  } ${COLORES_ESTADO[cita.estado].text} ${
+                                    COLORES_ESTADO[cita.estado].border
+                                  }`}
+                                >
+                                  {cita.estado.replace("_", " ")}
+                                </span>
+
+                                <span
+                                  className="px-3 py-1 rounded-full text-xs font-bold"
+                                  style={{
+                                    backgroundColor: `${COLORES_TIPO[cita.tipo_cita]}20`,
+                                    color: COLORES_TIPO[cita.tipo_cita],
+                                  }}
+                                >
+                                  {cita.tipo_cita.replace("_", " ")}
+                                </span>
+                              </div>
+                            </div>
+
+                            {/* chips */}
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
+                              {cita.motivo && (
+                                <div
+                                  className={`flex items-center gap-2 px-3 py-2 rounded-lg ${tema.colores.secundario}`}
+                                >
+                                  <FileText
+                                    className={`w-4 h-4 ${tema.colores.acento}`}
+                                  />
+                                  <span
+                                    className={`text-sm font-bold ${tema.colores.texto} truncate`}
+                                  >
+                                    {cita.motivo}
+                                  </span>
+                                </div>
+                              )}
+
+                              {cita.sala && (
+                                <div
+                                  className={`flex items-center gap-2 px-3 py-2 rounded-lg ${tema.colores.secundario}`}
+                                >
+                                  <MapPin
+                                    className={`w-4 h-4 ${tema.colores.acento}`}
+                                  />
+                                  <span
+                                    className={`text-sm font-bold ${tema.colores.texto} truncate`}
+                                  >
+                                    {cita.sala.nombre}
+                                  </span>
+                                </div>
+                              )}
+
+                              {cita.especialidad && (
+                                <div
+                                  className={`flex items-center gap-2 px-3 py-2 rounded-lg ${tema.colores.secundario}`}
+                                >
+                                  <Stethoscope
+                                    className={`w-4 h-4 ${tema.colores.acento}`}
+                                  />
+                                  <span
+                                    className={`text-sm font-bold ${tema.colores.texto} truncate`}
+                                  >
+                                    {cita.especialidad.nombre}
+                                  </span>
+                                </div>
+                              )}
+
+                              {cita.paciente.telefono && (
+                                <div
+                                  className={`flex items-center gap-2 px-3 py-2 rounded-lg ${tema.colores.secundario}`}
+                                >
+                                  <Phone
+                                    className={`w-4 h-4 ${tema.colores.acento}`}
+                                  />
+                                  <span
+                                    className={`text-sm font-bold ${tema.colores.texto} truncate`}
+                                  >
+                                    {cita.paciente.telefono}
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* estados mini */}
+                            <div className="flex items-center gap-2 flex-wrap mb-4">
+                              {cita.confirmado_por_paciente ? (
+                                <span className="flex items-center gap-1 px-3 py-1 bg-green-500/20 text-green-400 rounded-full text-xs font-bold">
+                                  <CheckCircle2 className="w-3 h-3" />
+                                  Confirmada
+                                </span>
+                              ) : (
+                                <span className="flex items-center gap-1 px-3 py-1 bg-yellow-500/20 text-yellow-400 rounded-full text-xs font-bold">
+                                  <Clock className="w-3 h-3" />
+                                  Sin Confirmar
+                                </span>
+                              )}
+
+                              {cita.pagada ? (
+                                <span className="flex items-center gap-1 px-3 py-1 bg-green-500/20 text-green-400 rounded-full text-xs font-bold">
+                                  <CheckCircle2 className="w-3 h-3" />
+                                  Pagada
+                                </span>
+                              ) : (
+                                <span className="flex items-center gap-1 px-3 py-1 bg-orange-500/20 text-orange-400 rounded-full text-xs font-bold">
+                                  <AlertCircle className="w-3 h-3" />
+                                  Pago Pendiente
+                                </span>
+                              )}
+
+                              {cita.recordatorio_enviado && (
+                                <span className="flex items-center gap-1 px-3 py-1 bg-blue-500/20 text-blue-400 rounded-full text-xs font-bold">
+                                  <Bell className="w-3 h-3" />
+                                  Recordatorio Enviado
+                                </span>
+                              )}
+                            </div>
+
+                            {/* acciones */}
+                            <div className="flex items-center gap-2 flex-wrap">
+                              {cita.estado === "programada" &&
+                                !cita.confirmado_por_paciente && (
+                                  <button
+                                    onClick={() =>
+                                      handleConfirmarCita(cita.id_cita)
+                                    }
+                                    className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-xl font-semibold text-sm transition-all duration-300 hover:scale-105 flex items-center gap-2"
+                                  >
+                                    <CheckCircle2 className="w-4 h-4" />
+                                    Confirmar
+                                  </button>
+                                )}
+
+                              {["programada", "confirmada"].includes(
+                                cita.estado
+                              ) && (
+                                <button
+                                  onClick={() =>
+                                    handleMarcarAsistencia(
+                                      cita.id_cita,
+                                      true
+                                    )
+                                  }
+                                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-semibold text-sm transition-all duration-300 hover:scale-105 flex items-center gap-2"
+                                >
+                                  <UserCheck className="w-4 h-4" />
+                                  En Sala Espera
+                                </button>
+                              )}
+
+                              {cita.estado === "en_sala_espera" && (
+                                <button
+                                  onClick={() =>
+                                    handleIniciarAtencion(cita.id_cita)
+                                  }
+                                  className={`px-4 py-2 ${tema.colores.primario} text-white rounded-xl font-semibold text-sm transition-all duration-300 hover:scale-105 flex items-center gap-2`}
+                                >
+                                  <Activity className="w-4 h-4" />
+                                  Iniciar Atención
+                                </button>
+                              )}
+
+                              {cita.estado === "en_atencion" && (
+                                <button
+                                  onClick={() =>
+                                    handleCompletarCita(cita.id_cita)
+                                  }
+                                  className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-semibold text-sm transition-all duration-300 hover:scale-105 flex items-center gap-2"
+                                >
+                                  <CheckCircle2 className="w-4 h-4" />
+                                  Completar
+                                </button>
+                              )}
+
+                              <Link
+                                href={`/medico/pacientes/${cita.id_paciente}`}
+                                className={`px-4 py-2 rounded-xl font-semibold text-sm transition-all duration-300 hover:scale-105 flex items-center gap-2 ${tema.colores.secundario} ${tema.colores.texto}`}
+                              >
+                                <FileText className="w-4 h-4" />
+                                Ver Ficha
+                              </Link>
+
+                              {!cita.recordatorio_enviado && (
+                                <button
+                                  onClick={() =>
+                                    handleEnviarRecordatorio(cita.id_cita)
+                                  }
+                                  className={`px-4 py-2 rounded-xl font-semibold text-sm transition-all duration-300 hover:scale-105 flex items-center gap-2 ${tema.colores.secundario} ${tema.colores.texto}`}
+                                >
+                                  <Send className="w-4 h-4" />
+                                  Recordatorio
+                                </button>
+                              )}
+
+                              <button
+                                onClick={() => handleEditarCita(cita)}
+                                className={`px-4 py-2 rounded-xl font-semibold text-sm transition-all duration-300 hover:scale-105 flex items-center gap-2 ${tema.colores.secundario} ${tema.colores.texto}`}
+                              >
+                                <Edit className="w-4 h-4" />
+                                Editar
+                              </button>
+
+                              <button
+                                onClick={() => handleVerDetalles(cita)}
+                                className={`p-2 rounded-xl transition-all duration-300 hover:scale-105 ${tema.colores.secundario} ${tema.colores.texto}`}
+                              >
+                                <MoreVertical className="w-5 h-5" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                  </Draggable>
+                ))
+              )}
+              {provided.placeholder}
+            </div>
+          )}
+        </Droppable>
+      </DragDropContext>
+    )}
+
+    {/* VISTA DE CALENDARIO */}
+    {vistaModo === "calendario" && (
+      <div
+        className={`rounded-2xl p-8 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra}`}
+      >
+        {vistaCalendario === "mes" && (
+          <>
+            <div className="grid grid-cols-7 gap-2 mb-4">
+              {["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"].map((dia) => (
+                <div
+                    key={dia}
+                    className={`text-center py-3 font-black text-sm ${tema.colores.texto}`}
+                >
+                  {dia}
+                </div>
+              ))}
+            </div>
+
+            <div className="grid grid-cols-7 gap-2">
+              {generarCalendarioMensual().map((dia, index) => {
+                const fechaStr = dia.fecha.toISOString().split("T")[0];
+                const citasDelDia = citasPorDia[fechaStr] || [];
+                const esHoy =
+                  fechaStr === new Date().toISOString().split("T")[0];
+
+                return (
+                  <div
+                    key={index}
+                    className={`min-h-[120px] p-3 rounded-xl ${
+                      dia.mesActual
+                        ? `${tema.colores.card} ${tema.colores.borde} border`
+                        : `${tema.colores.secundario} opacity-50`
+                    } ${
+                      esHoy ? "ring-2 ring-indigo-500" : ""
+                    } transition-all duration-300 hover:scale-105 cursor-pointer`}
+                    onClick={() => {
+                      setFechaSeleccionada(dia.fecha);
+                      setVistaCalendario("dia");
+                    }}
+                  >
+                    <div
+                      className={`text-right mb-2 font-bold ${
+                        esHoy ? "text-indigo-500" : tema.colores.texto
+                      }`}
+                    >
+                      {dia.dia}
+                    </div>
+
+                    <div className="space-y-1">
+                      {citasDelDia.slice(0, 3).map((cita) => (
+                        <div
+                          key={cita.id_cita}
+                          className={`px-2 py-1 rounded-lg text-xs font-bold truncate ${
+                            COLORES_ESTADO[cita.estado].bg
+                          } ${COLORES_ESTADO[cita.estado].text}`}
+                          title={`${formatearHora(
+                            cita.fecha_hora_inicio
+                          )} - ${cita.paciente.nombre_completo}`}
+                        >
+                          {formatearHora(cita.fecha_hora_inicio).substring(0, 5)}{" "}
+                          {cita.paciente.nombre_completo.split(" ")[0]}
+                        </div>
+                      ))}
+
+                      {citasDelDia.length > 3 && (
+                        <div
+                          className={`text-xs font-bold text-center ${tema.colores.acento}`}
+                        >
+                          +{citasDelDia.length - 3} más
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </>
+        )}
+
+        {vistaCalendario === "semana" && (
+          <div className="space-y-4">
+            <h3 className={`text-2xl font-black mb-6 ${tema.colores.texto}`}>
+              Vista Semanal
+            </h3>
+
+            <div className="grid grid-cols-8 gap-4">
+              {/* columna horas */}
+              <div className="col-span-1">
+                <div className="h-16"></div>
+                {generarHorarios().map((horario) => (
+                  <div
+                    key={horario.hora}
+                    className={`h-20 flex items-center justify-end pr-2 text-sm font-bold ${tema.colores.textoSecundario}`}
+                  >
+                    {horario.label}
+                  </div>
+                ))}
+              </div>
+
+              {/* días */}
+              {Array.from({ length: 7 }).map((_, diaIndex) => {
+                const fecha = new Date(fechaSeleccionada);
+                const primerDia =
+                  fecha.getDay() === 0 ? -6 : 1 - fecha.getDay();
+                fecha.setDate(fecha.getDate() + primerDia + diaIndex);
+                const fechaStr = fecha.toISOString().split("T")[0];
+                const citasDia = citasPorDia[fechaStr] || [];
+                const esHoy =
+                  fechaStr === new Date().toISOString().split("T")[0];
+
+                return (
+                  <div key={diaIndex} className="col-span-1">
+                    <div
+                      className={`h-16 flex flex-col items-center justify-center mb-2 rounded-xl ${
+                        esHoy
+                          ? `bg-gradient-to-br ${tema.colores.gradiente} text-white`
+                          : `${tema.colores.secundario} ${tema.colores.texto}`
+                      }`}
+                    >
+                      <div className="text-xs font-semibold">
+                        {new Intl.DateTimeFormat("es-CL", {
+                          weekday: "short",
+                        }).format(fecha)}
+                      </div>
+                      <div className="text-2xl font-black">
+                        {fecha.getDate()}
+                      </div>
+                    </div>
+
+                    <div className="space-y-2">
+                      {generarHorarios().map((horario) => {
+                        const citasHora = citasDia.filter((cita) => {
+                          const hora = cita.fecha_hora_inicio
+                            .split("T")[1]
+                            .substring(0, 5);
+                          const horaRedondeada = `${hora.split(":")[0]}:00`;
+                          return horaRedondeada === horario.hora;
+                        });
+
+                        return (
+                          <div
+                            key={horario.hora}
+                            className={`h-20 rounded-lg ${tema.colores.secundario} p-2 relative overflow-hidden`}
+                          >
+                            {citasHora.map((cita) => (
+                              <div
+                                key={cita.id_cita}
+                                className={`absolute inset-1 rounded-lg p-2 cursor-pointer transition-all duration-300 hover:scale-105 ${
+                                  COLORES_ESTADO[cita.estado].bg
+                                } ${COLORES_ESTADO[cita.estado].border} border-2`}
+                                onClick={() => handleVerDetalles(cita)}
+                              >
+                                <div
+                                  className={`text-xs font-bold ${COLORES_ESTADO[cita.estado].text}`}
+                                >
+                                  {formatearHora(
+                                    cita.fecha_hora_inicio
+                                  ).substring(0, 5)}
+                                </div>
+                                <div
+                                  className={`text-xs font-semibold truncate ${tema.colores.texto}`}
+                                >
+                                  {cita.paciente.nombre_completo.split(" ")[0]}
+                                </div>
+                              </div>
+                            ))}
                           </div>
                         );
                       })}
                     </div>
-                  </>
-                )}
-
-                {vistaCalendario === "semana" && (
-                  <div className={`text-center py-20 ${tema.colores.texto}`}>
-                    <Calendar className={`w-24 h-24 mx-auto mb-4 ${tema.colores.acento} animate-pulse`} />
-                    <h3 className="text-2xl font-black mb-2">Vista Semanal</h3>
-                    <p className={tema.colores.textoSecundario}>
-                      En desarrollo - Usa la vista de día o mes
-                    </p>
                   </div>
-                )}
-
-                {vistaCalendario === "dia" && (
-                  <div className="space-y-4">
-                    <h3 className={`text-2xl font-black mb-6 ${tema.colores.texto}`}>
-                      Citas del {formatearFecha(fechaSeleccionada.toISOString(), "largo")}
-                    </h3>
-
-                    {citasFiltradas.length === 0 ? (
-                      <div className="text-center py-12">
-                        <Calendar className={`w-16 h-16 mx-auto mb-4 ${tema.colores.acento} opacity-50`} />
-                        <p className={`text-lg ${tema.colores.textoSecundario}`}>
-                          No hay citas programadas para este día
-                        </p>
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                        {citasFiltradas.map((cita) => (
-                          <div
-                            key={cita.id_cita}
-                            className={`p-4 rounded-xl ${tema.colores.card} ${tema.colores.borde} border transition-all duration-300 hover:scale-105 cursor-pointer`}
-                            onClick={() => handleVerDetalles(cita)}
-                          >
-                            <div className="flex items-center justify-between mb-3">
-                              <div className={`text-xl font-black ${tema.colores.texto}`}>
-                                {formatearHora(cita.fecha_hora_inicio)}
-                              </div>
-                              <span
-                                className={`px-2 py-1 rounded-full text-xs font-bold ${
-                                  COLORES_ESTADO[cita.estado].bg
-                                } ${COLORES_ESTADO[cita.estado].text}`}
-                              >
-                                {cita.estado.replace("_", " ")}
-                              </span>
-                            </div>
-
-                            <h4 className={`font-bold mb-2 ${tema.colores.texto}`}>
-                              {cita.paciente.nombre_completo}
-                            </h4>
-
-                            <p className={`text-sm ${tema.colores.textoSecundario} mb-3`}>
-                              {cita.motivo || "Sin motivo especificado"}
-                            </p>
-
-                            <div className="flex items-center gap-2">
-                              <Clock className={`w-4 h-4 ${tema.colores.acento}`} />
-                              <span className={`text-sm font-semibold ${tema.colores.textoSecundario}`}>
-                                {cita.duracion_minutos} minutos
-                              </span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* VISTA DE TIMELINE */}
-            {vistaModo === "timeline" && (
-              <div className={`rounded-2xl p-8 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra}`}>
-                <h3 className={`text-2xl font-black mb-6 ${tema.colores.texto}`}>
-                  Timeline del Día
-                </h3>
-
-                <div className="space-y-4">
-                  {generarHorarios().map((horario) => {
-                    const citasHora = citasPorHora[horario.hora] || [];
-
-                    return (
-                      <div key={horario.hora} className="flex gap-4">
-                        <div className={`w-24 flex-shrink-0 text-right pt-2 font-black text-lg ${tema.colores.texto}`}>
-                          {horario.label}
-                        </div>
-
-                        <div className={`flex-1 min-h-[60px] rounded-xl ${tema.colores.secundario} p-4 relative`}>
-                          {citasHora.length === 0 ? (
-                            <div className={`text-sm ${tema.colores.textoSecundario} italic`}>
-                              Disponible
-                            </div>
-                          ) : (
-                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                              {citasHora.map((cita) => (
-                                <div
-                                  key={cita.id_cita}
-                                  className={`p-3 rounded-lg ${COLORES_ESTADO[cita.estado].bg} ${COLORES_ESTADO[cita.estado].border} border cursor-pointer transition-all duration-300 hover:scale-105`}
-                                  onClick={() => handleVerDetalles(cita)}
-                                >
-                                  <div className="flex items-start justify-between mb-2">
-                                    <div className={`font-black text-sm ${COLORES_ESTADO[cita.estado].text}`}>
-                                      {formatearHora(cita.fecha_hora_inicio)}
-                                    </div>
-                                    {cita.tipo_cita === "telemedicina" && (
-                                      <Video className="w-4 h-4 text-blue-400" />
-                                    )}
-                                    {cita.prioridad === "urgente" && (
-                                      <AlertTriangle className="w-4 h-4 text-red-400 animate-pulse" />
-                                    )}
-                                  </div>
-
-                                  <h4 className={`font-bold text-sm mb-1 ${tema.colores.texto}`}>
-                                    {cita.paciente.nombre_completo}
-                                  </h4>
-
-                                  <p className={`text-xs ${tema.colores.textoSecundario} truncate`}>
-                                    {cita.motivo || cita.tipo_cita.replace("_", " ")}
-                                  </p>
-
-                                  <div className="flex items-center gap-2 mt-2">
-                                    <Clock className={`w-3 h-3 ${tema.colores.acento}`} />
-                                    <span className={`text-xs font-semibold ${tema.colores.textoSecundario}`}>
-                                      {cita.duracion_minutos} min
-                                    </span>
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          )}
-
-                          <div className={`absolute left-0 top-0 bottom-0 w-1 ${tema.colores.primario.replace("hover:", "").replace("bg-", "bg-")}`}></div>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-          </>
+                );
+              })}
+            </div>
+          </div>
         )}
-      </main>
 
-      {/* MODAL SELECTOR DE TEMAS */}
-      {modalSelectorTema && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
-          <div
-            className={`max-w-4xl w-full rounded-3xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} overflow-hidden animate-slideIn`}
-          >
-            <div className={`p-8 border-b ${tema.colores.borde}`}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className={`text-3xl font-black ${tema.colores.texto} mb-2`}>
-                    Personaliza tu Tema
-                  </h2>
-                  <p className={`text-lg ${tema.colores.textoSecundario}`}>
-                    Elige el tema que mejor se adapte a tu estilo
-                  </p>
-                </div>
+        {vistaCalendario === "dia" && (
+          <div className="space-y-4">
+            <h3 className={`text-2xl font-black mb-6 ${tema.colores.texto}`}>
+              Citas del {formatearFecha(fechaSeleccionada.toISOString(), "largo")}
+            </h3>
 
-                <button
-                  onClick={() => setModalSelectorTema(false)}
-                  className={`p-3 rounded-xl ${tema.colores.secundario} ${tema.colores.texto} transition-all duration-300 hover:scale-110`}
-                >
-                  <X className="w-6 h-6" />
-                </button>
+            {citasFiltradas.length === 0 ? (
+              <div className="text-center py-12">
+                <Calendar
+                  className={`w-16 h-16 mx-auto mb-4 ${tema.colores.acento} opacity-50`}
+                />
+                <p className={`text-lg ${tema.colores.textoSecundario}`}>
+                  No hay citas programadas para este día
+                </p>
               </div>
-            </div>
-
-            <div className="p-8">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {Object.entries(TEMAS).map(([key, temaConfig]) => {
-                  const IconoTema = temaConfig.icono;
-                  const esTemaActual = key === temaActual;
-
-                  return (
-                    <button
-                      key={key}
-                      onClick={() => {
-                        cambiarTema(key as TemaColor);
-                        setModalSelectorTema(false);
-                      }}
-                      className={`relative p-6 rounded-2xl border-2 transition-all duration-300 hover:scale-105 ${
-                        esTemaActual
-                          ? `border-indigo-500 ring-4 ring-indigo-500/30 ${temaConfig.colores.card}`
-                          : `${temaConfig.colores.card} ${temaConfig.colores.borde}`
-                      }`}
-                    >
-                      {esTemaActual && (
-                        <div className="absolute -top-3 -right-3 w-10 h-10 bg-indigo-500 rounded-full flex items-center justify-center shadow-lg animate-pulse">
-                          <Check className="w-6 h-6 text-white" />
-                        </div>
-                      )}
-
-                      <div
-                        className={`w-20 h-20 mx-auto mb-4 rounded-2xl bg-gradient-to-br ${temaConfig.colores.gradiente} flex items-center justify-center shadow-xl`}
-                      >
-                        <IconoTema className="w-10 h-10 text-white" />
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {citasFiltradas.map((cita) => (
+                  <div
+                    key={cita.id_cita}
+                    className={`p-4 rounded-xl ${tema.colores.card} ${tema.colores.borde} border transition-all duration-300 hover:scale-105 cursor-pointer`}
+                    onClick={() => handleVerDetalles(cita)}
+                  >
+                    <div className="flex items-center justify-between mb-3">
+                      <div className={`text-xl font-black ${tema.colores.texto}`}>
+                        {formatearHora(cita.fecha_hora_inicio)}
                       </div>
-
-                      <h3
-                        className={`text-xl font-black mb-2 ${
-                          key === "light" ? "text-gray-900" : "text-white"
-                        }`}
+                      <span
+                        className={`px-2 py-1 rounded-full text-xs font-bold ${
+                          COLORES_ESTADO[cita.estado].bg
+                        } ${COLORES_ESTADO[cita.estado].text}`}
                       >
-                        {temaConfig.nombre}
-                      </h3>
+                        {cita.estado.replace("_", " ")}
+                      </span>
+                    </div>
 
-                      <div className="flex items-center justify-center gap-2 mb-4">
-                        <div
-                          className="w-8 h-8 rounded-full shadow-lg"
-                          style={{
-                            background: `linear-gradient(to bottom right, ${temaConfig.colores.gradiente.split(" ")[0].replace("from-", "var(--color-")}, ${temaConfig.colores.gradiente.split(" ")[2].replace("to-", "var(--color-")})`,
-                          }}
-                        ></div>
-                      </div>
-
-                      <p
-                        className={`text-sm ${
-                          key === "light" ? "text-gray-600" : "text-gray-400"
-                        }`}
-                      >
-                        {key === "light" && "Perfecto para trabajar durante el día"}
-                        {key === "dark" && "Ideal para sesiones nocturnas"}
-                        {key === "blue" && "Fresco y profesional"}
-                        {key === "purple" && "Elegante y moderno"}
-                        {key === "green" && "Relajante y medicinal"}
-                      </p>
-                    </button>
-                  );
-                })}
-              </div>
-
-              <div className={`mt-8 p-6 rounded-2xl ${tema.colores.secundario}`}>
-                <div className="flex items-start gap-4">
-                  <Info className={`w-6 h-6 ${tema.colores.acento} flex-shrink-0`} />
-                  <div>
                     <h4 className={`font-bold mb-2 ${tema.colores.texto}`}>
-                      Consejo Pro
+                      {cita.paciente.nombre_completo}
                     </h4>
-                    <p className={`text-sm ${tema.colores.textoSecundario}`}>
-                      Tu preferencia de tema se guardará automáticamente y se aplicará en
-                      todas tus sesiones futuras. Puedes cambiarla en cualquier momento.
+
+                    <p
+                      className={`text-sm ${tema.colores.textoSecundario} mb-3`}
+                    >
+                      {cita.motivo || "Sin motivo especificado"}
                     </p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
 
-      {/* MODAL NUEVA/EDITAR CITA */}
-      {(modalNuevaCita || modalEditarCita) && (
-  <div className="fixed inset-0 z-[100] flex items-start justify-center p-4 pt-10 bg-black/80 backdrop-blur-sm animate-fadeIn overflow-y-auto">
-    <div
-      className={`max-w-4xl w-full rounded-3xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} animate-slideIn max-h-[90vh] overflow-y-auto`}
-          >
-            <div className={`p-8 border-b ${tema.colores.borde}`}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className={`text-3xl font-black ${tema.colores.texto} mb-2`}>
-                    {modalEditarCita ? "Editar Cita" : "Nueva Cita"}
-                  </h2>
-                  <p className={`text-lg ${tema.colores.textoSecundario}`}>
-                    {modalEditarCita
-                      ? "Modifica los detalles de la cita"
-                      : "Programa una nueva cita para tu paciente"}
-                  </p>
-                </div>
-
-                <button
-                  onClick={() => {
-                    setModalNuevaCita(false);
-                    setModalEditarCita(false);
-                    setCitaSeleccionada(null);
-                  }}
-                  className={`p-3 rounded-xl ${tema.colores.secundario} ${tema.colores.texto} transition-all duration-300 hover:scale-110`}
-                >
-                  <X className="w-6 h-6" />
-                </button>
-              </div>
-            </div>
-
-            <div className="p-8 space-y-6">
-              {/* Selector de Paciente */}
-              <div>
-                <label className={`block text-sm font-bold mb-3 ${tema.colores.texto}`}>
-                  Paciente *
-                </label>
-                <div className="relative">
-                  <Search className={`absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 ${tema.colores.textoSecundario}`} />
-                  <input
-                    type="text"
-                    placeholder="Buscar paciente..."
-                    value={busquedaPaciente}
-                    onChange={(e) => setBusquedaPaciente(e.target.value)}
-                    className={`w-full pl-12 pr-4 py-4 rounded-xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto} placeholder:${tema.colores.textoSecundario} focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all duration-300`}
-                  />
-                </div>
-
-                {busquedaPaciente && (
-                  <div className={`mt-2 max-h-60 overflow-y-auto rounded-xl ${tema.colores.card} ${tema.colores.borde} border`}>
-                    {pacientesFiltrados.map((paciente) => (
-                      <button
-                        key={paciente.id}
-                        onClick={() => {
-                          setFormularioCita({ ...formularioCita, id_paciente: paciente.id });
-                          setBusquedaPaciente(paciente.nombre);
-                        }}
-                        className={`w-full text-left px-4 py-3 ${tema.colores.hover} ${tema.colores.texto} transition-all duration-300 first:rounded-t-xl last:rounded-b-xl`}
+                    <div className="flex items-center gap-2">
+                      <Clock className={`w-4 h-4 ${tema.colores.acento}`} />
+                      <span
+                        className={`text-sm font-semibold ${tema.colores.textoSecundario}`}
                       >
-                        <div className="font-bold">{paciente.nombre}</div>
-                        <div className={`text-sm ${tema.colores.textoSecundario}`}>
-                          {paciente.telefono} • {paciente.email}
+                        {cita.duracion_minutos} minutos
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    )}
+
+    {/* VISTA DE TIMELINE */}
+    {vistaModo === "timeline" && (
+      <div
+        className={`rounded-2xl p-8 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra}`}
+      >
+        <h3 className={`text-2xl font-black mb-6 ${tema.colores.texto}`}>
+          Timeline del Día
+        </h3>
+
+        <div className="space-y-4">
+          {generarHorarios().map((horario) => {
+            const citasHora = citasPorHora[horario.hora] || [];
+
+            return (
+              <div key={horario.hora} className="flex gap-4">
+                {/* Columna de hora */}
+                <div
+                  className={`w-24 flex-shrink-0 text-right pt-2 font-black text-lg ${tema.colores.texto}`}
+                >
+                  {horario.label}
+                </div>
+
+                {/* Columna de citas de ese horario */}
+                <div
+                  className={`flex-1 min-h-[60px] rounded-xl ${tema.colores.secundario} p-4 relative`}
+                >
+                  {citasHora.length === 0 ? (
+                    <div
+                      className={`text-sm ${tema.colores.textoSecundario} italic`}
+                    >
+                      Disponible
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                      {citasHora.map((cita) => (
+                        <div
+                          key={cita.id_cita}
+                          className={`p-3 rounded-lg ${COLORES_ESTADO[cita.estado].bg} ${COLORES_ESTADO[cita.estado].border} border cursor-pointer transition-all duration-300 hover:scale-105`}
+                          onClick={() => handleVerDetalles(cita)}
+                        >
+                          <div className="flex items-start justify-between mb-2">
+                            <div
+                              className={`font-black text-sm ${COLORES_ESTADO[cita.estado].text}`}
+                            >
+                              {formatearHora(cita.fecha_hora_inicio)}
+                            </div>
+                            {cita.tipo_cita === "telemedicina" && (
+                              <Video className="w-4 h-4 text-blue-400" />
+                            )}
+                            {cita.prioridad === "urgente" && (
+                              <AlertTriangle className="w-4 h-4 text-red-400 animate-pulse" />
+                            )}
+                          </div>
+
+                          <h4
+                            className={`font-bold text-sm mb-1 ${tema.colores.texto}`}
+                          >
+                            {cita.paciente.nombre_completo}
+                          </h4>
+
+                          <p
+                            className={`text-xs ${tema.colores.textoSecundario} truncate`}
+                          >
+                            {cita.motivo || cita.tipo_cita.replace("_", " ")}
+                          </p>
+
+                          <div className="flex items-center gap-2 mt-2">
+                            <Clock className={`w-3 h-3 ${tema.colores.acento}`} />
+                            <span
+                              className={`text-xs font-semibold ${tema.colores.textoSecundario}`}
+                            >
+                              {cita.duracion_minutos} min
+                            </span>
+                          </div>
                         </div>
-                      </button>
-                    ))}
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Línea lateral del timeline */}
+                  <div
+                    className={`absolute left-0 top-0 bottom-0 w-1 ${
+                      tema.colores.primario
+                        ? tema.colores.primario
+                        : "bg-indigo-500"
+                    }`}
+                  ></div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    )}
+  </>
+)}
+</main>
+
+{/* MODAL SELECTOR DE TEMAS */}
+{modalSelectorTema && (
+  <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-fadeIn">
+    <div
+      className={`max-w-4xl w-full rounded-3xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} overflow-hidden animate-slideIn`}
+    >
+      <div className={`p-8 border-b ${tema.colores.borde}`}>
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className={`text-3xl font-black ${tema.colores.texto} mb-2`}>
+              Personaliza tu Tema
+            </h2>
+            <p className={`text-lg ${tema.colores.textoSecundario}`}>
+              Elige el tema que mejor se adapte a tu estilo
+            </p>
+          </div>
+
+          <button
+            onClick={() => setModalSelectorTema(false)}
+            className={`p-3 rounded-xl ${tema.colores.secundario} ${tema.colores.texto} transition-all duration-300 hover:scale-110`}
+          >
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+      </div>
+
+      <div className="p-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {Object.entries(TEMAS).map(([key, temaConfig]) => {
+            const IconoTema = temaConfig.icono;
+            const esTemaActual = key === temaActual;
+
+            return (
+              <button
+                key={key}
+                onClick={() => {
+                  cambiarTema(key as TemaColor);
+                  setModalSelectorTema(false);
+                }}
+                className={`relative p-6 rounded-2xl border-2 transition-all duration-300 hover:scale-105 ${
+                  esTemaActual
+                    ? `border-indigo-500 ring-4 ring-indigo-500/30 ${temaConfig.colores.card}`
+                    : `${temaConfig.colores.card} ${temaConfig.colores.borde}`
+                }`}
+              >
+                {esTemaActual && (
+                  <div className="absolute -top-3 -right-3 w-10 h-10 bg-indigo-500 rounded-full flex items-center justify-center shadow-lg animate-pulse">
+                    <Check className="w-6 h-6 text-white" />
                   </div>
                 )}
-              </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Fecha */}
-                <div>
-                  <label className={`block text-sm font-bold mb-3 ${tema.colores.texto}`}>
-                    Fecha *
-                  </label>
-                  <input
-                    type="date"
-                    value={formularioCita.fecha}
-                    onChange={(e) =>
-                      setFormularioCita({ ...formularioCita, fecha: e.target.value })
-                    }
-                    className={`w-full px-4 py-4 rounded-xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto} focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all duration-300`}
-                  />
-                </div>
-
-                {/* Hora */}
-                <div>
-                  <label className={`block text-sm font-bold mb-3 ${tema.colores.texto}`}>
-                    Hora de Inicio *
-                  </label>
-                  <input
-                    type="time"
-                    value={formularioCita.hora_inicio}
-                    onChange={(e) =>
-                      setFormularioCita({ ...formularioCita, hora_inicio: e.target.value })
-                    }
-                    className={`w-full px-4 py-4 rounded-xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto} focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all duration-300`}
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Duración */}
-                <div>
-                  <label className={`block text-sm font-bold mb-3 ${tema.colores.texto}`}>
-                    Duración (minutos) *
-                  </label>
-                  <select
-                    value={formularioCita.duracion_minutos}
-                    onChange={(e) =>
-                      setFormularioCita({
-                        ...formularioCita,
-                        duracion_minutos: parseInt(e.target.value),
-                      })
-                    }
-                    className={`w-full px-4 py-4 rounded-xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto} focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all duration-300`}
-                  >
-                    <option value={15}>15 minutos</option>
-                    <option value={30}>30 minutos</option>
-                    <option value={45}>45 minutos</option>
-                    <option value={60}>1 hora</option>
-                    <option value={90}>1.5 horas</option>
-                    <option value={120}>2 horas</option>
-                  </select>
-                </div>
-
-                {/* Tipo de Cita */}
-                <div>
-                  <label className={`block text-sm font-bold mb-3 ${tema.colores.texto}`}>
-                    Tipo de Cita *
-                  </label>
-                  <select
-                    value={formularioCita.tipo_cita}
-                    onChange={(e) =>
-                      setFormularioCita({
-                        ...formularioCita,
-                        tipo_cita: e.target.value as TipoCita,
-                      })
-                    }
-                    className={`w-full px-4 py-4 rounded-xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto} focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all duration-300`}
-                  >
-                    <option value="primera_vez">Primera Vez</option>
-                    <option value="control">Control</option>
-                    <option value="procedimiento">Procedimiento</option>
-                    <option value="urgencia">Urgencia</option>
-                    <option value="telemedicina">Telemedicina</option>
-                  </select>
-                </div>
-
-                {/* Prioridad */}
-                <div>
-                  <label className={`block text-sm font-bold mb-3 ${tema.colores.texto}`}>
-                    Prioridad *
-                  </label>
-                  <select
-                    value={formularioCita.prioridad}
-                    onChange={(e) =>
-                      setFormularioCita({
-                        ...formularioCita,
-                        prioridad: e.target.value as "normal" | "alta" | "urgente",
-                      })
-                    }
-                    className={`w-full px-4 py-4 rounded-xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto} focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all duration-300`}
-                  >
-                    <option value="normal">Normal</option>
-                    <option value="alta">Alta</option>
-                    <option value="urgente">Urgente</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Especialidad */}
-                <div>
-                  <label className={`block text-sm font-bold mb-3 ${tema.colores.texto}`}>
-                    Especialidad
-                  </label>
-                  <select
-                    value={formularioCita.id_especialidad || ""}
-                    onChange={(e) =>
-                      setFormularioCita({
-                        ...formularioCita,
-                        id_especialidad: e.target.value ? parseInt(e.target.value) : null,
-                      })
-                    }
-                    className={`w-full px-4 py-4 rounded-xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto} focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all duration-300`}
-                  >
-                    <option value="">Seleccionar especialidad...</option>
-                    {ESPECIALIDADES_MOCK.map((esp) => (
-                      <option key={esp.id} value={esp.id}>
-                        {esp.nombre}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Sala */}
-                <div>
-                  <label className={`block text-sm font-bold mb-3 ${tema.colores.texto}`}>
-                    Sala
-                  </label>
-                  <select
-                    value={formularioCita.id_sala || ""}
-                    onChange={(e) =>
-                      setFormularioCita({
-                        ...formularioCita,
-                        id_sala: e.target.value ? parseInt(e.target.value) : null,
-                      })
-                    }
-                    className={`w-full px-4 py-4 rounded-xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto} focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all duration-300`}
-                  >
-                    <option value="">Seleccionar sala...</option>
-                    {SALAS_MOCK.map((sala) => (
-                      <option key={sala.id} value={sala.id}>
-                        {sala.nombre} - {sala.tipo}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {/* Motivo */}
-              <div>
-                <label className={`block text-sm font-bold mb-3 ${tema.colores.texto}`}>
-                  Motivo de Consulta *
-                </label>
-                <input
-                  type="text"
-                  placeholder="Ej: Dolor abdominal, Control de presión, etc."
-                  value={formularioCita.motivo}
-                  onChange={(e) =>
-                    setFormularioCita({ ...formularioCita, motivo: e.target.value })
-                  }
-                  className={`w-full px-4 py-4 rounded-xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto} placeholder:${tema.colores.textoSecundario} focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all duration-300`}
-                />
-              </div>
-
-              {/* Notas */}
-              <div>
-                <label className={`block text-sm font-bold mb-3 ${tema.colores.texto}`}>
-                  Notas
-                </label>
-                <textarea
-                  rows={3}
-                  placeholder="Notas adicionales sobre la cita..."
-                  value={formularioCita.notas}
-                  onChange={(e) =>
-                    setFormularioCita({ ...formularioCita, notas: e.target.value })
-                  }
-                  className={`w-full px-4 py-4 rounded-xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto} placeholder:${tema.colores.textoSecundario} focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all duration-300 resize-none`}
-                />
-              </div>
-
-              {/* Notas Privadas */}
-              <div>
-                <label className={`block text-sm font-bold mb-3 ${tema.colores.texto}`}>
-                  Notas Privadas (Solo Médico)
-                </label>
-                <textarea
-                  rows={2}
-                  placeholder="Notas privadas que solo tú puedes ver..."
-                  value={formularioCita.notas_privadas}
-                  onChange={(e) =>
-                    setFormularioCita({
-                      ...formularioCita,
-                      notas_privadas: e.target.value,
-                    })
-                  }
-                  className={`w-full px-4 py-4 rounded-xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto} placeholder:${tema.colores.textoSecundario} focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all duration-300 resize-none`}
-                />
-              </div>
-
-              {/* Monto */}
-              <div>
-                <label className={`block text-sm font-bold mb-3 ${tema.colores.texto}`}>
-                  Monto a Cobrar (CLP)
-                </label>
-                <div className="relative">
-                  <DollarSign className={`absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 ${tema.colores.textoSecundario}`} />
-                  <input
-                    type="number"
-                    placeholder="0"
-                    value={formularioCita.monto || ""}
-                    onChange={(e) =>
-                      setFormularioCita({
-                        ...formularioCita,
-                        monto: e.target.value ? parseFloat(e.target.value) : null,
-                      })
-                    }
-                    className={`w-full pl-12 pr-4 py-4 rounded-xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto} placeholder:${tema.colores.textoSecundario} focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all duration-300`}
-                  />
-                </div>
-              </div>
-
-              {/* Opciones de Notificaciones */}
-              <div className={`p-6 rounded-xl ${tema.colores.secundario} space-y-4`}>
-                <h4 className={`font-bold ${tema.colores.texto} mb-3`}>
-                  Notificaciones
-                </h4>
-
-                <label className={`flex items-center gap-3 cursor-pointer ${tema.colores.hover} p-3 rounded-lg`}>
-                  <input
-                    type="checkbox"
-                    checked={formularioCita.enviar_recordatorio}
-                    onChange={(e) =>
-                      setFormularioCita({
-                        ...formularioCita,
-                        enviar_recordatorio: e.target.checked,
-                      })
-                    }
-                    className="w-5 h-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                  />
-                  <div>
-                    <div className={`font-semibold ${tema.colores.texto}`}>
-                      Enviar recordatorio al paciente
-                    </div>
-                    <div className={`text-sm ${tema.colores.textoSecundario}`}>
-                      Se enviará 24 horas antes de la cita
-                    </div>
-                  </div>
-                </label>
-
-                <label className={`flex items-center gap-3 cursor-pointer ${tema.colores.hover} p-3 rounded-lg`}>
-                  <input
-                    type="checkbox"
-                    checked={formularioCita.enviar_confirmacion}
-                    onChange={(e) =>
-                      setFormularioCita({
-                        ...formularioCita,
-                        enviar_confirmacion: e.target.checked,
-                      })
-                    }
-                    className="w-5 h-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-                  />
-                  <div>
-                    <div className={`font-semibold ${tema.colores.texto}`}>
-                      Solicitar confirmación de asistencia
-                    </div>
-                    <div className={`text-sm ${tema.colores.textoSecundario}`}>
-                      El paciente podrá confirmar su asistencia
-                    </div>
-                  </div>
-                </label>
-              </div>
-            </div>
-
-            <div className={`p-8 border-t ${tema.colores.borde}`}>
-              <div className="flex items-center justify-end gap-4">
-                <button
-                  onClick={() => {
-                    setModalNuevaCita(false);
-                    setModalEditarCita(false);
-                    setCitaSeleccionada(null);
-                  }}
-                  className={`px-8 py-4 ${tema.colores.secundario} ${tema.colores.texto} rounded-xl font-bold transition-all duration-300 hover:scale-105`}
+                <div
+                  className={`w-20 h-20 mx-auto mb-4 rounded-2xl bg-gradient-to-br ${temaConfig.colores.gradiente} flex items-center justify-center shadow-xl`}
                 >
-                  Cancelar
-                </button>
+                  <IconoTema className="w-10 h-10 text-white" />
+                </div>
 
-                <button
-                  onClick={handleGuardarCita}
-                  className={`px-8 py-4 ${tema.colores.primario} text-white rounded-xl font-bold transition-all duration-300 hover:scale-105 ${tema.colores.sombra} flex items-center gap-2`}
+                <h3
+                  className={`text-xl font-black mb-2 ${
+                    key === "light" ? "text-gray-900" : "text-white"
+                  }`}
                 >
-                  <Save className="w-5 h-5" />
-                  {modalEditarCita ? "Guardar Cambios" : "Crear Cita"}
-                </button>
-              </div>
+                  {temaConfig.nombre}
+                </h3>
+
+                <div className="flex items-center justify-center gap-2 mb-4">
+                  <div
+                    className="w-8 h-8 rounded-full shadow-lg"
+                    style={{
+                      background: `linear-gradient(to bottom right, ${temaConfig.colores.gradiente.split(" ")[0].replace("from-", "var(--color-")}, ${temaConfig.colores.gradiente.split(" ")[2].replace("to-", "var(--color-")})`,
+                    }}
+                  ></div>
+                </div>
+
+                <p
+                  className={`text-sm ${
+                    key === "light" ? "text-gray-600" : "text-gray-400"
+                  }`}
+                >
+                  {key === "light" && "Perfecto para trabajar durante el día"}
+                  {key === "dark" && "Ideal para sesiones nocturnas"}
+                  {key === "blue" && "Fresco y profesional"}
+                  {key === "purple" && "Elegante y moderno"}
+                  {key === "green" && "Relajante y medicinal"}
+                </p>
+              </button>
+            );
+          })}
+        </div>
+
+        <div className={`mt-8 p-6 rounded-2xl ${tema.colores.secundario}`}>
+          <div className="flex items-start gap-4">
+            <Info className={`w-6 h-6 ${tema.colores.acento} flex-shrink-0`} />
+            <div>
+              <h4 className={`font-bold mb-2 ${tema.colores.texto}`}>
+                Consejo Pro
+              </h4>
+              <p className={`text-sm ${tema.colores.textoSecundario}`}>
+                Tu preferencia de tema se guardará automáticamente y se aplicará en
+                todas tus sesiones futuras. Puedes cambiarla en cualquier momento.
+              </p>
             </div>
           </div>
         </div>
-      )}
+      </div>
+    </div>
+  </div>
+)}
 
-      {/* MODAL DETALLES DE CITA */}
-     {modalDetallesCita && citaSeleccionada && (
+{/* MODAL NUEVA/EDITAR CITA */}
+{(modalNuevaCita || modalEditarCita) && (
   <div className="fixed inset-0 z-[100] flex items-start justify-center p-4 pt-10 bg-black/80 backdrop-blur-sm animate-fadeIn overflow-y-auto">
     <div
       className={`max-w-4xl w-full rounded-3xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} animate-slideIn max-h-[90vh] overflow-y-auto`}
+    >
+      <div
+        className={`p-8 border-b ${tema.colores.borde} sticky top-0 z-10 ${tema.colores.card}`}
+      >
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className={`text-3xl font-black ${tema.colores.texto} mb-2`}>
+              {modalEditarCita ? "Editar Cita" : "Nueva Cita"}
+            </h2>
+            <p className={`text-lg ${tema.colores.textoSecundario}`}>
+              {modalEditarCita
+                ? "Modifica los detalles de la cita"
+                : "Programa una nueva cita para tu paciente"}
+            </p>
+          </div>
+
+          <button
+            onClick={() => {
+              setModalNuevaCita(false);
+              setModalEditarCita(false);
+              setCitaSeleccionada(null);
+              setBusquedaPaciente("");
+              setMostrarResultadosPacientes(false);
+            }}
+            disabled={guardando}
+            className={`p-3 rounded-xl ${tema.colores.secundario} ${tema.colores.texto} transition-all duration-300 hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed`}
           >
-            <div className={`p-8 border-b ${tema.colores.borde}`}>
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className={`text-3xl font-black ${tema.colores.texto} mb-2`}>
-                    Detalles de la Cita
-                  </h2>
-                  <p className={`text-lg ${tema.colores.textoSecundario}`}>
-                    Información completa de la cita programada
-                  </p>
-                </div>
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+      </div>
 
+      <div className="p-8 space-y-6">
+        {/* Selector de Paciente */}
+        <div>
+          <label className={`block text-sm font-bold mb-3 ${tema.colores.texto}`}>
+            Paciente *
+          </label>
+          <div className="relative">
+            <Search
+              className={`absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 ${tema.colores.textoSecundario}`}
+            />
+            <input
+              type="text"
+              placeholder="Buscar paciente por nombre, RUT o email..."
+              value={busquedaPaciente}
+              onChange={(e) => setBusquedaPaciente(e.target.value)}
+              disabled={guardando}
+              className={`w-full pl-12 pr-4 py-4 rounded-xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto} placeholder:${tema.colores.textoSecundario} focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed`}
+            />
+            {loadingCatalogos && (
+              <Loader2
+                className={`absolute right-4 top-1/2 transform -translate-y-1/2 w-5 h-5 ${tema.colores.textoSecundario} animate-spin`}
+              />
+            )}
+          </div>
+
+          {mostrarResultadosPacientes && pacientesFiltrados.length > 0 && (
+            <div
+              className={`mt-2 max-h-60 overflow-y-auto rounded-xl ${tema.colores.card} ${tema.colores.borde} border shadow-lg`}
+            >
+              {pacientesFiltrados.map((paciente) => (
                 <button
-                  onClick={() => {
-                    setModalDetallesCita(false);
-                    setCitaSeleccionada(null);
-                  }}
-                  className={`p-3 rounded-xl ${tema.colores.secundario} ${tema.colores.texto} transition-all duration-300 hover:scale-110`}
+                  key={paciente.id_paciente}
+                  onClick={() => handleSeleccionarPaciente(paciente)}
+                  className={`w-full text-left px-4 py-3 ${tema.colores.hover} ${tema.colores.texto} transition-all duration-300 first:rounded-t-xl last:rounded-b-xl`}
                 >
-                  <X className="w-6 h-6" />
+                  <div className="font-bold">{paciente.nombre_completo}</div>
+                  <div className={`text-sm ${tema.colores.textoSecundario}`}>
+                    {paciente.rut} • {paciente.edad} años • {paciente.genero}
+                  </div>
+                  {(paciente.telefono || paciente.email) && (
+                    <div className={`text-xs ${tema.colores.textoSecundario} mt-1`}>
+                      {paciente.telefono && `📞 ${paciente.telefono}`}
+                      {paciente.telefono && paciente.email && " • "}
+                      {paciente.email && `📧 ${paciente.email}`}
+                    </div>
+                  )}
                 </button>
+              ))}
+            </div>
+          )}
+
+          {busquedaPaciente.length >= 2 &&
+            pacientesFiltrados.length === 0 &&
+            !loadingCatalogos && (
+              <div
+                className={`mt-2 p-4 rounded-xl ${tema.colores.card} ${tema.colores.borde} border text-center`}
+              >
+                <p className={`text-sm ${tema.colores.textoSecundario}`}>
+                  No se encontraron pacientes con "{busquedaPaciente}"
+                </p>
+              </div>
+            )}
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Fecha */}
+          <div>
+            <label className={`block text-sm font-bold mb-3 ${tema.colores.texto}`}>
+              Fecha *
+            </label>
+            <input
+              type="date"
+              value={formularioCita.fecha}
+              onChange={(e) =>
+                setFormularioCita({ ...formularioCita, fecha: e.target.value })
+              }
+              disabled={guardando}
+              className={`w-full px-4 py-4 rounded-xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto} focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed`}
+            />
+          </div>
+
+          {/* Hora */}
+          <div>
+            <label className={`block text-sm font-bold mb-3 ${tema.colores.texto}`}>
+              Hora de Inicio *
+            </label>
+            <input
+              type="time"
+              value={formularioCita.hora_inicio}
+              onChange={(e) =>
+                setFormularioCita({
+                  ...formularioCita,
+                  hora_inicio: e.target.value,
+                })
+              }
+              disabled={guardando}
+              className={`w-full px-4 py-4 rounded-xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto} focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed`}
+            />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {/* Duración */}
+          <div>
+            <label className={`block text-sm font-bold mb-3 ${tema.colores.texto}`}>
+              Duración (minutos) *
+            </label>
+            <select
+              value={formularioCita.duracion_minutos}
+              onChange={(e) =>
+                setFormularioCita({
+                  ...formularioCita,
+                  duracion_minutos: parseInt(e.target.value),
+                })
+              }
+              disabled={guardando}
+              className={`w-full px-4 py-4 rounded-xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto} focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed`}
+            >
+              <option value={15}>15 minutos</option>
+              <option value={30}>30 minutos</option>
+              <option value={45}>45 minutos</option>
+              <option value={60}>1 hora</option>
+              <option value={90}>1.5 horas</option>
+              <option value={120}>2 horas</option>
+            </select>
+          </div>
+
+          {/* Tipo de Cita */}
+          <div>
+            <label className={`block text-sm font-bold mb-3 ${tema.colores.texto}`}>
+              Tipo de Cita *
+            </label>
+            <select
+              value={formularioCita.tipo_cita}
+              onChange={(e) =>
+                setFormularioCita({
+                  ...formularioCita,
+                  tipo_cita: e.target.value as TipoCita,
+                })
+              }
+              disabled={guardando}
+              className={`w-full px-4 py-4 rounded-xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto} focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed`}
+            >
+              <option value="primera_vez">Primera Vez</option>
+              <option value="control">Control</option>
+              <option value="procedimiento">Procedimiento</option>
+              <option value="urgencia">Urgencia</option>
+              <option value="telemedicina">Telemedicina</option>
+            </select>
+          </div>
+
+          {/* Prioridad */}
+          <div>
+            <label className={`block text-sm font-bold mb-3 ${tema.colores.texto}`}>
+              Prioridad *
+            </label>
+            <select
+              value={formularioCita.prioridad}
+              onChange={(e) =>
+                setFormularioCita({
+                  ...formularioCita,
+                  prioridad: e.target.value as "normal" | "alta" | "urgente",
+                })
+              }
+              disabled={guardando}
+              className={`w-full px-4 py-4 rounded-xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto} focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed`}
+            >
+              <option value="normal">Normal</option>
+              <option value="alta">Alta</option>
+              <option value="urgente">Urgente</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Especialidad */}
+          <div>
+            <label className={`block text-sm font-bold mb-3 ${tema.colores.texto}`}>
+              Especialidad
+            </label>
+            <select
+              value={formularioCita.id_especialidad || ""}
+              onChange={(e) =>
+                setFormularioCita({
+                  ...formularioCita,
+                  id_especialidad: e.target.value
+                    ? parseInt(e.target.value)
+                    : null,
+                })
+              }
+              disabled={guardando || loadingCatalogos}
+              className={`w-full px-4 py-4 rounded-xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto} focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed`}
+            >
+              <option value="">Seleccionar especialidad...</option>
+              {especialidades.map((esp) => (
+                <option key={esp.id_especialidad} value={esp.id_especialidad}>
+                  {esp.nombre}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Sala */}
+          <div>
+            <label className={`block text-sm font-bold mb-3 ${tema.colores.texto}`}>
+              Sala
+            </label>
+            <select
+              value={formularioCita.id_sala || ""}
+              onChange={(e) =>
+                setFormularioCita({
+                  ...formularioCita,
+                  id_sala: e.target.value ? parseInt(e.target.value) : null,
+                })
+              }
+              disabled={guardando || loadingCatalogos}
+              className={`w-full px-4 py-4 rounded-xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto} focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed`}
+            >
+              <option value="">Seleccionar sala...</option>
+              {salas.map((sala) => (
+                <option key={sala.id_sala} value={sala.id_sala}>
+                  {sala.nombre} - {sala.tipo}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        {/* Motivo */}
+        <div>
+          <label className={`block text-sm font-bold mb-3 ${tema.colores.texto}`}>
+            Motivo de Consulta *
+          </label>
+          <input
+            type="text"
+            placeholder="Ej: Dolor abdominal, Control de presión, etc."
+            value={formularioCita.motivo}
+            onChange={(e) =>
+              setFormularioCita({ ...formularioCita, motivo: e.target.value })
+            }
+            disabled={guardando}
+            className={`w-full px-4 py-4 rounded-xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto} placeholder:${tema.colores.textoSecundario} focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed`}
+          />
+        </div>
+
+        {/* Notas */}
+        <div>
+          <label className={`block text-sm font-bold mb-3 ${tema.colores.texto}`}>
+            Notas
+          </label>
+          <textarea
+            rows={3}
+            placeholder="Notas adicionales sobre la cita..."
+            value={formularioCita.notas}
+            onChange={(e) =>
+              setFormularioCita({ ...formularioCita, notas: e.target.value })
+            }
+            disabled={guardando}
+            className={`w-full px-4 py-4 rounded-xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto} placeholder:${tema.colores.textoSecundario} focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all duration-300 resize-none disabled:opacity-50 disabled:cursor-not-allowed`}
+          />
+        </div>
+
+        {/* Notas Privadas */}
+        <div>
+          <label className={`block text-sm font-bold mb-3 ${tema.colores.texto}`}>
+            Notas Privadas (Solo Médico)
+          </label>
+          <textarea
+            rows={2}
+            placeholder="Notas privadas que solo tú puedes ver..."
+            value={formularioCita.notas_privadas}
+            onChange={(e) =>
+              setFormularioCita({
+                ...formularioCita,
+                notas_privadas: e.target.value,
+              })
+            }
+            disabled={guardando}
+            className={`w-full px-4 py-4 rounded-xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto} placeholder:${tema.colores.textoSecundario} focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all duration-300 resize-none disabled:opacity-50 disabled:cursor-not-allowed`}
+          />
+        </div>
+
+        {/* Monto */}
+        <div>
+          <label className={`block text-sm font-bold mb-3 ${tema.colores.texto}`}>
+            Monto a Cobrar (CLP)
+          </label>
+          <div className="relative">
+            <DollarSign
+              className={`absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 ${tema.colores.textoSecundario}`}
+            />
+            <input
+              type="number"
+              placeholder="0"
+              value={formularioCita.monto || ""}
+              onChange={(e) =>
+                setFormularioCita({
+                  ...formularioCita,
+                  monto: e.target.value ? parseFloat(e.target.value) : null,
+                })
+              }
+              disabled={guardando}
+              className={`w-full pl-12 pr-4 py-4 rounded-xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto} placeholder:${tema.colores.textoSecundario} focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed`}
+            />
+          </div>
+        </div>
+
+        {/* Opciones de Notificaciones */}
+        <div className={`p-6 rounded-xl ${tema.colores.secundario} space-y-4`}>
+          <h4 className={`font-bold ${tema.colores.texto} mb-3`}>
+            Notificaciones
+          </h4>
+
+          <label
+            className={`flex items-center gap-3 cursor-pointer ${tema.colores.hover} p-3 rounded-lg ${
+              guardando ? "opacity-50 cursor-not-allowed" : ""
+            }`}
+          >
+            <input
+              type="checkbox"
+              checked={formularioCita.enviar_recordatorio}
+              onChange={(e) =>
+                setFormularioCita({
+                  ...formularioCita,
+                  enviar_recordatorio: e.target.checked,
+                })
+              }
+              disabled={guardando}
+              className="w-5 h-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+            />
+            <div>
+              <div className={`font-semibold ${tema.colores.texto}`}>
+                Enviar recordatorio al paciente
+              </div>
+              <div className={`text-sm ${tema.colores.textoSecundario}`}>
+                Se enviará 24 horas antes de la cita
+              </div>
+            </div>
+          </label>
+
+          <label
+            className={`flex items-center gap-3 cursor-pointer ${tema.colores.hover} p-3 rounded-lg ${
+              guardando ? "opacity-50 cursor-not-allowed" : ""
+            }`}
+          >
+            <input
+              type="checkbox"
+              checked={formularioCita.enviar_confirmacion}
+              onChange={(e) =>
+                setFormularioCita({
+                  ...formularioCita,
+                  enviar_confirmacion: e.target.checked,
+                })
+              }
+              disabled={guardando}
+              className="w-5 h-5 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+            />
+            <div>
+              <div className={`font-semibold ${tema.colores.texto}`}>
+                Solicitar confirmación de asistencia
+              </div>
+              <div className={`text-sm ${tema.colores.textoSecundario}`}>
+                El paciente podrá confirmar su asistencia
+              </div>
+            </div>
+          </label>
+        </div>
+
+        {error && (
+          <div className="p-4 rounded-xl bg-red-500/20 border-2 border-red-500/30 flex items-start gap-3">
+            <AlertTriangle className="w-5 h-5 text-red-400 flex-shrink-0 mt-0.5" />
+            <div>
+              <div className="font-bold text-red-400 mb-1">Error</div>
+              <div className="text-sm text-red-300">{error}</div>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div
+        className={`p-8 border-t ${tema.colores.borde} sticky bottom-0 z-10 ${tema.colores.card}`}
+      >
+        <div className="flex items-center justify-end gap-4">
+          <button
+            onClick={() => {
+              setModalNuevaCita(false);
+              setModalEditarCita(false);
+              setCitaSeleccionada(null);
+              setBusquedaPaciente("");
+              setMostrarResultadosPacientes(false);
+              setError(null);
+            }}
+            disabled={guardando}
+            className={`px-8 py-4 ${tema.colores.secundario} ${tema.colores.texto} rounded-xl font-bold transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed`}
+          >
+            Cancelar
+          </button>
+
+          <button
+            onClick={handleGuardarCita}
+            disabled={
+              guardando || !formularioCita.id_paciente || !formularioCita.motivo.trim()
+            }
+            className={`px-8 py-4 ${tema.colores.primario} text-white rounded-xl font-bold transition-all duration-300 hover:scale-105 ${tema.colores.sombra} flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed`}
+          >
+            {guardando ? (
+              <>
+                <Loader2 className="w-5 h-5 animate-spin" />
+                Guardando...
+              </>
+            ) : (
+              <>
+                <Save className="w-5 h-5" />
+                {modalEditarCita ? "Guardar Cambios" : "Crear Cita"}
+              </>
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+)}
+
+{/* MODAL DETALLES DE CITA */}
+{modalDetallesCita && citaSeleccionada && (
+  <div className="fixed inset-0 z-[100] flex items-start justify-center p-4 pt-10 bg-black/80 backdrop-blur-sm animate-fadeIn overflow-y-auto">
+    <div
+      className={`max-w-4xl w-full rounded-3xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} animate-slideIn max-h-[90vh] overflow-y-auto`}
+    >
+      <div
+        className={`p-8 border-b ${tema.colores.borde} sticky top-0 z-10 ${tema.colores.card}`}
+      >
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className={`text-3xl font-black ${tema.colores.texto} mb-2`}>
+              Detalles de la Cita
+            </h2>
+            <p className={`text-lg ${tema.colores.textoSecundario}`}>
+              Información completa de la cita programada
+            </p>
+          </div>
+
+          <button
+            onClick={() => {
+              setModalDetallesCita(false);
+              setCitaSeleccionada(null);
+            }}
+            className={`p-3 rounded-xl ${tema.colores.secundario} ${tema.colores.texto} transition-all duration-300 hover:scale-110`}
+          >
+            <X className="w-6 h-6" />
+          </button>
+        </div>
+      </div>
+
+      <div className="p-8 space-y-6">
+        {/* Información del Paciente */}
+        <div className={`p-6 rounded-2xl ${tema.colores.secundario}`}>
+          <h3
+            className={`text-xl font-black mb-4 ${tema.colores.texto} flex items-center gap-2`}
+          >
+            <User className="w-6 h-6" />
+            Información del Paciente
+          </h3>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <div
+                className={`text-sm font-bold mb-1 ${tema.colores.textoSecundario}`}
+              >
+                Nombre Completo
+              </div>
+              <div className={`text-lg font-bold ${tema.colores.texto}`}>
+                {citaSeleccionada.paciente.nombre_completo}
               </div>
             </div>
 
-            <div className="p-8 space-y-6">
-              {/* Información del Paciente */}
-              <div className={`p-6 rounded-2xl ${tema.colores.secundario}`}>
-                <h3 className={`text-xl font-black mb-4 ${tema.colores.texto} flex items-center gap-2`}>
-                  <User className="w-6 h-6" />
-                  Información del Paciente
-                </h3>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <div className={`text-sm font-bold mb-1 ${tema.colores.textoSecundario}`}>
-                      Nombre Completo
-                    </div>
-                    <div className={`text-lg font-bold ${tema.colores.texto}`}>
-                      {citaSeleccionada.paciente.nombre_completo}
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className={`text-sm font-bold mb-1 ${tema.colores.textoSecundario}`}>
-                      Edad y Género
-                    </div>
-                    <div className={`text-lg font-bold ${tema.colores.texto}`}>
-                      {citaSeleccionada.paciente.edad} años • {citaSeleccionada.paciente.genero}
-                    </div>
-                  </div>
-
-                  {citaSeleccionada.paciente.telefono && (
-                    <div>
-                      <div className={`text-sm font-bold mb-1 ${tema.colores.textoSecundario}`}>
-                        Teléfono
-                      </div>
-                      <div className={`text-lg font-bold ${tema.colores.texto} flex items-center gap-2`}>
-                        <Phone className="w-5 h-5" />
-                        {citaSeleccionada.paciente.telefono}
-                      </div>
-                    </div>
-                  )}
-
-                  {citaSeleccionada.paciente.email && (
-                    <div>
-                      <div className={`text-sm font-bold mb-1 ${tema.colores.textoSecundario}`}>
-                        Email
-                      </div>
-                      <div className={`text-lg font-bold ${tema.colores.texto} flex items-center gap-2`}>
-                        <Mail className="w-5 h-5" />
-                        {citaSeleccionada.paciente.email}
-                      </div>
-                    </div>
-                  )}
-
-                  <div>
-                    <div className={`text-sm font-bold mb-1 ${tema.colores.textoSecundario}`}>
-                      Grupo Sanguíneo
-                    </div>
-                    <div className={`text-lg font-bold ${tema.colores.texto}`}>
-                      {citaSeleccionada.paciente.grupo_sanguineo}
-                    </div>
-                  </div>
-
-                  {citaSeleccionada.paciente.alergias_criticas > 0 && (
-                    <div>
-                      <div className={`text-sm font-bold mb-1 ${tema.colores.textoSecundario}`}>
-                        Alergias Críticas
-                      </div>
-                      <div className={`text-lg font-bold text-red-400 flex items-center gap-2`}>
-                        <AlertTriangle className="w-5 h-5" />
-                        {citaSeleccionada.paciente.alergias_criticas} alergia(s)
-                      </div>
-                    </div>
-                  )}
-                </div>
+            <div>
+              <div
+                className={`text-sm font-bold mb-1 ${tema.colores.textoSecundario}`}
+              >
+                Edad y Género
               </div>
-
-              {/* Información de la Cita */}
-              <div className={`p-6 rounded-2xl ${tema.colores.secundario}`}>
-                <h3 className={`text-xl font-black mb-4 ${tema.colores.texto} flex items-center gap-2`}>
-                  <Calendar className="w-6 h-6" />
-                  Información de la Cita
-                </h3>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <div className={`text-sm font-bold mb-1 ${tema.colores.textoSecundario}`}>
-                      Fecha y Hora
-                    </div>
-                    <div className={`text-lg font-bold ${tema.colores.texto}`}>
-                      {formatearFecha(citaSeleccionada.fecha_hora_inicio, "largo")}
-                      <br />
-                      {formatearHora(citaSeleccionada.fecha_hora_inicio)} -{" "}
-                      {formatearHora(citaSeleccionada.fecha_hora_fin)}
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className={`text-sm font-bold mb-1 ${tema.colores.textoSecundario}`}>
-                      Duración
-                    </div>
-                    <div className={`text-lg font-bold ${tema.colores.texto} flex items-center gap-2`}>
-                      <Clock className="w-5 h-5" />
-                      {citaSeleccionada.duracion_minutos} minutos
-                    </div>
-                  </div>
-
-                  <div>
-                    <div className={`text-sm font-bold mb-1 ${tema.colores.textoSecundario}`}>
-                      Estado
-                    </div>
-                    <span
-                      className={`inline-flex px-4 py-2 rounded-full text-sm font-bold border ${
-                        COLORES_ESTADO[citaSeleccionada.estado].bg
-                      } ${COLORES_ESTADO[citaSeleccionada.estado].text} ${
-                        COLORES_ESTADO[citaSeleccionada.estado].border
-                      }`}
-                    >
-                      {citaSeleccionada.estado.replace("_", " ")}
-                    </span>
-                  </div>
-
-                  <div>
-                    <div className={`text-sm font-bold mb-1 ${tema.colores.textoSecundario}`}>
-                      Tipo de Cita
-                    </div>
-                    <span
-                      className={`inline-flex px-4 py-2 rounded-full text-sm font-bold`}
-                      style={{
-                        backgroundColor: `${COLORES_TIPO[citaSeleccionada.tipo_cita]}20`,
-                        color: COLORES_TIPO[citaSeleccionada.tipo_cita],
-                      }}
-                    >
-                      {citaSeleccionada.tipo_cita.replace("_", " ")}
-                    </span>
-                  </div>
-
-                  <div>
-                    <div className={`text-sm font-bold mb-1 ${tema.colores.textoSecundario}`}>
-                      Prioridad
-                    </div>
-                    <span
-                      className={`inline-flex px-4 py-2 rounded-full text-sm font-bold ${
-                        citaSeleccionada.prioridad === "urgente"
-                          ? "bg-red-500/20 text-red-400"
-                          : citaSeleccionada.prioridad === "alta"
-                          ? "bg-orange-500/20 text-orange-400"
-                          : "bg-blue-500/20 text-blue-400"
-                      }`}
-                    >
-                      {citaSeleccionada.prioridad}
-                    </span>
-                  </div>
-
-                  {citaSeleccionada.especialidad && (
-                    <div>
-                      <div className={`text-sm font-bold mb-1 ${tema.colores.textoSecundario}`}>
-                        Especialidad
-                      </div>
-                      <div className={`text-lg font-bold ${tema.colores.texto} flex items-center gap-2`}>
-                        <Stethoscope className="w-5 h-5" />
-                        {citaSeleccionada.especialidad.nombre}
-                      </div>
-                    </div>
-                  )}
-
-                  {citaSeleccionada.sala && (
-                    <div>
-                      <div className={`text-sm font-bold mb-1 ${tema.colores.textoSecundario}`}>
-                        Sala
-                      </div>
-                      <div className={`text-lg font-bold ${tema.colores.texto} flex items-center gap-2`}>
-                        <MapPin className="w-5 h-5" />
-                        {citaSeleccionada.sala.nombre}
-                      </div>
-                    </div>
-                  )}
-
-                  {citaSeleccionada.monto && (
-                    <div>
-                      <div className={`text-sm font-bold mb-1 ${tema.colores.textoSecundario}`}>
-                        Monto
-                      </div>
-                      <div className={`text-lg font-bold ${tema.colores.texto} flex items-center gap-2`}>
-                        <DollarSign className="w-5 h-5" />
-                        ${citaSeleccionada.monto.toLocaleString("es-CL")}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {citaSeleccionada.motivo && (
-                  <div className="mt-4">
-                    <div className={`text-sm font-bold mb-2 ${tema.colores.textoSecundario}`}>
-                      Motivo de Consulta
-                    </div>
-                    <div className={`text-base ${tema.colores.texto} p-4 rounded-xl ${tema.colores.hover}`}>
-                      {citaSeleccionada.motivo}
-                    </div>
-                  </div>
-                )}
-
-                {citaSeleccionada.notas && (
-                  <div className="mt-4">
-                    <div className={`text-sm font-bold mb-2 ${tema.colores.textoSecundario}`}>
-                      Notas
-                    </div>
-                    <div className={`text-base ${tema.colores.texto} p-4 rounded-xl ${tema.colores.hover}`}>
-                      {citaSeleccionada.notas}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Estados de Confirmación */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div
-                  className={`p-6 rounded-2xl text-center ${
-                    citaSeleccionada.confirmado_por_paciente
-                      ? "bg-green-500/20 border-2 border-green-500/30"
-                      : "bg-yellow-500/20 border-2 border-yellow-500/30"
-                  }`}
-                >
-                  <div className="flex items-center justify-center mb-3">
-                    {citaSeleccionada.confirmado_por_paciente ? (
-                      <CheckCircle2 className="w-12 h-12 text-green-400" />
-                    ) : (
-                      <Clock className="w-12 h-12 text-yellow-400" />
-                    )}
-                  </div>
-                  <div className={`font-bold ${tema.colores.texto}`}>
-                    {citaSeleccionada.confirmado_por_paciente
-                      ? "Confirmada"
-                      : "Sin Confirmar"}
-                  </div>
-                </div>
-
-                <div
-                  className={`p-6 rounded-2xl text-center ${
-                    citaSeleccionada.pagada
-                      ? "bg-green-500/20 border-2 border-green-500/30"
-                      : "bg-orange-500/20 border-2 border-orange-500/30"
-                  }`}
-                >
-                  <div className="flex items-center justify-center mb-3">
-                    {citaSeleccionada.pagada ? (
-                      <CheckCircle2 className="w-12 h-12 text-green-400" />
-                    ) : (
-                      <CreditCard className="w-12 h-12 text-orange-400" />
-                    )}
-                  </div>
-                  <div className={`font-bold ${tema.colores.texto}`}>
-                    {citaSeleccionada.pagada ? "Pagada" : "Pago Pendiente"}
-                  </div>
-                </div>
-
-                <div
-                  className={`p-6 rounded-2xl text-center ${
-                    citaSeleccionada.recordatorio_enviado
-                      ? "bg-blue-500/20 border-2 border-blue-500/30"
-                      : "bg-gray-500/20 border-2 border-gray-500/30"
-                  }`}
-                >
-                  <div className="flex items-center justify-center mb-3">
-                    {citaSeleccionada.recordatorio_enviado ? (
-                      <Bell className="w-12 h-12 text-blue-400" />
-                    ) : (
-                      <BellOff className="w-12 h-12 text-gray-400" />
-                    )}
-                  </div>
-                  <div className={`font-bold ${tema.colores.texto}`}>
-                    {citaSeleccionada.recordatorio_enviado
-                      ? "Recordatorio Enviado"
-                      : "Sin Recordatorio"}
-                  </div>
-                </div>
+              <div className={`text-lg font-bold ${tema.colores.texto}`}>
+                {citaSeleccionada.paciente.edad} años •{" "}
+                {citaSeleccionada.paciente.genero}
               </div>
             </div>
 
-            <div className={`p-8 border-t ${tema.colores.borde}`}>
-              <div className="flex items-center justify-between gap-4">
-                <button
-                  onClick={() => handleEditarCita(citaSeleccionada)}
-                  className={`px-6 py-3 ${tema.colores.secundario} ${tema.colores.texto} rounded-xl font-bold transition-all duration-300 hover:scale-105 flex items-center gap-2`}
+            {citaSeleccionada.paciente.telefono && (
+              <div>
+                <div
+                  className={`text-sm font-bold mb-1 ${tema.colores.textoSecundario}`}
                 >
-                  <Edit className="w-5 h-5" />
-                  Editar
-                </button>
-
-                <div className="flex items-center gap-3">
-                  {!citaSeleccionada.recordatorio_enviado && (
-                    <button
-                      onClick={() => handleEnviarRecordatorio(citaSeleccionada.id_cita)}
-                      className={`px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-all duration-300 hover:scale-105 flex items-center gap-2`}
-                    >
-                      <Send className="w-5 h-5" />
-                      Enviar Recordatorio
-                    </button>
-                  )}
-
-                  {["programada", "confirmada", "en_sala_espera", "en_atencion"].includes(
-                    citaSeleccionada.estado
-                  ) && (
-                    <button
-                      onClick={() => {
-                        const motivo = prompt("Ingresa el motivo de la cancelación:");
-                        if (motivo) {
-                          handleCancelarCita(citaSeleccionada.id_cita, motivo);
-                          setModalDetallesCita(false);
-                        }
-                      }}
-                      className={`px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold transition-all duration-300 hover:scale-105 flex items-center gap-2`}
-                    >
-                      <XCircle className="w-5 h-5" />
-                      Cancelar Cita
-                    </button>
-                  )}
-
-                  <button
-                    onClick={() => {
-                      setModalDetallesCita(false);
-                      setCitaSeleccionada(null);
-                    }}
-                    className={`px-6 py-3 ${tema.colores.primario} text-white rounded-xl font-bold transition-all duration-300 hover:scale-105`}
-                  >
-                    Cerrar
-                  </button>
+                  Teléfono
+                </div>
+                <div
+                  className={`text-lg font-bold ${tema.colores.texto} flex items-center gap-2`}
+                >
+                  <Phone className="w-5 h-5" />
+                  {citaSeleccionada.paciente.telefono}
                 </div>
               </div>
+            )}
+
+            {citaSeleccionada.paciente.email && (
+              <div>
+                <div
+                  className={`text-sm font-bold mb-1 ${tema.colores.textoSecundario}`}
+                >
+                  Email
+                </div>
+                <div
+                  className={`text-lg font-bold ${tema.colores.texto} flex items-center gap-2`}
+                >
+                  <Mail className="w-5 h-5" />
+                  {citaSeleccionada.paciente.email}
+                </div>
+              </div>
+            )}
+
+            <div>
+              <div
+                className={`text-sm font-bold mb-1 ${tema.colores.textoSecundario}`}
+              >
+                Grupo Sanguíneo
+              </div>
+              <div className={`text-lg font-bold ${tema.colores.texto}`}>
+                {citaSeleccionada.paciente.grupo_sanguineo}
+              </div>
+            </div>
+
+            {citaSeleccionada.paciente.alergias_criticas > 0 && (
+              <div>
+                <div
+                  className={`text-sm font-bold mb-1 ${tema.colores.textoSecundario}`}
+                >
+                  Alergias Críticas
+                </div>
+                <div
+                  className={`text-lg font-bold text-red-400 flex items-center gap-2`}
+                >
+                  <AlertTriangle className="w-5 h-5" />
+                  {citaSeleccionada.paciente.alergias_criticas} alergia(s)
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Información de la Cita */}
+        <div className={`p-6 rounded-2xl ${tema.colores.secundario}`}>
+          <h3
+            className={`text-xl font-black mb-4 ${tema.colores.texto} flex items-center gap-2`}
+          >
+            <Calendar className="w-6 h-6" />
+            Información de la Cita
+          </h3>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <div
+                className={`text-sm font-bold mb-1 ${tema.colores.textoSecundario}`}
+              >
+                Fecha y Hora
+              </div>
+              <div className={`text-lg font-bold ${tema.colores.texto}`}>
+                {formatearFecha(citaSeleccionada.fecha_hora_inicio, "largo")}
+                <br />
+                {formatearHora(citaSeleccionada.fecha_hora_inicio)} -{" "}
+                {formatearHora(citaSeleccionada.fecha_hora_fin)}
+              </div>
+            </div>
+
+            <div>
+              <div
+                className={`text-sm font-bold mb-1 ${tema.colores.textoSecundario}`}
+              >
+                Duración
+              </div>
+              <div
+                className={`text-lg font-bold ${tema.colores.texto} flex items-center gap-2`}
+              >
+                <Clock className="w-5 h-5" />
+                {citaSeleccionada.duracion_minutos} minutos
+              </div>
+            </div>
+
+            <div>
+              <div
+                className={`text-sm font-bold mb-1 ${tema.colores.textoSecundario}`}
+              >
+                Estado
+              </div>
+              <span
+                className={`inline-flex px-4 py-2 rounded-full text-sm font-bold border ${
+                  COLORES_ESTADO[citaSeleccionada.estado].bg
+                } ${COLORES_ESTADO[citaSeleccionada.estado].text} ${
+                  COLORES_ESTADO[citaSeleccionada.estado].border
+                }`}
+              >
+                {citaSeleccionada.estado.replace("_", " ")}
+              </span>
+            </div>
+
+            <div>
+              <div
+                className={`text-sm font-bold mb-1 ${tema.colores.textoSecundario}`}
+              >
+                Tipo de Cita
+              </div>
+              <span
+                className={`inline-flex px-4 py-2 rounded-full text-sm font-bold`}
+                style={{
+                  backgroundColor: `${COLORES_TIPO[citaSeleccionada.tipo_cita]}20`,
+                  color: COLORES_TIPO[citaSeleccionada.tipo_cita],
+                }}
+              >
+                {citaSeleccionada.tipo_cita.replace("_", " ")}
+              </span>
+            </div>
+
+            <div>
+              <div
+                className={`text-sm font-bold mb-1 ${tema.colores.textoSecundario}`}
+              >
+                Prioridad
+              </div>
+              <span
+                className={`inline-flex px-4 py-2 rounded-full text-sm font-bold ${
+                  citaSeleccionada.prioridad === "urgente"
+                    ? "bg-red-500/20 text-red-400"
+                    : citaSeleccionada.prioridad === "alta"
+                    ? "bg-orange-500/20 text-orange-400"
+                    : "bg-blue-500/20 text-blue-400"
+                }`}
+              >
+                {citaSeleccionada.prioridad}
+              </span>
+            </div>
+
+            {citaSeleccionada.especialidad && (
+              <div>
+                <div
+                  className={`text-sm font-bold mb-1 ${tema.colores.textoSecundario}`}
+                >
+                  Especialidad
+                </div>
+                <div
+                  className={`text-lg font-bold ${tema.colores.texto} flex items-center gap-2`}
+                >
+                  <Stethoscope className="w-5 h-5" />
+                  {citaSeleccionada.especialidad.nombre}
+                </div>
+              </div>
+            )}
+
+            {citaSeleccionada.sala && (
+              <div>
+                <div
+                  className={`text-sm font-bold mb-1 ${tema.colores.textoSecundario}`}
+                >
+                  Sala
+                </div>
+                <div
+                  className={`text-lg font-bold ${tema.colores.texto} flex items-center gap-2`}
+                >
+                  <MapPin className="w-5 h-5" />
+                  {citaSeleccionada.sala.nombre}
+                </div>
+              </div>
+            )}
+
+            {citaSeleccionada.monto && (
+              <div>
+                <div
+                  className={`text-sm font-bold mb-1 ${tema.colores.textoSecundario}`}
+                >
+                  Monto
+                </div>
+                <div
+                  className={`text-lg font-bold ${tema.colores.texto} flex items-center gap-2`}
+                >
+                  <DollarSign className="w-5 h-5" />
+                  ${citaSeleccionada.monto.toLocaleString("es-CL")}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {citaSeleccionada.motivo && (
+            <div className="mt-4">
+              <div
+                className={`text-sm font-bold mb-2 ${tema.colores.textoSecundario}`}
+              >
+                Motivo de Consulta
+              </div>
+              <div
+                className={`text-base ${tema.colores.texto} p-4 rounded-xl ${tema.colores.hover}`}
+              >
+                {citaSeleccionada.motivo}
+              </div>
+            </div>
+          )}
+
+          {citaSeleccionada.notas && (
+            <div className="mt-4">
+              <div
+                className={`text-sm font-bold mb-2 ${tema.colores.textoSecundario}`}
+              >
+                Notas
+              </div>
+              <div
+                className={`text-base ${tema.colores.texto} p-4 rounded-xl ${tema.colores.hover}`}
+              >
+                {citaSeleccionada.notas}
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Estados de Confirmación */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div
+            className={`p-6 rounded-2xl text-center ${
+              citaSeleccionada.confirmado_por_paciente
+                ? "bg-green-500/20 border-2 border-green-500/30"
+                : "bg-yellow-500/20 border-2 border-yellow-500/30"
+            }`}
+          >
+            <div className="flex items-center justify-center mb-3">
+              {citaSeleccionada.confirmado_por_paciente ? (
+                <CheckCircle2 className="w-12 h-12 text-green-400" />
+              ) : (
+                <Clock className="w-12 h-12 text-yellow-400" />
+              )}
+            </div>
+            <div className={`font-bold ${tema.colores.texto}`}>
+              {citaSeleccionada.confirmado_por_paciente
+                ? "Confirmada"
+                : "Sin Confirmar"}
+            </div>
+          </div>
+
+          <div
+            className={`p-6 rounded-2xl text-center ${
+              citaSeleccionada.pagada
+                ? "bg-green-500/20 border-2 border-green-500/30"
+                : "bg-orange-500/20 border-2 border-orange-500/30"
+            }`}
+          >
+            <div className="flex items-center justify-center mb-3">
+              {citaSeleccionada.pagada ? (
+                <CheckCircle2 className="w-12 h-12 text-green-400" />
+              ) : (
+                <CreditCard className="w-12 h-12 text-orange-400" />
+              )}
+            </div>
+            <div className={`font-bold ${tema.colores.texto}`}>
+              {citaSeleccionada.pagada ? "Pagada" : "Pago Pendiente"}
+            </div>
+          </div>
+
+          <div
+            className={`p-6 rounded-2xl text-center ${
+              citaSeleccionada.recordatorio_enviado
+                ? "bg-blue-500/20 border-2 border-blue-500/30"
+                : "bg-gray-500/20 border-2 border-gray-500/30"
+            }`}
+          >
+            <div className="flex items-center justify-center mb-3">
+              {citaSeleccionada.recordatorio_enviado ? (
+                <Bell className="w-12 h-12 text-blue-400" />
+              ) : (
+                <BellOff className="w-12 h-12 text-gray-400" />
+              )}
+            </div>
+            <div className={`font-bold ${tema.colores.texto}`}>
+              {citaSeleccionada.recordatorio_enviado
+                ? "Recordatorio Enviado"
+                : "Sin Recordatorio"}
             </div>
           </div>
         </div>
-      )}
-
-      {/* ESTILOS PERSONALIZADOS */}
-      <style jsx global>{`
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 8px;
-          height: 8px;
-        }
-
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: rgba(31, 41, 55, 0.5);
-          border-radius: 10px;
-        }
-
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: rgba(99, 102, 241, 0.5);
-          border-radius: 10px;
-        }
-
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: rgba(99, 102, 241, 0.7);
-        }
-
-        @keyframes fadeIn {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-
-        .animate-fadeIn {
-          animation: fadeIn 0.5s ease-out forwards;
-        }
-
-        @keyframes slideIn {
-          from {
-            opacity: 0;
-            transform: translateX(-20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateX(0);
-          }
-        }
-
-        .animate-slideIn {
-          animation: slideIn 0.3s ease-out forwards;
-        }
-
-        @keyframes slideUp {
-          from {
-            opacity: 0;
-            transform: translateY(40px) scale(0.95);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0) scale(1);
-          }
-        }
-
-        .animate-slideUp {
-          animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
-        }
-
-        @keyframes pulse {
-          0%,
-          100% {
-            opacity: 1;
-          }
-          50% {
-            opacity: 0.5;
-          }
-        }
-
-        @keyframes bounce {
-          0%,
-          100% {
-            transform: translateY(0);
-          }
-          50% {
-            transform: translateY(-10px);
-          }
-        }
-
-        .animate-bounce-slow {
-          animation: bounce 2s infinite;
-        }
-
-        @keyframes shimmer {
-          0% {
-            background-position: -1000px 0;
-          }
-          100% {
-            background-position: 1000px 0;
-          }
-        }
-
-        .animate-shimmer {
-          animation: shimmer 2s linear infinite;
-          background: linear-gradient(
-            to right,
-            rgba(255, 255, 255, 0) 0%,
-            rgba(255, 255, 255, 0.1) 50%,
-            rgba(255, 255, 255, 0) 100%
-          );
-          background-size: 1000px 100%;
-        }
-
-        @keyframes float {
-          0%,
-          100% {
-            transform: translateY(0px);
-          }
-          50% {
-            transform: translateY(-20px);
-          }
-        }
-
-        .animate-float {
-          animation: float 3s ease-in-out infinite;
-        }
-
-        @keyframes spin-slow {
-          from {
-            transform: rotate(0deg);
-          }
-          to {
-            transform: rotate(360deg);
-          }
-        }
-
-        .animate-spin-slow {
-          animation: spin-slow 3s linear infinite;
-        }
-
-        /* Transiciones suaves globales */
-        * {
-          transition-property: background-color, border-color, color, fill, stroke, opacity,
-            box-shadow, transform;
-          transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
-          transition-duration: 150ms;
-        }
-
-        /* Mejoras de rendimiento */
-        .will-change-transform {
-          will-change: transform;
-        }
-
-        .will-change-opacity {
-          will-change: opacity;
-        }
-
-        /* Efectos de hover mejorados */
-        .hover-lift {
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .hover-lift:hover {
-          transform: translateY(-4px);
-          box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1),
-            0 10px 10px -5px rgba(0, 0, 0, 0.04);
-        }
-
-        /* Gradientes animados */
-        .gradient-animation {
-          background-size: 200% 200%;
-          animation: gradient 3s ease infinite;
-        }
-
-        @keyframes gradient {
-          0% {
-            background-position: 0% 50%;
-          }
-          50% {
-            background-position: 100% 50%;
-          }
-          100% {
-            background-position: 0% 50%;
-          }
-        }
-
-        /* Efectos de glassmorphism */
-        .glass-effect {
-          backdrop-filter: blur(10px) saturate(150%);
-          -webkit-backdrop-filter: blur(10px) saturate(150%);
-        }
-
-        /* Estilos de impresión */
-        @media print {
-          body * {
-            visibility: hidden;
-          }
-          .print-content,
-          .print-content * {
-            visibility: visible;
-          }
-          .print-content {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-          }
-
-          /* Ocultar elementos no necesarios en impresión */
-          aside,
-          button,
-          .no-print {
-            display: none !important;
-          }
-        }
-
-        /* Estilos para drag and drop */
-        .dragging {
-          opacity: 0.5;
-          transform: rotate(5deg);
-        }
-
-        .drag-over {
-          background: rgba(99, 102, 241, 0.1);
-          border: 2px dashed rgba(99, 102, 241, 0.5);
-        }
-
-        /* Mejoras de accesibilidad */
-        .focus-visible:focus {
-          outline: 2px solid rgba(99, 102, 241, 0.5);
-          outline-offset: 2px;
-        }
-
-        /* Animaciones de entrada para modales */
-        .modal-backdrop {
-          animation: fadeIn 0.3s ease-out;
-        }
-
-        .modal-content {
-          animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        /* Efectos de ripple en botones */
-        .ripple {
-          position: relative;
-          overflow: hidden;
-        }
-
-        .ripple::after {
-          content: "";
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          width: 0;
-          height: 0;
-          border-radius: 50%;
-          background: rgba(255, 255, 255, 0.5);
-          transform: translate(-50%, -50%);
-          transition: width 0.6s, height 0.6s;
-        }
-
-        .ripple:active::after {
-          width: 300px;
-          height: 300px;
-        }
-
-        /* Skeleton loaders */
-        .skeleton {
-          background: linear-gradient(
-            90deg,
-            rgba(255, 255, 255, 0.05) 25%,
-            rgba(255, 255, 255, 0.1) 50%,
-            rgba(255, 255, 255, 0.05) 75%
-          );
-          background-size: 200% 100%;
-          animation: shimmer 1.5s infinite;
-        }
-
-        /* Efectos de texto */
-        .text-gradient {
-          background: linear-gradient(
-            135deg,
-            #667eea 0%,
-            #764ba2 100%
-          );
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-        }
-
-        /* Efectos de sombra personalizados */
-        .shadow-glow {
-          box-shadow: 0 0 20px rgba(99, 102, 241, 0.3);
-        }
-
-        .shadow-glow-hover:hover {
-          box-shadow: 0 0 30px rgba(99, 102, 241, 0.5);
-        }
-
-        /* Animaciones de carga */
-        .loading-dots span {
-          animation: loading-dots 1.4s infinite;
-        }
-
-        .loading-dots span:nth-child(2) {
-          animation-delay: 0.2s;
-        }
-
-        .loading-dots span:nth-child(3) {
-          animation-delay: 0.4s;
-        }
-
-        @keyframes loading-dots {
-          0%,
-          80%,
-          100% {
-            opacity: 0.3;
-            transform: scale(1);
-          }
-          40% {
-            opacity: 1;
-            transform: scale(1.3);
-          }
-        }
-
-        /* Efectos de border */
-        .border-gradient {
-          border: 2px solid transparent;
-          background-clip: padding-box;
-          position: relative;
-        }
-
-        .border-gradient::before {
-          content: "";
-          position: absolute;
-          top: 0;
-          right: 0;
-          bottom: 0;
-          left: 0;
-          z-index: -1;
-          margin: -2px;
-          border-radius: inherit;
-          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        }
-
-        /* Efectos de card hover */
-        .card-hover {
-          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .card-hover:hover {
-          transform: translateY(-8px) scale(1.02);
-          box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
-        }
-
-        /* Efectos de progreso */
-        .progress-bar {
-          position: relative;
-          overflow: hidden;
-        }
-
-        .progress-bar::after {
-          content: "";
-          position: absolute;
-          top: 0;
-          left: 0;
-          bottom: 0;
-          width: 100%;
-          background: linear-gradient(
-            90deg,
-            transparent,
-            rgba(255, 255, 255, 0.3),
-            transparent
-          );
-          animation: progress-shimmer 2s infinite;
-        }
-
-        @keyframes progress-shimmer {
-          0% {
-            transform: translateX(-100%);
-          }
-          100% {
-            transform: translateX(100%);
-          }
-        }
-
-        /* Efectos de badge */
-        .badge-pulse {
-          animation: badge-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-        }
-
-        @keyframes badge-pulse {
-          0%,
-          100% {
-            opacity: 1;
-          }
-          50% {
-            opacity: 0.5;
-          }
-        }
-
-        /* Efectos de tooltip */
-        .tooltip {
-          position: relative;
-        }
-
-        .tooltip::before {
-          content: attr(data-tooltip);
-          position: absolute;
-          bottom: 100%;
-          left: 50%;
-          transform: translateX(-50%) translateY(-8px);
-          padding: 8px 12px;
-          background: rgba(0, 0, 0, 0.9);
-          color: white;
-          border-radius: 8px;
-          font-size: 12px;
-          white-space: nowrap;
-          opacity: 0;
-          pointer-events: none;
-          transition: opacity 0.3s, transform 0.3s;
-        }
-
-        .tooltip:hover::before {
-          opacity: 1;
-          transform: translateX(-50%) translateY(-4px);
-        }
-
-        /* Mejoras responsivas */
-        @media (max-width: 768px) {
-          .hide-mobile {
-            display: none;
-          }
-
-          .mobile-full-width {
-            width: 100% !important;
-          }
-
-          .mobile-stack {
-            flex-direction: column;
-          }
-        }
-
-        /* Efectos de entrada de lista */
-        .list-enter {
-          animation: listEnter 0.3s ease-out forwards;
-        }
-
-        @keyframes listEnter {
-          from {
-            opacity: 0;
-            transform: translateX(-20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateX(0);
-          }
-        }
-
-        .list-enter:nth-child(1) {
-          animation-delay: 0s;
-        }
-        .list-enter:nth-child(2) {
-          animation-delay: 0.05s;
-        }
-        .list-enter:nth-child(3) {
-          animation-delay: 0.1s;
-        }
-        .list-enter:nth-child(4) {
-          animation-delay: 0.15s;
-        }
-        .list-enter:nth-child(5) {
-          animation-delay: 0.2s;
-        }
-
-        /* Efectos de notificación */
-        .notification-slide-in {
-          animation: notificationSlideIn 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        @keyframes notificationSlideIn {
-          from {
-            transform: translateX(400px);
-            opacity: 0;
-          }
-          to {
-            transform: translateX(0);
-            opacity: 1;
-          }
-        }
-
-        /* Efectos de calendario */
-        .calendar-day-hover {
-          transition: all 0.2s ease;
-        }
-
-        .calendar-day-hover:hover {
-          background: rgba(99, 102, 241, 0.1);
-          transform: scale(1.05);
-          z-index: 10;
-        }
-
-        /* Efectos de timeline */
-        .timeline-item::before {
-          content: "";
-          position: absolute;
-          left: 0;
-          top: 0;
-          bottom: 0;
-          width: 3px;
-          background: linear-gradient(to bottom, #667eea, #764ba2);
-          animation: timeline-pulse 2s ease-in-out infinite;
-        }
-
-        @keyframes timeline-pulse {
-          0%,
-          100% {
-            opacity: 0.5;
-          }
-          50% {
-            opacity: 1;
-          }
-        }
-
-        /* Optimizaciones de rendimiento */
-        .gpu-accelerated {
-          transform: translateZ(0);
-          backface-visibility: hidden;
-          perspective: 1000px;
-        }
-
-        /* Efectos de scroll suave */
-        html {
-          scroll-behavior: smooth;
-        }
-
-        /* Efectos de input focus */
-        input:focus,
-        textarea:focus,
-        select:focus {
-          outline: none;
-          box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
-        }
-
-        /* Efectos de checkbox y radio personalizados */
-        input[type="checkbox"],
-        input[type="radio"] {
-          cursor: pointer;
-          transition: all 0.2s;
-        }
-
-        input[type="checkbox"]:checked,
-        input[type="radio"]:checked {
-          transform: scale(1.1);
-        }
-
-        /* Efectos de select personalizado */
-        select {
-          cursor: pointer;
-          appearance: none;
-          background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='currentColor'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'%3E%3C/path%3E%3C/svg%3E");
-          background-repeat: no-repeat;
-          background-position: right 0.75rem center;
-          background-size: 1.5em 1.5em;
-          padding-right: 2.5rem;
-        }
-
-        /* Efectos de overlay */
-        .overlay-enter {
-          animation: overlayEnter 0.3s ease-out;
-        }
-
-        @keyframes overlayEnter {
-          from {
-            opacity: 0;
-          }
-          to {
-            opacity: 1;
-          }
-        }
-
-        /* Efectos de zoom */
-        .zoom-hover {
-          transition: transform 0.3s ease;
-        }
-
-        .zoom-hover:hover {
-          transform: scale(1.05);
-        }
-
-        /* Efectos de rotate */
-        .rotate-hover {
-          transition: transform 0.3s ease;
-        }
-
-        .rotate-hover:hover {
-          transform: rotate(5deg);
-        }
-
-        /* Efectos de blur */
-        .blur-hover {
-          transition: filter 0.3s ease;
-        }
-
-        .blur-hover:hover {
-          filter: blur(0px) brightness(1.1);
-        }
-
-        /* Efectos de saturate */
-        .saturate-hover {
-          transition: filter 0.3s ease;
-        }
-
-        .saturate-hover:hover {
-          filter: saturate(1.3);
-        }
-
-        /* Efectos de neon */
-        .neon-glow {
-          text-shadow: 0 0 10px rgba(99, 102, 241, 0.8), 0 0 20px rgba(99, 102, 241, 0.6),
-            0 0 30px rgba(99, 102, 241, 0.4);
-        }
-
-        /* Efectos de particle */
-        @keyframes particle-float {
-          0%,
-          100% {
-            transform: translateY(0) rotate(0deg);
-            opacity: 0;
-          }
-          10% {
-            opacity: 1;
-          }
-          90% {
-            opacity: 1;
-          }
-          100% {
-            transform: translateY(-100vh) rotate(360deg);
-            opacity: 0;
-          }
-        }
-
-        /* Efectos de wave */
-        .wave {
-          animation: wave 2s ease-in-out infinite;
-        }
-
-        @keyframes wave {
-          0%,
-          100% {
-            transform: translateY(0);
-          }
-          50% {
-            transform: translateY(-10px);
-          }
-        }
-
-        /* Efectos de heartbeat */
-        .heartbeat {
-          animation: heartbeat 1.5s ease-in-out infinite;
-        }
-
-        @keyframes heartbeat {
-          0%,
-          100% {
-            transform: scale(1);
-          }
-          15% {
-            transform: scale(1.1);
-          }
-          30% {
-            transform: scale(1);
-          }
-          45% {
-            transform: scale(1.1);
-          }
-          60% {
-            transform: scale(1);
-          }
-        }
-
-        /* Mejoras de performance en móvil */
-        @media (max-width: 768px) {
-          * {
-            -webkit-tap-highlight-color: transparent;
-          }
-
-          input,
-          textarea,
-          select {
-            font-size: 16px; /* Evita zoom en iOS */
-          }
-        }
-
-        /* Dark mode support */
-        @media (prefers-color-scheme: dark) {
-          :root {
-            color-scheme: dark;
-          }
-        }
-
-        /* Reduced motion support */
-        @media (prefers-reduced-motion: reduce) {
-          *,
-          *::before,
-          *::after {
-            animation-duration: 0.01ms !important;
-            animation-iteration-count: 1 !important;
-            transition-duration: 0.01ms !important;
-          }
-        }
-
-        /* High contrast mode support */
-        @media (prefers-contrast: high) {
-          .card,
-          .button {
-            border: 2px solid currentColor;
-          }
-        }
-      `}</style>
+      </div>
+
+      <div
+        className={`p-8 border-t ${tema.colores.borde} sticky bottom-0 z-10 ${tema.colores.card}`}
+      >
+        <div className="flex items-center justify-between gap-4">
+          <button
+            onClick={() => handleEditarCita(citaSeleccionada)}
+            className={`px-6 py-3 ${tema.colores.secundario} ${tema.colores.texto} rounded-xl font-bold transition-all duration-300 hover:scale-105 flex items-center gap-2`}
+          >
+            <Edit className="w-5 h-5" />
+            Editar
+          </button>
+
+          <div className="flex items-center gap-3">
+            {!citaSeleccionada.recordatorio_enviado && (
+              <button
+                onClick={() =>
+                  handleEnviarRecordatorio(citaSeleccionada.id_cita)
+                }
+                className={`px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold transition-all duration-300 hover:scale-105 flex items-center gap-2`}
+              >
+                <Send className="w-5 h-5" />
+                Enviar Recordatorio
+              </button>
+            )}
+
+            {["programada", "confirmada", "en_sala_espera", "en_atencion"].includes(
+              citaSeleccionada.estado
+            ) && (
+              <button
+                onClick={() => {
+                  const motivo = prompt("Ingresa el motivo de la cancelación:");
+                  if (motivo) {
+                    handleCancelarCita(citaSeleccionada.id_cita, motivo);
+                    setModalDetallesCita(false);
+                  }
+                }}
+                className={`px-6 py-3 bg-red-600 hover:bg-red-700 text-white rounded-xl font-bold transition-all duration-300 hover:scale-105 flex items-center gap-2`}
+              >
+                <XCircle className="w-5 h-5" />
+                Cancelar Cita
+              </button>
+            )}
+
+            <button
+              onClick={() => {
+                setModalDetallesCita(false);
+                setCitaSeleccionada(null);
+              }}
+              className={`px-6 py-3 ${tema.colores.primario} text-white rounded-xl font-bold transition-all duration-300 hover:scale-105`}
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
+      </div>
     </div>
-  );
+  </div>
+)}
+
+  {/* ESTILOS PERSONALIZADOS */}
+  <style jsx global>{`
+    .custom-scrollbar::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+      background: rgba(31, 41, 55, 0.5);
+      border-radius: 10px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+      background: rgba(99, 102, 241, 0.5);
+      border-radius: 10px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+      background: rgba(99, 102, 241, 0.7);
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .animate-fadeIn {
+      animation: fadeIn 0.5s ease-out forwards;
+    }
+
+    @keyframes slideIn {
+      from {
+        opacity: 0;
+        transform: translateX(-20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    .animate-slideIn {
+      animation: slideIn 0.3s ease-out forwards;
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(40px) scale(0.95);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+      }
+    }
+
+    .animate-slideUp {
+      animation: slideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    }
+
+    * {
+      transition-property: background-color, border-color, color, fill, stroke,
+        opacity, box-shadow, transform;
+      transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+      transition-duration: 150ms;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *,
+      *::before,
+      *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  `}</style>
+</div>
+);
 }

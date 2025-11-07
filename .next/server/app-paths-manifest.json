@@ -1,8 +1,15 @@
 {
   "/not-found": "app/not-found.js",
   "/(dashboard)/medico/page": "app/(dashboard)/medico/page.js",
-  "/(dashboard)/medico/certificados/page": "app/(dashboard)/medico/certificados/page.js",
-  "/(dashboard)/medico/mensajes/page": "app/(dashboard)/medico/mensajes/page.js",
+  "/(dashboard)/medico/telemedicina/page": "app/(dashboard)/medico/telemedicina/page.js",
   "/(dashboard)/medico/agenda/page": "app/(dashboard)/medico/agenda/page.js",
+  "/api/auth/session/route": "app/api/auth/session/route.js",
+  "/api/medico/pacientes/route": "app/api/medico/pacientes/route.js",
+  "/api/users/preferencias/tema/route": "app/api/users/preferencias/tema/route.js",
+  "/api/medico/agenda/route": "app/api/medico/agenda/route.js",
+  "/api/centros/[id]/salas/route": "app/api/centros/[id]/salas/route.js",
+  "/api/centros/[id]/especialidades/route": "app/api/centros/[id]/especialidades/route.js",
+  "/(dashboard)/medico/mensajes/page": "app/(dashboard)/medico/mensajes/page.js",
+  "/(dashboard)/medico/configuracion/page": "app/(dashboard)/medico/configuracion/page.js",
   "/(dashboard)/medico/pacientes/page": "app/(dashboard)/medico/pacientes/page.js"
 }
