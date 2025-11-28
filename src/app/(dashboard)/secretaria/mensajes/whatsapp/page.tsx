@@ -521,13 +521,11 @@ export default function WhatsAppMessagingPage() {
   };
 
   const cargarConversaciones = async () => {
-    if (!usuario?.secretaria?.id_secretaria) return;
-
     try {
       setLoadingConversaciones(true);
 
       const res = await fetch(
-        `/api/secretaria/whatsapp/conversaciones?id_secretaria=${usuario.secretaria.id_secretaria}`,
+        `/api/mensajes/whatsapp/conversaciones`,
         {
           method: "GET",
           headers: { "Content-Type": "application/json" },
@@ -550,7 +548,7 @@ export default function WhatsAppMessagingPage() {
   const cargarMensajes = async (idConversacion: number) => {
     try {
       const res = await fetch(
-        `/api/secretaria/whatsapp/mensajes?id_conversacion=${idConversacion}`,
+        `/api/mensajes/whatsapp/mensajes?id_conversacion=${idConversacion}`,
         {
           method: "GET",
           headers: { "Content-Type": "application/json" },
@@ -569,11 +567,9 @@ export default function WhatsAppMessagingPage() {
   };
 
   const cargarEstadisticas = async () => {
-    if (!usuario?.secretaria?.id_secretaria) return;
-
     try {
       const res = await fetch(
-        `/api/secretaria/whatsapp/estadisticas?id_secretaria=${usuario.secretaria.id_secretaria}`,
+        `/api/mensajes/whatsapp/estadisticas`,
         {
           method: "GET",
           headers: { "Content-Type": "application/json" },
@@ -618,14 +614,14 @@ export default function WhatsAppMessagingPage() {
       setMensajes((prev) => [...prev, nuevoMensaje]);
       setMensajeTexto("");
 
-      const res = await fetch("/api/secretaria/whatsapp/enviar", {
+      const res = await fetch("/api/mensajes/enviar", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify({
-          id_conversacion: conversacionActiva.id_conversacion,
+          id_usuario_receptor: conversacionActiva.paciente.id_paciente,
           contenido: mensajeTexto,
-          tipo: "texto",
+          tipo_mensaje: "texto",
         }),
       });
 
@@ -669,7 +665,7 @@ export default function WhatsAppMessagingPage() {
 
   const marcarComoLeido = async (idConversacion: number) => {
     try {
-      await fetch(`/api/secretaria/whatsapp/marcar-leido`, {
+      await fetch(`/api/mensajes/whatsapp/marcar-leido`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -690,7 +686,7 @@ export default function WhatsAppMessagingPage() {
 
   const archivarConversacion = async (idConversacion: number) => {
     try {
-      await fetch(`/api/secretaria/whatsapp/archivar`, {
+      await fetch(`/api/mensajes/whatsapp/archivar`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
