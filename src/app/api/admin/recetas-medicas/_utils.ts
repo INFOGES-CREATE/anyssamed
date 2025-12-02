@@ -1,4 +1,6 @@
 // frontend/src/app/api/admin/recetas-medicas/_utils.ts
+export const dynamic = "force-dynamic";
+
 import pool from "@/lib/db";
 
 export function tipoAbbr(tipo?: string | null) {

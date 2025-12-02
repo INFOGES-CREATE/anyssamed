@@ -28,7 +28,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
          c.nombre AS centro_nombre, m.id_centro
        FROM telemedicina_sesiones ts
        JOIN pacientes p ON p.id_paciente = ts.id_paciente
-       JOIN medicos m   ON m.id_medico   = ts.id_medico
+       JOIN profesionales_salud m   ON m.id_profesional   = ts.id_profesional
        JOIN usuarios u  ON u.id_usuario  = m.id_usuario
        LEFT JOIN centros_medicos c ON c.id_centro = m.id_centro
        WHERE ts.id_sesion = ? LIMIT 1`, [id]
@@ -60,7 +60,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
     }
 
     // Parches del body
-    ["id_cita","id_paciente","id_medico","proveedor_servicio","id_sala_virtual","estado",
+    ["id_cita","id_paciente","id_profesional","proveedor_servicio","id_sala_virtual","estado",
      "fecha_hora_inicio_programada","fecha_hora_fin_programada","fecha_hora_inicio_real","fecha_hora_fin_real",
      "token_acceso","url_sesion","calidad_conexion","grabacion_autorizada","notas_tecnicas"].forEach(k => {
       if (body[k] !== undefined) trySet(k, body[k]);

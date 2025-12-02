@@ -1,28 +1,23 @@
+//src\app\api\admin\bi-dashboards\opciones\route.ts
+export const dynamic = "force-dynamic";
+
 import { NextResponse } from "next/server";
 import mysql from "mysql2/promise";
 
-export const dynamic = "force-dynamic";
 
 function getPool() {
-  const {
-    MYSQL_HOST, MYSQL_PORT, MYSQL_DATABASE, MYSQL_USER, MYSQL_PASSWORD,
-    DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASS,
-  } = process.env;
-
+  const { MYSQL_HOST, MYSQL_PORT, MYSQL_DATABASE, MYSQL_USER, MYSQL_PASSWORD } = process.env;
   // @ts-ignore
   if (!globalThis.__DB_POOL__) {
     // @ts-ignore
     globalThis.__DB_POOL__ = mysql.createPool({
-      host: MYSQL_HOST || DB_HOST || "localhost",
-      port: Number(MYSQL_PORT || DB_PORT || 3306),
-      user: MYSQL_USER || DB_USER || "root",
-      password: MYSQL_PASSWORD || DB_PASS || "",
-      database: MYSQL_DATABASE || DB_NAME || "Anyssamed",
-      waitForConnections: true,
+      host: MYSQL_HOST,
+      port: MYSQL_PORT ? Number(MYSQL_PORT) : 3306,
+      user: MYSQL_USER,
+      password: MYSQL_PASSWORD,
+      database: MYSQL_DATABASE,
       connectionLimit: 10,
-      queueLimit: 0,
-      // IMPORTANTE: charset es el set de caracteres, no la collation
-      charset: "utf8mb4",
+      charset: "utf8mb4_general_ci",
       dateStrings: true,
     });
   }

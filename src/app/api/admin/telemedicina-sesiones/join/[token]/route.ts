@@ -97,7 +97,7 @@ export async function GET(
 
     const sql = `
       SELECT
-        ts.id_sesion, ts.id_cita, ts.id_paciente, ts.id_medico,
+        ts.id_sesion, ts.id_cita, ts.id_paciente, ts.id_profesional,
         ${selectProv}   AS proveedor_servicio,
         ${selectEstado} AS estado,
         ts.fecha_hora_inicio_programada, ts.fecha_hora_fin_programada,
@@ -110,7 +110,7 @@ export async function GET(
         m.id_centro
       FROM telemedicina_sesiones ts
       JOIN pacientes p ON p.id_paciente = ts.id_paciente
-      JOIN medicos m   ON m.id_medico   = ts.id_medico
+      JOIN profesionales_salud m   ON m.id_profesional   = ts.id_profesional
       JOIN usuarios u  ON u.id_usuario  = m.id_usuario
       LEFT JOIN centros_medicos c ON c.id_centro = m.id_centro
       ${salasJoin}
@@ -133,7 +133,7 @@ export async function GET(
       id_sesion: r.id_sesion,
       id_cita: r.id_cita ?? null,
       id_paciente: r.id_paciente,
-      id_medico: r.id_medico,
+      id_profesional: r.id_profesional,
       id_centro: r.id_centro ?? null,
       proveedor_servicio: r.proveedor_servicio ?? null,
       estado: r.estado ?? null,

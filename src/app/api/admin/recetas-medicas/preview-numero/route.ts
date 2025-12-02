@@ -1,4 +1,6 @@
 // frontend/src/app/api/admin/recetas-medicas/preview-numero/route.ts
+export const dynamic = "force-dynamic";
+
 import { NextResponse } from "next/server";
 import { previewRecetaNumber } from "../_utils";
 

@@ -1,3 +1,5 @@
+//src\app\(dashboard)\secretaria\page.tsx
+
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
@@ -185,7 +187,7 @@ interface UsuarioSesion {
       region: string;
     };
     medicos_asignados: Array<{
-      id_medico: number;
+      id_profesional: number;
       nombre_completo: string;
       especialidad: string;
       foto_url: string | null;
@@ -228,7 +230,7 @@ interface CitaSecretaria {
     foto_url: string | null;
   };
   medico: {
-    id_medico: number;
+    id_profesional: number;
     nombre_completo: string;
     especialidad: string;
     foto_url: string | null;
@@ -251,7 +253,7 @@ interface TareaPendiente {
     telefono: string | null;
   } | null;
   medico: {
-    id_medico: number;
+    id_profesional: number;
     nombre_completo: string;
   } | null;
   estado: "pendiente" | "en_proceso" | "completada";
@@ -276,7 +278,7 @@ interface LlamadaPendiente {
 }
 
 interface MedicoAsignado {
-  id_medico: number;
+  id_profesional: number;
   nombre_completo: string;
   especialidad: string;
   foto_url: string | null;
@@ -334,6 +336,9 @@ interface MenuItem {
   badge?: number;
   submenu?: MenuItem[];
   activo?: boolean;
+  target?: string;  // 👈 AÑADIR ESTO
+  rel?: string;     // 👈 Opcional (seguridad)
+  
 }
 
 // ========================================
@@ -552,10 +557,10 @@ export default function DashboardSecretariaPage() {
     {
       titulo: "Agenda",
       icono: Calendar,
-      url: "/secretaria/agenda",
+      url: "",
       badge: estadisticas?.citas_programadas_hoy || 0,
       submenu: [
-        { titulo: "Ver Agenda", icono: CalendarDays, url: "/secretaria/agenda" },
+        { titulo: "Gestionar Agenda", icono: CalendarDays, url: "/secretaria/agenda" },
         { titulo: "Nueva Cita", icono: CalendarPlus, url: "/secretaria/agenda/nueva" },
         { titulo: "Búsqueda Citas", icono: Search, url: "/secretaria/agenda/buscar" },
         { titulo: "Disponibilidad", icono: CalendarClock, url: "/secretaria/agenda/disponibilidad" },
@@ -564,9 +569,10 @@ export default function DashboardSecretariaPage() {
     {
       titulo: "Confirmaciones",
       icono: CheckSquare,
-      url: "/secretaria/confirmaciones",
+      url: "",
       badge: estadisticas?.citas_pendientes_confirmacion || 0,
       submenu: [
+        { titulo: "Gestionar Confirmaciones", icono: CheckSquare, url: "/secretaria/confirmaciones/" },
         { titulo: "Pendientes", icono: Clock, url: "/secretaria/confirmaciones/pendientes" },
         { titulo: "Confirmadas", icono: CheckCircle2, url: "/secretaria/confirmaciones/confirmadas" },
         { titulo: "Cancelaciones", icono: X, url: "/secretaria/confirmaciones/cancelaciones" },
@@ -575,9 +581,10 @@ export default function DashboardSecretariaPage() {
     {
       titulo: "Llamadas",
       icono: Phone,
-      url: "/secretaria/llamadas",
+      url: "",
       badge: estadisticas?.llamadas_pendientes || 0,
       submenu: [
+        { titulo: "Gestionar Llamadas", icono: Phone, url: "/secretaria/llamadas/" },
         { titulo: "Por Realizar", icono: PhoneOutgoing, url: "/secretaria/llamadas/pendientes" },
         { titulo: "Realizadas", icono: PhoneIncoming, url: "/secretaria/llamadas/historial" },
         { titulo: "Registro", icono: ClipboardList, url: "/secretaria/llamadas/registro" },
@@ -586,10 +593,10 @@ export default function DashboardSecretariaPage() {
     {
       titulo: "Pacientes",
       icono: Users,
-      url: "/secretaria/pacientes",
+      url: "",
       badge: estadisticas?.pacientes_nuevos_mes || 0,
       submenu: [
-        { titulo: "Todos", icono: Users, url: "/secretaria/pacientes" },
+        { titulo: "Gestionar Pacientes", icono: Users, url: "/secretaria/pacientes" },
         { titulo: "Nuevo Paciente", icono: UserPlus, url: "/secretaria/pacientes/nuevo" },
         { titulo: "Búsqueda", icono: Search, url: "/secretaria/pacientes/buscar" },
         { titulo: "Atención Hoy", icono: CalendarCheck, url: "/secretaria/pacientes/hoy" },
@@ -598,9 +605,9 @@ export default function DashboardSecretariaPage() {
     {
       titulo: "Médicos",
       icono: Stethoscope,
-      url: "/secretaria/medicos",
+      url: "",
       submenu: [
-        { titulo: "Mis Médicos", icono: UserCog, url: "/secretaria/medicos" },
+        { titulo: "Gestionar Médicos", icono: UserCog, url: "/secretaria/medicos" },
         { titulo: "Disponibilidad", icono: CalendarClock, url: "/secretaria/medicos/disponibilidad" },
         { titulo: "Contacto", icono: Phone, url: "/secretaria/medicos/contacto" },
       ],
@@ -608,9 +615,10 @@ export default function DashboardSecretariaPage() {
     {
       titulo: "Recordatorios",
       icono: Bell,
-      url: "/secretaria/recordatorios",
+      url: "",
       badge: estadisticas?.recordatorios_enviados_hoy || 0,
       submenu: [
+        { titulo: "Gestionar Recordatorios", icono: Bell, url: "/secretaria/recordatorios/" },
         { titulo: "Programados", icono: Clock, url: "/secretaria/recordatorios/programados" },
         { titulo: "Enviados", icono: Send, url: "/secretaria/recordatorios/enviados" },
         { titulo: "Configuración", icono: Settings, url: "/secretaria/recordatorios/config" },
@@ -619,31 +627,39 @@ export default function DashboardSecretariaPage() {
     {
       titulo: "Documentos",
       icono: FileText,
-      url: "/secretaria/documentos",
+      url: "",
       badge: estadisticas?.documentos_procesados_semana || 0,
       submenu: [
-        { titulo: "Gestión", icono: FileSpreadsheet, url: "/secretaria/documentos" },
+        { titulo: "Gestionar Documentos", icono: FileSpreadsheet, url: "/secretaria/documentos" },
         { titulo: "Certificados", icono: Award, url: "/secretaria/documentos/certificados" },
         { titulo: "Recetas", icono: Pill, url: "/secretaria/documentos/recetas" },
         { titulo: "Órdenes", icono: ClipboardList, url: "/secretaria/documentos/ordenes" },
       ],
     },
-    {
-      titulo: "Mensajes",
-      icono: MessageSquare,
-      url: "/secretaria/mensajes",
-      badge: estadisticas?.mensajes_sin_leer || 0,
-      submenu: [
-        { titulo: "Bandeja", icono: Mail, url: "/secretaria/mensajes" },
-        { titulo: "WhatsApp", icono: MessageSquare, url: "/secretaria/mensajes/whatsapp" },
-        { titulo: "SMS", icono: Phone, url: "/secretaria/mensajes/sms" },
-        { titulo: "Email", icono: Mail, url: "/secretaria/mensajes/email" },
-      ],
+  {
+  titulo: "Mensajes",
+  icono: MessageSquare,
+  url: "",
+  badge: estadisticas?.mensajes_sin_leer || 0,
+  submenu: [
+    { titulo: "Bandeja", icono: Mail, url: "/secretaria/mensajes" },
+    { 
+      titulo: "WhatsApp", 
+      icono: MessageSquare, 
+      url: "https://web.whatsapp.com/",
+      target: "_blank",            // 👈 SOLO WhatsApp abre nueva pestaña
+      rel: "noopener noreferrer"   // 👈 Seguridad (recomendado)
     },
+    { titulo: "SMS", icono: Phone, url: "/secretaria/mensajes/sms" },
+    { titulo: "Email", icono: Mail, url: "/secretaria/mensajes/email" },
+    { titulo: "Automáticos", icono: Mail, url: "/secretaria/mensajes/auto" },
+  ],
+},
+
     {
       titulo: "Telemedicina",
       icono: Video,
-      url: "/secretaria/telemedicina",
+      url: "",
       badge: estadisticas?.consultas_telemedicina_hoy || 0,
       submenu: [
         { titulo: "Sala Espera", icono: Clock, url: "/secretaria/telemedicina/espera" },
@@ -654,9 +670,10 @@ export default function DashboardSecretariaPage() {
     {
       titulo: "Tareas",
       icono: CheckSquare,
-      url: "/secretaria/tareas",
+      url: "",
       badge: estadisticas?.tareas_pendientes || 0,
       submenu: [
+        { titulo: "Todos Mis Tareas", icono: Square, url: "/secretaria/tareas" },
         { titulo: "Pendientes", icono: Square, url: "/secretaria/tareas/pendientes" },
         { titulo: "Completadas", icono: CheckSquare, url: "/secretaria/tareas/completadas" },
         { titulo: "Nueva Tarea", icono: Plus, url: "/secretaria/tareas/nueva" },
@@ -665,9 +682,9 @@ export default function DashboardSecretariaPage() {
     {
       titulo: "Reportes",
       icono: BarChart3,
-      url: "/secretaria/reportes",
+      url: "",
       submenu: [
-        { titulo: "Mis Métricas", icono: TrendingUp, url: "/secretaria/reportes/metricas" },
+        { titulo: "Mis Métricas", icono: TrendingUp, url: "/secretaria/reportes/" },
         { titulo: "Citas", icono: Calendar, url: "/secretaria/reportes/citas" },
         { titulo: "Llamadas", icono: Phone, url: "/secretaria/reportes/llamadas" },
         { titulo: "Rendimiento", icono: Target, url: "/secretaria/reportes/rendimiento" },
@@ -676,7 +693,7 @@ export default function DashboardSecretariaPage() {
     {
       titulo: "Mi Perfil",
       icono: User,
-      url: "/secretaria/perfil",
+      url: "",
       submenu: [
         { titulo: "Información Personal", icono: User, url: "/secretaria/perfil" },
         { titulo: "Horarios", icono: Clock, url: "/secretaria/perfil/horarios" },
@@ -686,9 +703,9 @@ export default function DashboardSecretariaPage() {
     {
       titulo: "Configuración",
       icono: Settings,
-      url: "/secretaria/configuracion",
+      url: "",
       submenu: [
-        { titulo: "General", icono: Settings, url: "/secretaria/configuracion/general" },
+        { titulo: "General", icono: Settings, url: "/secretaria/configuracion/" },
         { titulo: "Notificaciones", icono: Bell, url: "/secretaria/configuracion/notificaciones" },
         { titulo: "Seguridad", icono: Shield, url: "/secretaria/configuracion/seguridad" },
         { titulo: "Temas", icono: Sparkles, url: "/secretaria/configuracion/temas" },
@@ -1955,7 +1972,7 @@ export default function DashboardSecretariaPage() {
                     >
                       <option value="">Todos los médicos</option>
                       {medicosAsignados.map((medico) => (
-                        <option key={medico.id_medico} value={medico.id_medico}>
+                        <option key={medico.id_profesional} value={medico.id_profesional}>
                           {medico.nombre_completo}
                         </option>
                       ))}
@@ -2356,7 +2373,7 @@ export default function DashboardSecretariaPage() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                   {medicosAsignados.map((medico) => (
                     <div
-                      key={medico.id_medico}
+                      key={medico.id_profesional}
                       className={`p-5 rounded-2xl ${tema.colores.card} ${tema.colores.borde} border transition-all duration-300 hover:scale-105 hover:-translate-y-1 ${tema.colores.sombra} cursor-pointer group`}
                     >
                       <div className="flex flex-col items-center text-center">

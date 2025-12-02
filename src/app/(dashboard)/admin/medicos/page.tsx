@@ -1,3 +1,5 @@
+//src\app\(dashboard)\admin\medicos\page.tsx
+
 "use client";
 
 import { useState, useEffect } from "react";
@@ -46,7 +48,7 @@ import ModalDetallesMedico from "@/components/admin/medicos/ModalDetallesMedico"
 // ========================================
 
 interface Medico {
-  id_medico: number;
+  id_profesional: number;
   id_usuario: number;
   id_centro_principal: number;
   numero_registro_medico: string;
@@ -551,7 +553,7 @@ export default function GestionMedicosPage() {
       }
 
       const response = await fetch(
-        `/api/admin/medicos/${medicoSeleccionado.id_medico}`,
+        `/api/admin/medicos/${medicoSeleccionado.id_profesional}`,
         {
           method: "PUT",
           headers: {
@@ -592,7 +594,7 @@ export default function GestionMedicosPage() {
       }
 
       const response = await fetch(
-        `/api/admin/medicos/${medicoSeleccionado.id_medico}`,
+        `/api/admin/medicos/${medicoSeleccionado.id_profesional}`,
         {
           method: "DELETE",
           headers: {
@@ -700,7 +702,7 @@ export default function GestionMedicosPage() {
     if (medicos.length === 0) return;
 
     const data = medicos.map((medico) => ({
-      ID: medico.id_medico,
+      ID: medico.id_profesional,
       Nombre: `${medico.usuario.nombre} ${medico.usuario.apellido_paterno}`,
       RUT: medico.usuario.rut,
       Email: medico.usuario.email,
@@ -1536,7 +1538,7 @@ export default function GestionMedicosPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 md:gap-6 mb-8">
             {medicosPaginados.map((medico) => (
               <div
-                key={medico.id_medico}
+                key={medico.id_profesional}
                 className={`group relative overflow-hidden rounded-2xl p-6 shadow-xl border transition-all duration-500 hover:scale-105 hover:shadow-2xl ${
                   darkMode
                     ? "bg-gray-800/50 border-gray-700 hover:border-indigo-500/50"
@@ -1582,7 +1584,7 @@ export default function GestionMedicosPage() {
                         onClick={(e) => {
                           e.stopPropagation();
                           setMenuAbiertoId((prev) =>
-                            prev === medico.id_medico ? null : medico.id_medico
+                            prev === medico.id_profesional ? null : medico.id_profesional
                           );
                         }}
                         className={`p-2 rounded-lg transition-colors ${
@@ -1592,7 +1594,7 @@ export default function GestionMedicosPage() {
                         <MoreVertical className="w-4 h-4" />
                       </button>
 
-                      {menuAbiertoId === medico.id_medico && (
+                      {menuAbiertoId === medico.id_profesional && (
                         <div
                           onClick={(e) => e.stopPropagation()}
                           className={`absolute right-0 mt-2 w-44 rounded-xl shadow-2xl border z-50 ${
@@ -1916,7 +1918,7 @@ export default function GestionMedicosPage() {
                 >
                   {medicosPaginados.map((medico) => (
                     <tr
-                      key={medico.id_medico}
+                      key={medico.id_profesional}
                       className={`transition-colors duration-200 ${
                         darkMode ? "hover:bg-gray-900/30" : "hover:bg-gray-50"
                       }`}

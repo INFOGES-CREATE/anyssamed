@@ -1,9 +1,10 @@
 // frontend/src/app/api/admin/examenes-medicos/route.ts
+export const dynamic = "force-dynamic";
+
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 import type { RowDataPacket, ResultSetHeader } from "mysql2/promise";
 
-export const dynamic = "force-dynamic";
 
 /* ============== Utils ============== */
 const toInt = (v: any, d = 0) => (Number.isFinite(Number(v)) ? Number(v) : d);
@@ -76,7 +77,7 @@ export async function GET(req: Request) {
     const fPrioridad = (searchParams.get("prioridad") ?? "").trim();
     const fTipo = searchParams.get("id_tipo_examen") ? Number(searchParams.get("id_tipo_examen")) : null;
     const fCentro = searchParams.get("id_centro") ? Number(searchParams.get("id_centro")) : null;
-    const fMedico = searchParams.get("id_medico") ? Number(searchParams.get("id_medico")) : null;
+    const fMedico = searchParams.get("id_profesional") ? Number(searchParams.get("id_profesional")) : null;
     const fPaciente = searchParams.get("id_paciente") ? Number(searchParams.get("id_paciente")) : null;
     const fDesde = (searchParams.get("desde") ?? "").trim();
     const fHasta = (searchParams.get("hasta") ?? "").trim();
@@ -120,7 +121,7 @@ export async function GET(req: Request) {
     if (fPrioridad) { where.push(`e.${prioridadCol} = ?`); params.push(fPrioridad); }
     if (fTipo) { where.push(`e.id_tipo_examen = ?`); params.push(fTipo); }
     if (fCentro) { where.push(`e.id_centro = ?`); params.push(fCentro); }
-    if (fMedico) { where.push(`e.id_medico_solicitante = ?`); params.push(fMedico); }
+    if (fMedico) { where.push(`e.id_profesional_solicitante = ?`); params.push(fMedico); }
     if (fPaciente) { where.push(`e.id_paciente = ?`); params.push(fPaciente); }
     if (fDesde) { where.push(`e.fecha_solicitud >= ?`); params.push(fDesde + (fDesde.length === 10 ? " 00:00:00" : "")); }
     if (fHasta) { where.push(`e.fecha_solicitud <= ?`); params.push(fHasta + (fHasta.length === 10 ? " 23:59:59" : "")); }
@@ -138,7 +139,7 @@ export async function GET(req: Request) {
        FROM examenes_medicos e
        JOIN pacientes p ON p.id_paciente = e.id_paciente
        JOIN tipos_examenes te ON te.id_tipo_examen = e.id_tipo_examen
-       JOIN medicos m ON m.id_medico = e.id_medico_solicitante
+       JOIN profesionales_salud m ON m.id_profesional = e.id_profesional_solicitante
        JOIN usuarios u ON u.id_usuario = m.id_usuario
        JOIN centros_medicos c ON c.id_centro = e.id_centro
        LEFT JOIN integracion_laboratorios l ON l.id_integracion = e.id_laboratorio
@@ -164,7 +165,7 @@ export async function GET(req: Request) {
       FROM examenes_medicos e
       JOIN pacientes p ON p.id_paciente = e.id_paciente
       JOIN tipos_examenes te ON te.id_tipo_examen = e.id_tipo_examen
-      JOIN medicos m ON m.id_medico = e.id_medico_solicitante
+      JOIN profesionales_salud m ON m.id_profesional = e.id_profesional_solicitante
       JOIN usuarios u ON u.id_usuario = m.id_usuario
       JOIN centros_medicos c ON c.id_centro = e.id_centro
       LEFT JOIN integracion_laboratorios l ON l.id_integracion = e.id_laboratorio
@@ -215,13 +216,13 @@ export async function GET(req: Request) {
 /**
  * Body single:
  * {
- *   id_paciente, id_tipo_examen, id_medico_solicitante, id_centro,
+ *   id_paciente, id_tipo_examen, id_profesional_solicitante, id_centro,
  *   estado?, prioridad?, numero_orden?, fecha_solicitud?, fecha_programada?, ...
  * }
  *
  * Body batch:
  * {
- *   id_paciente, id_medico_solicitante, id_centro,
+ *   id_paciente, id_profesional_solicitante, id_centro,
  *   estado?, prioridad?, numero_orden?, fecha_solicitud?, motivo_solicitud?, diagnostico?, ...
  *   items: [{ id_tipo_examen, fecha_programada?, requiere_preparacion?, id_laboratorio?, costo?, ... }, ...]
  * }
@@ -252,12 +253,12 @@ export async function POST(req: Request) {
 
     if (isBatch) {
       const id_paciente = toInt(must(body.id_paciente, "id_paciente"));
-      const id_medico_solicitante = toInt(must(body.id_medico_solicitante, "id_medico_solicitante"));
+      const id_profesional_solicitante = toInt(must(body.id_profesional_solicitante, "id_profesional_solicitante"));
       const id_centro = toInt(must(body.id_centro, "id_centro"));
 
       const header: Record<string, any> = {
         id_paciente,
-        id_medico_solicitante,
+        id_profesional_solicitante,
         id_centro,
         numero_orden: numero_orden_shared,
         [estadoCol]: String(body[estadoCol] ?? body.estado ?? "solicitado"),
@@ -309,13 +310,13 @@ export async function POST(req: Request) {
     } else {
       const id_paciente = toInt(must(body.id_paciente, "id_paciente"));
       const id_tipo_examen = toInt(must(body.id_tipo_examen, "id_tipo_examen"));
-      const id_medico_solicitante = toInt(must(body.id_medico_solicitante, "id_medico_solicitante"));
+      const id_profesional_solicitante = toInt(must(body.id_profesional_solicitante, "id_profesional_solicitante"));
       const id_centro = toInt(must(body.id_centro, "id_centro"));
 
       const rec: Record<string, any> = {
         id_paciente,
         id_tipo_examen,
-        id_medico_solicitante,
+        id_profesional_solicitante,
         id_centro,
         numero_orden: typeof body?.numero_orden === "string" && body.numero_orden.trim()
           ? String(body.numero_orden)

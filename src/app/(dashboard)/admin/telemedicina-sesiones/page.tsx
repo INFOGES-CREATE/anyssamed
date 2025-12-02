@@ -1,12 +1,15 @@
 "use client";
 
 import React, { useEffect, useMemo, useState, useCallback } from "react";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
+
 import { useRouter } from "next/navigation";
 import {
   Video, Plus, Edit, X, Search, CheckSquare, Trash2, Building2, Stethoscope, User,
   Loader2, Download, Filter, Eye, FileText, RefreshCw, List, Grid, Printer,
   ChevronDown, ChevronUp, Link as LinkIcon, Clock, AlertTriangle, Check, Ban, Copy,
-  Calendar, Bug, ExternalLink, Play, Pause, Mail, AlertOctagon, Link, Save,
+  Calendar, Bug, ExternalLink, Play, Pause, Mail, AlertOctagon, Save,
   TrendingUp, TrendingDown, Activity, Zap, Settings, Bell, Users, BarChart3,
   PieChart, LineChart, Award, Shield, Star, MessageSquare, Phone, Maximize2,
   Minimize2, CloudDownload, FileSpreadsheet, FilePlus, Mic, MicOff, Video as VideoIcon,
@@ -17,7 +20,7 @@ import {
   Headphones, Radio, Tv, Camera, Layout, Type, AlignLeft, Lock, Unlock,
   EyeOff, UserPlus, UserMinus, UserCheck, UserX, ChevronLeft, ChevronRight,
   MoreVertical, MoreHorizontal, Maximize, Minimize, ZoomIn, ZoomOut, RotateCw,
-  RotateCcw, SortAsc, SortDesc, ArrowUp, ArrowDown, ArrowLeft, ArrowDownRight,
+  RotateCcw, SortAsc, SortDesc, ArrowUp, ArrowDown, ArrowDownRight,
   CornerDownRight, Minus, Sun, Moon, Sunrise, Sunset, CloudRain, Wind
 } from "lucide-react";
 
@@ -689,6 +692,15 @@ export default function AdminTelemedicinaSesionesPremiumPage() {
             {/* HEADER */}
             <header className="flex flex-wrap items-center justify-between gap-4">
               <div>
+                <Link
+    href="javascript:history.back()"
+    className="p-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600
+               text-white shadow-lg hover:shadow-xl hover:scale-110 active:scale-95
+               transition-all duration-200 inline-flex items-center justify-center"
+  >
+    <ArrowLeft className="w-5 h-5" />
+  </Link>
+                
                 <h1 className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
                   Gestión de Sesiones
                 </h1>

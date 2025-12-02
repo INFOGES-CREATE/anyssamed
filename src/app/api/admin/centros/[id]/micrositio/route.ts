@@ -1,3 +1,6 @@
+// frontend/src/app/api/admin/centros/[id]/micrositio/route.ts
+export const dynamic = "force-dynamic";
+
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 import { RowDataPacket } from "mysql2";
@@ -182,14 +185,14 @@ export async function GET(
           m.biografia AS frase,
           (
             SELECT e.nombre
-            FROM medicos_especialidades me
+            FROM profesionales_especialidades me
             JOIN especialidades e
               ON e.id_especialidad = me.id_especialidad
             WHERE me.id_medico = m.id_medico
             ORDER BY me.es_principal DESC
             LIMIT 1
           ) AS especialidad_principal
-        FROM medicos m
+        FROM profesionales_salud m
         JOIN usuarios u ON u.id_usuario = m.id_usuario
         WHERE m.id_centro_principal = ?
           AND m.estado = 'activo'

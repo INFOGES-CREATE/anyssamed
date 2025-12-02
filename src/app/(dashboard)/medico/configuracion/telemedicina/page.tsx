@@ -176,7 +176,7 @@ interface UsuarioSesion {
     nivel_jerarquia: number;
   };
   medico?: {
-    id_medico: number;
+    id_profesional: number;
     id_centro_principal: number;
     titulo_profesional: string;
     numero_registro_medico?: string;

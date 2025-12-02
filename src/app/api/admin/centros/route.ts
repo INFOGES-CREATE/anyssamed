@@ -1,4 +1,6 @@
-// frontend/src/app/api/admin/centros/route.ts
+//src\app\api\admin\centros\route.ts
+export const dynamic = "force-dynamic";
+
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 import { RowDataPacket, ResultSetHeader } from "mysql2";
@@ -8,14 +10,19 @@ export async function GET(request: Request) {
     const { searchParams } = new URL(request.url);
     const estado = searchParams.get("estado");
     const busqueda = searchParams.get("busqueda");
-    const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "50");
+    const page = parseInt(searchParams.get("page") || "1", 10);
+    const limit = parseInt(searchParams.get("limit") || "50", 10);
     const offset = (page - 1) * limit;
 
-    console.log("🔍 GET /api/admin/centros - Parámetros:", { estado, busqueda, page, limit });
+    console.log("🔍 GET /api/admin/centros - Parámetros:", {
+      estado,
+      busqueda,
+      page,
+      limit,
+    });
 
-    let whereConditions: string[] = [];
-    let queryParams: any[] = [];
+    const whereConditions: string[] = [];
+    const queryParams: any[] = [];
 
     if (estado && estado !== "todos") {
       whereConditions.push("cm.estado = ?");
@@ -23,116 +30,116 @@ export async function GET(request: Request) {
     }
 
     if (busqueda && busqueda.trim() !== "") {
-      whereConditions.push(
-        "(cm.nombre LIKE ? OR cm.rut LIKE ? OR cm.ciudad LIKE ? OR cm.region LIKE ? OR cm.razon_social LIKE ?)"
-      );
       const searchTerm = `%${busqueda.trim()}%`;
-      queryParams.push(searchTerm, searchTerm, searchTerm, searchTerm, searchTerm);
+      whereConditions.push(
+        `(cm.nombre LIKE ? 
+          OR cm.razon_social LIKE ?
+          OR cm.rut LIKE ?
+          OR cm.ciudad LIKE ?
+          OR cm.region LIKE ?
+          OR cm.descripcion LIKE ?)`
+      );
+      queryParams.push(
+        searchTerm,
+        searchTerm,
+        searchTerm,
+        searchTerm,
+        searchTerm,
+        searchTerm
+      );
     }
 
-    const whereClause = whereConditions.length > 0 
-      ? `WHERE ${whereConditions.join(" AND ")}` 
-      : "";
+    const whereClause =
+      whereConditions.length > 0
+        ? `WHERE ${whereConditions.join(" AND ")}`
+        : "";
 
+    // SOLO CAMPOS DE LA TABLA centros_medicos
     const [centros] = await pool.query<RowDataPacket[]>(
-      `SELECT 
+      `
+      SELECT
         cm.id_centro,
         cm.nombre,
+        cm.pais,
         cm.razon_social,
         cm.rut,
         cm.direccion,
         cm.ciudad,
         cm.region,
+        cm.comuna,
         cm.codigo_postal,
-        cm.telefono_principal as telefono,
-        cm.email_contacto as email,
+        cm.telefono_principal,
+        cm.telefono_secundario,
+        cm.email_contacto,
+        cm.email_secundario,
         cm.sitio_web,
         cm.logo_url,
         cm.descripcion,
         cm.horario_apertura,
         cm.horario_cierre,
         cm.dias_atencion,
+        cm.plan,
         cm.estado,
         cm.fecha_inicio_operacion,
         cm.capacidad_pacientes_dia,
         cm.nivel_complejidad,
         cm.especializacion_principal,
+        cm.tipo_establecimiento,
         cm.fecha_creacion,
-        cm.fecha_modificacion as fecha_actualizacion,
-        
-        COUNT(DISTINCT u.id_usuario) as usuarios_count,
-        COUNT(DISTINCT CASE WHEN u.estado = 'activo' THEN u.id_usuario END) as usuarios_activos,
-        COUNT(DISTINCT m.id_medico) as medicos_count,
-        COUNT(DISTINCT CASE WHEN m.estado = 'activo' THEN m.id_medico END) as medicos_activos,
-        COUNT(DISTINCT p.id_paciente) as pacientes_count,
-        COUNT(DISTINCT CASE WHEN p.estado = 'activo' THEN p.id_paciente END) as pacientes_activos,
-        COUNT(DISTINCT s.id_sucursal) as sucursales_count,
-        COUNT(DISTINCT CASE 
-          WHEN MONTH(hc.fecha_atencion) = MONTH(CURDATE()) 
-          AND YEAR(hc.fecha_atencion) = YEAR(CURDATE()) 
-          THEN hc.id_historial 
-        END) as consultas_mes,
-        COUNT(DISTINCT CASE 
-          WHEN YEAR(hc.fecha_atencion) = YEAR(CURDATE()) 
-          THEN hc.id_historial 
-        END) as consultas_ano,
-        
-        CASE 
-          WHEN cm.capacidad_pacientes_dia > 100 THEN 'enterprise'
-          WHEN cm.capacidad_pacientes_dia > 50 THEN 'profesional'
-          ELSE 'basico'
-        END as plan,
-        
-        4.5 as satisfaccion,
-        'Hace 2 horas' as ultima_actividad
-        
+        cm.fecha_modificacion,
+        cm.created_by,
+        cm.id_pais,
+        cm.id_region,
+        cm.id_comuna
       FROM centros_medicos cm
-      LEFT JOIN usuarios u ON u.id_centro_principal = cm.id_centro
-      LEFT JOIN medicos m ON m.id_centro_principal = cm.id_centro
-      LEFT JOIN pacientes p ON p.id_centro_registro = cm.id_centro
-      LEFT JOIN sucursales s ON s.id_centro = cm.id_centro
-      LEFT JOIN historial_clinico hc ON hc.id_centro = cm.id_centro
       ${whereClause}
-      GROUP BY cm.id_centro
       ORDER BY cm.fecha_creacion DESC
-      LIMIT ? OFFSET ?`,
+      LIMIT ? OFFSET ?
+      `,
       [...queryParams, limit, offset]
     );
 
     const [countResult] = await pool.query<RowDataPacket[]>(
-      `SELECT COUNT(DISTINCT cm.id_centro) as total
-       FROM centros_medicos cm
-       ${whereClause}`,
+      `
+      SELECT COUNT(DISTINCT cm.id_centro) AS total
+      FROM centros_medicos cm
+      ${whereClause}
+      `,
       queryParams
     );
 
     const total = countResult[0]?.total || 0;
     const totalPages = Math.ceil(total / limit);
 
-    const [estadisticas] = await pool.query<RowDataPacket[]>(`
+    // Estadísticas generales (solo usando campos de centros_medicos)
+    const [estadisticas] = await pool.query<RowDataPacket[]>(
+      `
       SELECT 
-        COUNT(*) as total_centros,
-        SUM(CASE WHEN estado = 'activo' THEN 1 ELSE 0 END) as centros_activos,
-        SUM(CASE WHEN estado = 'inactivo' THEN 1 ELSE 0 END) as centros_inactivos,
-        SUM(CASE WHEN estado = 'suspendido' THEN 1 ELSE 0 END) as centros_suspendidos,
-        AVG(capacidad_pacientes_dia) as capacidad_promedio,
-        SUM(capacidad_pacientes_dia) as capacidad_total,
-        COUNT(CASE WHEN nivel_complejidad = 'alta' THEN 1 END) as centros_alta_complejidad,
-        COUNT(CASE WHEN nivel_complejidad = 'media' THEN 1 END) as centros_media_complejidad,
-        COUNT(CASE WHEN nivel_complejidad = 'baja' THEN 1 END) as centros_baja_complejidad
+        COUNT(*) AS total_centros,
+        SUM(CASE WHEN estado = 'activo' THEN 1 ELSE 0 END) AS centros_activos,
+        SUM(CASE WHEN estado = 'inactivo' THEN 1 ELSE 0 END) AS centros_inactivos,
+        SUM(CASE WHEN estado = 'suspendido' THEN 1 ELSE 0 END) AS centros_suspendidos,
+        AVG(capacidad_pacientes_dia) AS capacidad_promedio,
+        SUM(capacidad_pacientes_dia) AS capacidad_total,
+        COUNT(CASE WHEN nivel_complejidad = 'alta' THEN 1 END) AS centros_alta_complejidad,
+        COUNT(CASE WHEN nivel_complejidad = 'media' THEN 1 END) AS centros_media_complejidad,
+        COUNT(CASE WHEN nivel_complejidad = 'baja' THEN 1 END) AS centros_baja_complejidad
       FROM centros_medicos
-    `);
+      `
+    );
 
-    const [distribucionRegion] = await pool.query<RowDataPacket[]>(`
+    const [distribucionRegion] = await pool.query<RowDataPacket[]>(
+      `
       SELECT 
         region,
-        COUNT(*) as cantidad,
-        COUNT(CASE WHEN estado = 'activo' THEN 1 END) as activos
+        COUNT(*) AS cantidad,
+        COUNT(CASE WHEN estado = 'activo' THEN 1 END) AS activos
       FROM centros_medicos
       GROUP BY region
       ORDER BY cantidad DESC
       LIMIT 10
-    `);
+      `
+    );
 
     console.log("✅ Centros encontrados:", centros.length);
 
@@ -166,43 +173,79 @@ export async function GET(request: Request) {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    
+
     console.log("📝 POST /api/admin/centros - Creando centro:", body.nombre);
 
     const {
       nombre,
+      pais,
       razon_social,
       rut,
       direccion,
       ciudad,
       region,
+      comuna,
       codigo_postal,
-      telefono,
-      email,
+      telefono, // lo usamos como telefono_principal
+      telefono_secundario,
+      email, // lo usamos como email_contacto
+      email_secundario,
       sitio_web,
       logo_url,
       descripcion,
       horario_apertura,
       horario_cierre,
       dias_atencion,
+      plan,
       estado,
       fecha_inicio_operacion,
       capacidad_pacientes_dia,
       nivel_complejidad,
       especializacion_principal,
+      tipo_establecimiento,
+      created_by,
+      id_pais,
+      id_region,
+      id_comuna,
     } = body;
 
-    if (!nombre || !razon_social || !rut || !direccion || !ciudad || !region || !telefono || !email) {
+    // ✅ Campos obligatorios según la tabla
+    if (
+      !nombre ||
+      !razon_social ||
+      !rut ||
+      !direccion ||
+      !ciudad ||
+      !region ||
+      !telefono ||
+      !email ||
+      !horario_apertura ||
+      !horario_cierre ||
+      !created_by
+    ) {
       return NextResponse.json(
-        { 
-          success: false, 
+        {
+          success: false,
           error: "Faltan campos obligatorios",
-          campos_requeridos: ["nombre", "razon_social", "rut", "direccion", "ciudad", "region", "telefono", "email"]
+          campos_requeridos: [
+            "nombre",
+            "razon_social",
+            "rut",
+            "direccion",
+            "ciudad",
+            "region",
+            "telefono",
+            "email",
+            "horario_apertura",
+            "horario_cierre",
+            "created_by",
+          ],
         },
         { status: 400 }
       );
     }
 
+    // ✅ Validar email
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       return NextResponse.json(
@@ -211,6 +254,7 @@ export async function POST(request: Request) {
       );
     }
 
+    // ✅ Validar RUT
     if (!rut || rut.length < 8) {
       return NextResponse.json(
         { success: false, error: "Formato de RUT inválido" },
@@ -223,6 +267,7 @@ export async function POST(request: Request) {
     try {
       await connection.beginTransaction();
 
+      // ✅ Validar RUT único
       const [existingRut] = await connection.query<RowDataPacket[]>(
         "SELECT id_centro, nombre FROM centros_medicos WHERE rut = ?",
         [rut]
@@ -231,85 +276,141 @@ export async function POST(request: Request) {
       if (existingRut.length > 0) {
         await connection.rollback();
         return NextResponse.json(
-          { 
-            success: false, 
+          {
+            success: false,
             error: "El RUT ya está registrado",
-            centro_existente: existingRut[0].nombre
+            centro_existente: existingRut[0].nombre,
           },
           { status: 400 }
         );
       }
 
+      // ✅ INSERT CON EXACTAMENTE 30 PLACEHOLDERS (CORREGIDO)
       const [result] = await connection.query<ResultSetHeader>(
-        `INSERT INTO centros_medicos (
-          nombre, razon_social, rut, direccion, ciudad, region, codigo_postal,
-          telefono_principal, email_contacto, sitio_web, logo_url, descripcion,
-          horario_apertura, horario_cierre, dias_atencion, estado,
-          fecha_inicio_operacion, capacidad_pacientes_dia, nivel_complejidad,
-          especializacion_principal
-        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-        [
+        `
+        INSERT INTO centros_medicos (
           nombre,
-          razon_social || nombre,
+          pais,
+          razon_social,
           rut,
           direccion,
           ciudad,
           region,
-          codigo_postal || null,
-          telefono,
-          email,
-          sitio_web || null,
-          logo_url || null,
-          descripcion || null,
-          horario_apertura || "08:00:00",
-          horario_cierre || "20:00:00",
-          dias_atencion || "Lunes a Viernes",
-          estado || "activo",
-          fecha_inicio_operacion || new Date(),
-          capacidad_pacientes_dia || 50,
-          nivel_complejidad || "media",
-          especializacion_principal || null,
+          comuna,
+          codigo_postal,
+          telefono_principal,
+          telefono_secundario,
+          email_contacto,
+          email_secundario,
+          sitio_web,
+          logo_url,
+          descripcion,
+          horario_apertura,
+          horario_cierre,
+          dias_atencion,
+          plan,
+          estado,
+          fecha_inicio_operacion,
+          capacidad_pacientes_dia,
+          nivel_complejidad,
+          especializacion_principal,
+          tipo_establecimiento,
+          created_by,
+          id_pais,
+          id_region,
+          id_comuna
+        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `,
+        [
+          nombre,                              // 1
+          pais || null,                         // 2
+          razon_social,                         // 3
+          rut,                                  // 4
+          direccion,                            // 5
+          ciudad,                               // 6
+          region,                               // 7
+          comuna || null,                       // 8
+          codigo_postal || null,                // 9
+          telefono,                             // 10
+          telefono_secundario || null,          // 11
+          email,                                // 12
+          email_secundario || null,             // 13
+          sitio_web || null,                    // 14
+          logo_url || null,                     // 15
+          descripcion || null,                  // 16
+          horario_apertura,                     // 17
+          horario_cierre,                       // 18
+          dias_atencion || "Lunes-Viernes",     // 19
+          plan || "basico",                     // 20
+          estado || "activo",                   // 21
+          fecha_inicio_operacion || new Date().toISOString().split('T')[0], // 22
+          capacidad_pacientes_dia || 50,        // 23
+          nivel_complejidad || "media",         // 24
+          especializacion_principal || null,    // 25
+          tipo_establecimiento || "clinica",    // 26
+          created_by,                           // 27
+          id_pais || null,                      // 28
+          id_region || null,                    // 29
+          id_comuna || null,                    // 30
         ]
       );
 
+      // ✅ Devolver el registro recién creado
       const [newCentro] = await connection.query<RowDataPacket[]>(
-        `SELECT 
-          cm.*,
-          cm.telefono_principal as telefono,
-          cm.email_contacto as email,
-          cm.fecha_modificacion as fecha_actualizacion,
-          0 as usuarios_count,
-          0 as usuarios_activos,
-          0 as medicos_count,
-          0 as medicos_activos,
-          0 as pacientes_count,
-          0 as pacientes_activos,
-          0 as sucursales_count,
-          0 as consultas_mes,
-          0 as consultas_ano,
-          CASE 
-            WHEN cm.capacidad_pacientes_dia > 100 THEN 'enterprise'
-            WHEN cm.capacidad_pacientes_dia > 50 THEN 'profesional'
-            ELSE 'basico'
-          END as plan,
-          0 as satisfaccion,
-          'Recién creado' as ultima_actividad
+        `
+        SELECT
+          cm.id_centro,
+          cm.nombre,
+          cm.pais,
+          cm.razon_social,
+          cm.rut,
+          cm.direccion,
+          cm.ciudad,
+          cm.region,
+          cm.comuna,
+          cm.codigo_postal,
+          cm.telefono_principal,
+          cm.telefono_secundario,
+          cm.email_contacto,
+          cm.email_secundario,
+          cm.sitio_web,
+          cm.logo_url,
+          cm.descripcion,
+          cm.horario_apertura,
+          cm.horario_cierre,
+          cm.dias_atencion,
+          cm.plan,
+          cm.estado,
+          cm.fecha_inicio_operacion,
+          cm.capacidad_pacientes_dia,
+          cm.nivel_complejidad,
+          cm.especializacion_principal,
+          cm.tipo_establecimiento,
+          cm.fecha_creacion,
+          cm.fecha_modificacion,
+          cm.created_by,
+          cm.id_pais,
+          cm.id_region,
+          cm.id_comuna
         FROM centros_medicos cm
-        WHERE cm.id_centro = ?`,
+        WHERE cm.id_centro = ?
+        `,
         [result.insertId]
       );
 
       await connection.commit();
 
-      console.log("✅ Centro creado exitosamente:", newCentro[0].nombre);
+      console.log("✅ Centro creado exitosamente:", newCentro[0]?.nombre);
 
-      return NextResponse.json({
-        success: true,
-        data: newCentro[0],
-        message: "Centro médico creado exitosamente",
-        id_centro: result.insertId,
-      }, { status: 201 });
-
+      return NextResponse.json(
+        {
+          success: true,
+          data: newCentro[0],
+          message: "Centro médico creado exitosamente",
+          id_centro: result.insertId,
+        },
+        { status: 201 }
+      );
     } catch (error) {
       await connection.rollback();
       throw error;

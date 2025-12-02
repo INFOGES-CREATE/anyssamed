@@ -1,9 +1,12 @@
 // frontend/src/app/(dashboard)/medico/telemedicina/sala/video/page.tsx
-
 "use client";
 
-import { useState, useEffect, useMemo, useRef, useCallback } from "react";
+import { Suspense } from "react";
+
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+
+
 import {
   Activity,
   AlertCircle,
@@ -408,7 +411,7 @@ const TEMAS: Record<TemaColor, ConfiguracionTema> = {
 // COMPONENTE PRINCIPAL
 // ========================================
 
-export default function TelemedicinaProfesionalPage() {
+function TelemedicinaProfesionalPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const idSesion = searchParams.get("sesion");
@@ -2738,5 +2741,16 @@ function TranscripcionPanel({ transcripcionTexto, sugerenciasIA, tema, sesionAct
         </div>
       )}
     </div>
+  );
+}
+
+// ========================================
+// WRAPPER NECESARIO PARA useSearchParams()
+// ========================================
+export default function PageWrapper() {
+  return (
+    <Suspense>
+      <TelemedicinaProfesionalPage />
+    </Suspense>
   );
 }

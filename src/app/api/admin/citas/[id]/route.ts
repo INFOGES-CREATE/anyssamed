@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 
@@ -13,7 +15,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
         CONCAT(u.nombre,' ',u.apellido_paterno) AS medico_nombre
       FROM citas c
         JOIN pacientes p ON p.id_paciente=c.id_paciente
-        JOIN medicos m ON m.id_medico=c.id_medico
+        JOIN medicos m ON m.id_profesional=c.id_profesional
         JOIN usuarios u ON u.id_usuario=m.id_usuario
       WHERE c.id_cita = ?`,
       [params.id]
@@ -36,7 +38,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
     const body = await req.json().catch(() => ({}));
     const {
       id_paciente,
-      id_medico,
+      id_profesional,
       id_centro,
       id_sucursal = null,
       tipo_cita,
@@ -106,9 +108,9 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
         const [over]: any = await conn.query(
           `SELECT COUNT(1) AS solapes
            FROM citas
-           WHERE id_medico=? AND estado IN ('programada','confirmada','en_sala_espera','en_atencion','reprogramada')
+           WHERE id_profesional=? AND estado IN ('programada','confirmada','en_sala_espera','en_atencion','reprogramada')
              AND (? < fecha_hora_fin) AND (? > fecha_hora_inicio)`,
-          [id_medico || orig.id_medico, inicio, fin]
+          [id_profesional || orig.id_profesional, inicio, fin]
         );
         if (over?.[0]?.solapes > 0) {
           await conn.rollback(); conn.release();
@@ -123,7 +125,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
         // ✅ INSERT correcto con todas las columnas necesarias
         const [ins]: any = await conn.query(
           `INSERT INTO citas (
-            id_paciente, id_medico, id_centro, id_sucursal,
+            id_paciente, id_profesional, id_centro, id_sucursal,
             fecha_hora_inicio, fecha_hora_fin, duracion_minutos,
             tipo_cita, motivo, estado, prioridad, id_especialidad,
             origen, pagada, monto, id_sala, notas, notas_privadas,
@@ -134,7 +136,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'programada', ?, ?, ?, ?, ?, ?, ?, NULL, 0, NULL, 0, NULL, 0, ?, ?, ?)`,
           [
             id_paciente || orig.id_paciente,
-            id_medico || orig.id_medico,
+            id_profesional || orig.id_profesional,
             id_centro || orig.id_centro,
             id_sucursal ?? orig.id_sucursal,
             inicio,
@@ -168,11 +170,11 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
       const dur = Number(duracion_minutos || orig.duracion_minutos || 30);
       const fin = new Date(inicio.getTime() + dur * 60000);
 
-      const checkMed = id_medico || orig.id_medico;
+      const checkMed = id_profesional || orig.id_profesional;
       const [over2]: any = await conn.query(
         `SELECT COUNT(1) AS solapes
          FROM citas
-         WHERE id_medico=? AND id_cita <> ? AND estado IN ('programada','confirmada','en_sala_espera','en_atencion','reprogramada')
+         WHERE id_profesional=? AND id_cita <> ? AND estado IN ('programada','confirmada','en_sala_espera','en_atencion','reprogramada')
            AND (? < fecha_hora_fin) AND (? > fecha_hora_inicio)`,
         [checkMed, id_cita, inicio, fin]
       );
@@ -183,14 +185,14 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
 
       await conn.query(
         `UPDATE citas SET
-           id_paciente=?, id_medico=?, id_centro=?, id_sucursal=?,
+           id_paciente=?, id_profesional=?, id_centro=?, id_sucursal=?,
            fecha_hora_inicio=?, fecha_hora_fin=?, duracion_minutos=?,
            tipo_cita=?, motivo=?, estado=?, prioridad=?, id_especialidad=?, origen=?,
            pagada=?, monto=?, id_sala=?, notas=?, modificado_por=?, fecha_modificacion=NOW()
          WHERE id_cita=?`,
         [
           id_paciente || orig.id_paciente,
-          id_medico || orig.id_medico,
+          id_profesional || orig.id_profesional,
           id_centro || orig.id_centro,
           id_sucursal ?? orig.id_sucursal,
           inicio,

@@ -1,7 +1,10 @@
 "use client";
 
+import { Suspense } from "react";
+
 import { useState, useEffect, useMemo } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+
 import {
   Video,
   ArrowLeft,
@@ -463,7 +466,7 @@ const TEMAS: Record<TemaColor, ConfiguracionTema> = {
 // ========================================
 // COMPONENTE PRINCIPAL
 // ========================================
-export default function NuevaSesionTelemedicinaUltraPremium() {
+function NuevaSesionTelemedicinaUltraPremium() {
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -2241,3 +2244,16 @@ export default function NuevaSesionTelemedicinaUltraPremium() {
     </div>
   );
 }
+// ============================================================
+// WRAPPER OBLIGATORIO PARA useSearchParams() - Next.js 14
+// ============================================================
+
+function PageWrapper() {
+  return (
+    <Suspense>
+      <NuevaSesionTelemedicinaUltraPremium />
+    </Suspense>
+  );
+}
+
+export default PageWrapper;

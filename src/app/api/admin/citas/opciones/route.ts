@@ -1,4 +1,5 @@
 // frontend/src/app/api/admin/citas/opciones/route.ts
+export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
@@ -42,7 +43,7 @@ export async function GET() {
     // ==================== MÉDICOS ====================
     const [medicos]: any = await pool.query(
       `SELECT 
-        m.id_medico AS value,
+        m.id_profesional AS value,
         CONCAT(u.nombre, ' ', u.apellido_paterno, ' ', IFNULL(u.apellido_materno, '')) AS label,
         m.id_centro,
         m.rut,
@@ -50,13 +51,13 @@ export async function GET() {
         m.activo,
         c.nombre AS centro_nombre,
         GROUP_CONCAT(DISTINCT e.nombre ORDER BY e.nombre SEPARATOR ', ') AS especialidades
-       FROM medicos m
+       FROM profesionales_salud m
        INNER JOIN usuarios u ON u.id_usuario = m.id_usuario
        INNER JOIN centros_medicos c ON c.id_centro = m.id_centro
-       LEFT JOIN medicos_especialidades me ON me.id_medico = m.id_medico
+       LEFT JOIN profesionales_especialidades me ON me.id_profesional = m.id_profesional
        LEFT JOIN especialidades e ON e.id_especialidad = me.id_especialidad
        WHERE m.activo = 1 AND u.activo = 1
-       GROUP BY m.id_medico, u.nombre, u.apellido_paterno, u.apellido_materno, 
+       GROUP BY m.id_profesional, u.nombre, u.apellido_paterno, u.apellido_materno, 
                 m.id_centro, m.rut, m.registro_nacional, m.activo, c.nombre
        ORDER BY u.apellido_paterno ASC, u.apellido_materno ASC, u.nombre ASC`
     );
@@ -231,7 +232,7 @@ export async function GET() {
       `SELECT 
         (SELECT COUNT(*) FROM centros_medicos WHERE activo = 1) AS total_centros,
         (SELECT COUNT(*) FROM sucursales WHERE activo = 1) AS total_sucursales,
-        (SELECT COUNT(*) FROM medicos WHERE activo = 1) AS total_medicos,
+        (SELECT COUNT(*) FROM profesionales_salud WHERE activo = 1) AS total_medicos,
         (SELECT COUNT(*) FROM pacientes WHERE activo = 1) AS total_pacientes,
         (SELECT COUNT(*) FROM tipos_cita WHERE activo = 1) AS total_tipos_cita,
         (SELECT COUNT(*) FROM salas WHERE estado IN ('activa', 'ocupada')) AS total_salas,
@@ -338,17 +339,17 @@ export async function POST(req: Request) {
         const whereClauseMedico = id_centro ? `AND m.id_centro = ${Number(id_centro)}` : "";
         const [medicosRes]: any = await pool.query(
           `SELECT 
-            m.id_medico AS value,
+            m.id_profesional AS value,
             CONCAT(u.nombre, ' ', u.apellido_paterno, ' ', IFNULL(u.apellido_materno, '')) AS label,
             m.id_centro,
             m.rut,
             m.registro_nacional,
             c.nombre AS centro_nombre,
             GROUP_CONCAT(DISTINCT e.nombre ORDER BY e.nombre SEPARATOR ', ') AS especialidades
-           FROM medicos m
+           FROM profesionales_salud m
            INNER JOIN usuarios u ON u.id_usuario = m.id_usuario
            INNER JOIN centros_medicos c ON c.id_centro = m.id_centro
-           LEFT JOIN medicos_especialidades me ON me.id_medico = m.id_medico
+           LEFT JOIN profesionales_especialidades me ON me.id_profesional = m.id_profesional
            LEFT JOIN especialidades e ON e.id_especialidad = me.id_especialidad
            WHERE m.activo = 1 AND u.activo = 1
              ${whereClauseMedico}
@@ -359,7 +360,7 @@ export async function POST(req: Request) {
                m.rut LIKE ? OR
                m.registro_nacional LIKE ?
              )
-           GROUP BY m.id_medico, u.nombre, u.apellido_paterno, u.apellido_materno,
+           GROUP BY m.id_profesional, u.nombre, u.apellido_paterno, u.apellido_materno,
                     m.id_centro, m.rut, m.registro_nacional, c.nombre
            ORDER BY u.apellido_paterno ASC, u.nombre ASC
            LIMIT ?`,

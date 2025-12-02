@@ -23,7 +23,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
     const sql = `
       SELECT
         -- Base
-        hc.id_historial, hc.id_paciente, hc.id_medico, hc.id_centro, hc.id_especialidad, hc.id_sucursal,
+        hc.id_historial, hc.id_paciente, hc.id_profesional, hc.id_centro, hc.id_especialidad, hc.id_sucursal,
         hc.fecha_atencion,
         hc.motivo_consulta,
         hc.anamnesis,
@@ -60,7 +60,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
         s.nombre AS sucursal_nombre
       FROM historial_clinico hc
       JOIN pacientes p ON p.id_paciente = hc.id_paciente
-      JOIN medicos m   ON m.id_medico   = hc.id_medico
+      JOIN profesionales_salud m   ON m.id_profesional   = hc.id_profesional
       JOIN usuarios mu ON mu.id_usuario = m.id_usuario
       JOIN centros_medicos c ON c.id_centro = hc.id_centro
       LEFT JOIN especialidades e ON e.id_especialidad = hc.id_especialidad
@@ -102,7 +102,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
       id_ficha:           body.id_ficha,
       id_paciente:        body.id_paciente,
       fecha_atencion:     body.fecha_atencion,
-      id_medico:          body.id_medico,
+      id_profesional:          body.id_profesional,
       id_especialidad:    body.id_especialidad,
       id_centro:          body.id_centro,
       id_sucursal:        body.id_sucursal,
@@ -135,7 +135,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
 
     // --------- Lista blanca de columnas actualizables ---------
     const allowed = [
-      "id_ficha","id_paciente","fecha_atencion","id_medico","id_especialidad","id_centro","id_sucursal",
+      "id_ficha","id_paciente","fecha_atencion","id_profesional","id_especialidad","id_centro","id_sucursal",
       "motivo_consulta","anamnesis","examen_fisico","diagnostico_principal","codigo_cie10","plan_tratamiento",
       "observaciones","estado_registro","tipo_atencion","duracion_minutos","es_ges","es_cronica","proximo_control","id_cita"
     ] as const;

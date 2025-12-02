@@ -1,8 +1,12 @@
+
+//export const dynamic = "force-dynamic";
+
+export const dynamic = "force-dynamic";
+
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 import type { RowDataPacket } from "mysql2/promise";
 
-export const dynamic = "force-dynamic";
 
 /* ================= Utils ================= */
 const like = (s: string) => `%${s}%`;
@@ -51,7 +55,7 @@ async function readEnum(table: string, column: string): Promise<string[] | null>
  * GET /api/admin/telemedicina-sesiones/opciones
  * Query:
  *  - id_centro?: filtra médicos y salas por centro
- *  - id_medico?: (opcional) influye en selección de features efectivas
+ *  - id_profesional?: (opcional) influye en selección de features efectivas
  *  - q?: filtra pacientes por nombre/apellidos/rut
  *  - limit?: límite pacientes (50..5000; default 1000)
  */
@@ -59,7 +63,7 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const id_centro = searchParams.get("id_centro");
-    const id_medico = searchParams.get("id_medico");
+    const id_profesional = searchParams.get("id_profesional");
     const q = (searchParams.get("q") || "").trim();
     const limit = Math.min(5000, Math.max(50, toInt(searchParams.get("limit") ?? 1000)));
 
@@ -98,10 +102,10 @@ export async function GET(req: Request) {
       safeQuery<RowDataPacket[]>(
         `
         SELECT
-          m.id_medico,
+          m.id_profesional,
           COALESCE(m.id_centro, m.id_centro_principal) AS id_centro,
           u.nombre, u.apellido_paterno, IFNULL(u.apellido_materno,'') AS apm
-        FROM medicos m
+        FROM profesionales_salud m
         JOIN usuarios u ON u.id_usuario = m.id_usuario
         ${whereCentroMed}
         ORDER BY u.nombre, u.apellido_paterno
@@ -124,7 +128,7 @@ export async function GET(req: Request) {
       safeQuery<RowDataPacket[]>(
         `
         SELECT
-          id_sala_virtual, id_centro, IFNULL(id_medico,0) AS id_medico,
+          id_sala_virtual, id_centro, IFNULL(id_profesional,0) AS id_profesional,
           nombre, tipo, proveedor_servicio, estado
         FROM telemedicina_salas_virtuales
         ${whereCentroSala}
@@ -156,17 +160,17 @@ export async function GET(req: Request) {
           where += " AND id_centro = ?";
           params.push(Number(id_centro));
         }
-        if (id_medico) {
+        if (id_profesional) {
           // prioriza config de médico si existe; si no, que caiga a centro
-          where += " AND (id_medico IS NULL OR id_medico = ?)";
-          params.push(Number(id_medico));
+          where += " AND (id_profesional IS NULL OR id_profesional = ?)";
+          params.push(Number(id_profesional));
         }
         const rows = await safeQuery<RowDataPacket[]>(
           `
           SELECT *
             FROM telemedicina_configuraciones
             ${where}
-           ORDER BY (id_medico IS NOT NULL) DESC, fecha_modificacion DESC
+           ORDER BY (id_profesional IS NOT NULL) DESC, fecha_modificacion DESC
            LIMIT 1
         `,
           params
@@ -183,7 +187,7 @@ export async function GET(req: Request) {
     }));
 
     const medicos = medicosRows.map((m: any) => ({
-      value: m.id_medico,
+      value: m.id_profesional,
       label: `${m.nombre} ${m.apellido_paterno} ${m.apm}`.replace(/\s+/g, " ").trim(),
       id_centro: m.id_centro,
     }));
@@ -200,7 +204,7 @@ export async function GET(req: Request) {
       value: s.id_sala_virtual,
       label: s.nombre,
       id_centro: s.id_centro,
-      id_medico: s.id_medico,
+      id_profesional: s.id_profesional,
       tipo: s.tipo,
       proveedor_servicio: s.proveedor_servicio,
       estado: s.estado,
@@ -268,7 +272,7 @@ export async function GET(req: Request) {
       meta: {
         pacientes_limit: limit,
         filtered_by_centro: id_centro ? Number(id_centro) : null,
-        filtered_by_medico: id_medico ? Number(id_medico) : null,
+        filtered_by_medico: id_profesional ? Number(id_profesional) : null,
       },
       opciones: {
         centros,

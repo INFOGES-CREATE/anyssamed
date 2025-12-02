@@ -136,7 +136,7 @@ export default function RegistroPage() {
             Crear Nueva Cuenta
           </h1>
           <p className="text-gray-600">
-            Únete a MediSuite Pro y gestiona tu salud de forma inteligente
+            Únete a AnyssaMed y gestiona tu salud de forma inteligente
           </p>
         </div>
 

@@ -1,4 +1,4 @@
-//frontend\src\app\(dashboard)\medico\telemedicina\page.tsx
+//src\app\(dashboard)\medico\telemedicina\page.tsx
 
 "use client";
 

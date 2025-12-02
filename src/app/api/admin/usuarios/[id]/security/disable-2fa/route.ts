@@ -1,4 +1,6 @@
 // frontend/src/app/api/admin/usuarios/[id]/security/disable-2fa/route.ts
+export const dynamic = "force-dynamic";
+
 
 import { NextRequest, NextResponse } from "next/server";
 import pool from "@/lib/db";

@@ -1,4 +1,5 @@
 //frontend/src/app/api/admin/medicos/next-registro/route.ts
+export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
@@ -10,7 +11,7 @@ export async function GET() {
   try {
     const [[row]]: any = await pool.query(`
       SELECT COALESCE(MAX(CAST(numero_registro_medico AS UNSIGNED)), 999) + 1 AS next
-      FROM medicos
+      FROM profesionales_salud
     `);
 
     const next = String(row?.next ?? 1000);

@@ -1,4 +1,5 @@
 // frontend/src/app/api/telemedicina/sesiones/route.ts
+export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 import pool from "@/lib/db";

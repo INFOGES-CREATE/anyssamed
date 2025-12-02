@@ -1,0 +1,50 @@
+﻿{
+  "compilerOptions": {
+    // 🔧 Compilación moderna
+    "target": "ES2022",
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+
+    // ✅ Permisos y validaciones
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+
+    // ⚙️ Configuración del módulo
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "preserve",
+
+    // ⚡ Optimizaciones
+    "incremental": true,
+
+    // 🧩 Soporte Next.js
+    "plugins": [{ "name": "next" }],
+
+    // 🌍 Alias de rutas (importantísimo)
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "@/app/*": ["src/app/*"],
+      "@/components/*": ["src/components/*"],
+      "@/lib/*": ["src/lib/*"],
+      "@/styles/*": ["src/styles/*"],
+      "@/public/*": ["public/*"]
+    }
+  },
+
+  // 📁 Archivos incluidos
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts"
+  ],
+
+  // 🚫 Exclusiones
+  "exclude": ["node_modules"]
+}

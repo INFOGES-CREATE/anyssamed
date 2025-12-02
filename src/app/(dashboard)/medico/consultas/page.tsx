@@ -169,7 +169,7 @@ interface UsuarioSesion {
     nivel_jerarquia: number;
   };
   medico?: {
-    id_medico: number;
+    id_profesional: number;
     numero_registro_medico: string;
     titulo_profesional: string;
     especialidades: Array<{
@@ -606,7 +606,7 @@ export default function ConsultasPage() {
 
       const payload = {
         id_paciente: pacienteSeleccionado.id_paciente,
-        id_medico: usuario.medico.id_medico,
+        id_profesional: usuario.medico.id_profesional,
         id_centro: usuario.medico.id_centro_principal,
         id_especialidad: usuario.medico.especialidades[0]?.id_especialidad || null,
         ...formularioConsulta,

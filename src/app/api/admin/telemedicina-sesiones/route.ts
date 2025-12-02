@@ -61,7 +61,7 @@ export async function GET(req: Request) {
     const estado = (searchParams.get("estado") ?? "").trim();
     const proveedor = (searchParams.get("proveedor") ?? "").trim();
     const idCentro = searchParams.get("id_centro") ? Number(searchParams.get("id_centro")) : null;
-    const idMedico = searchParams.get("id_medico") ? Number(searchParams.get("id_medico")) : null;
+    const idMedico = searchParams.get("id_profesional") ? Number(searchParams.get("id_profesional")) : null;
     const idPaciente = searchParams.get("id_paciente") ? Number(searchParams.get("id_paciente")) : null;
     const desde = (searchParams.get("desde") ?? "").trim();
     const hasta = (searchParams.get("hasta") ?? "").trim();
@@ -113,7 +113,7 @@ export async function GET(req: Request) {
       params.push(idCentro);
     }
     if (idMedico) {
-      where.push("ts.id_medico = ?");
+      where.push("ts.id_profesional = ?");
       params.push(idMedico);
     }
     if (idPaciente) {
@@ -134,7 +134,7 @@ export async function GET(req: Request) {
     const baseFrom = `
       FROM telemedicina_sesiones ts
       JOIN pacientes p ON p.id_paciente = ts.id_paciente
-      JOIN medicos m   ON m.id_medico   = ts.id_medico
+      JOIN profesionales_salud m   ON m.id_profesional   = ts.id_profesional
       JOIN usuarios u  ON u.id_usuario  = m.id_usuario
       LEFT JOIN centros_medicos c ON c.id_centro = m.id_centro
     `;
@@ -179,7 +179,7 @@ export async function GET(req: Request) {
 
     const dataSql = `
       SELECT
-        ts.id_sesion, ts.id_cita, ts.id_paciente, ts.id_medico,
+        ts.id_sesion, ts.id_cita, ts.id_paciente, ts.id_profesional,
         m.id_centro,
         ${selectProv} AS proveedor_servicio,
         ${selectEstado} AS estado,
@@ -226,7 +226,7 @@ export async function POST(req: Request) {
     // Requeridos de negocio (id_cita puede ser opcional)
     const required = [
       "id_paciente",
-      "id_medico",
+      "id_profesional",
       "fecha_hora_inicio_programada",
       "fecha_hora_fin_programada",
       "proveedor_servicio",
@@ -302,7 +302,7 @@ export async function POST(req: Request) {
     // Candidatos (sólo se insertan columnas existentes y con valor !== undefined)
     const candidates: Record<string, any> = {
       id_paciente: body.id_paciente,
-      id_medico: body.id_medico,
+      id_profesional: body.id_profesional,
       proveedor_servicio: body.proveedor_servicio,
       fecha_hora_inicio_programada: body.fecha_hora_inicio_programada,
       fecha_hora_fin_programada: body.fecha_hora_fin_programada,

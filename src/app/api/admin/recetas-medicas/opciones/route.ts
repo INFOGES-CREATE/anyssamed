@@ -136,10 +136,10 @@ export async function GET(req: Request) {
       safeQuery<RowDataPacket[]>(
         `
         SELECT
-          m.id_medico,
+          m.id_profesional,
           COALESCE(m.id_centro, m.id_centro_principal) AS id_centro,
           u.nombre, u.apellido_paterno, IFNULL(u.apellido_materno,'') AS apm
-        FROM medicos m
+        FROM profesionales_salud m
         JOIN usuarios u ON u.id_usuario = m.id_usuario
         ${whereCentro}
         ORDER BY u.nombre, u.apellido_paterno
@@ -188,7 +188,7 @@ export async function GET(req: Request) {
     }));
 
     const medicos = medicosRows.map((m: any) => ({
-      value: m.id_medico,
+      value: m.id_profesional,
       label: `${m.nombre} ${m.apellido_paterno} ${m.apm}`.replace(/\s+/g, " ").trim(),
       id_centro: m.id_centro,
     }));

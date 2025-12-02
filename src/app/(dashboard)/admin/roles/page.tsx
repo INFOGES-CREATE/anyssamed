@@ -2,6 +2,8 @@
 "use client";
 
 import React, { useEffect, useMemo, useState, useCallback } from "react";
+import Link from "next/link";
+import {  ArrowLeft } from "lucide-react";
 import {
   Plus, Edit, X, Search, CheckSquare, Archive, Trash2, RefreshCw, List, Grid,
   Printer, ChevronDown, ChevronUp, Check, Shield, ShieldCheck, ShieldAlert, 
@@ -457,9 +459,18 @@ export default function AdminRolesPage() {
         {/* HEADER PROFESIONAL */}
         <header className="flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <div className="p-3 bg-gradient-to-br from-indigo-500 via-purple-600 to-pink-600 rounded-2xl shadow-xl">
-              <Shield className="w-10 h-10 text-white" />
-            </div>
+            <Link
+  href="javascript:history.back()"
+  className="group flex items-center gap-3 p-3 bg-gradient-to-br from-indigo-500 via-purple-600 to-pink-600 rounded-2xl shadow-xl transition-all duration-200 hover:shadow-2xl hover:scale-105 active:scale-95"
+>
+  <div className="p-3 bg-white/10 rounded-xl flex items-center justify-center">
+    <ArrowLeft className="w-6 h-6 text-white group-hover:-translate-x-1 transition-transform duration-200" />
+  </div>
+
+  <span className="text-white text-base font-semibold tracking-wide group-hover:underline">
+    Volver atrás
+  </span>
+</Link>
             <div>
               <h1 className="text-4xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
                 Gestión de Roles
@@ -541,7 +552,7 @@ export default function AdminRolesPage() {
             <div className="grid md:grid-cols-6 gap-3">
               {/* Búsqueda principal */}
               <div className="md:col-span-2">
-                <label className="text-sm font-semibold block mb-1.5 text-gray-700 dark:text-gray-300 flex items-center gap-2">
+                <label className="text-sm font-semibold mb-1.5 text-gray-700 dark:text-gray-300 flex items-center gap-2">
                   <Search className="w-4 h-4" /> Búsqueda Rápida
                 </label>
                 <div className="relative">
@@ -1933,7 +1944,7 @@ function ModalCE({
 
         {/* Selector de permisos avanzado */}
         <div>
-          <label className="text-sm font-semibold block mb-3 text-gray-700 dark:text-gray-300 flex items-center justify-between">
+          <label className="text-sm font-semibold mb-3 text-gray-700 dark:text-gray-300 flex items-center justify-between">
             <span className="flex items-center gap-2">
               <Shield className="w-4 h-4" />
               Permisos Asignados ({perms.length})

@@ -1,6 +1,9 @@
 // app/api/auth/session/route.ts
 // ✅ Verificación de sesión (JWT) + chequeo en tabla sesiones_usuarios
 // Compatible con Next.js 14 (App Router)
+// 🌍 Global, seguro y escalable
+// ✨ Adaptado a estructura existente de sesiones_usuarios
+export const dynamic = "force-dynamic";
 
 export const runtime = "nodejs";
 
@@ -9,9 +12,10 @@ import pool from "@/lib/db";
 import { RowDataPacket } from "mysql2";
 import { verifyToken } from "@/lib/auth";
 
-// ----------------------------------------
-// Tipos
-// ----------------------------------------
+// ========================================
+// TIPOS
+// ========================================
+
 interface UsuarioSesion {
   id_usuario: number;
   username: string;
@@ -20,37 +24,109 @@ interface UsuarioSesion {
   apellido_paterno: string;
   apellido_materno: string | null;
   foto_perfil_url: string | null;
+  telefono: string | null;
+  celular: string | null;
+  direccion: string | null;
+  ciudad: string | null;
+  region: string | null;
+  fecha_nacimiento: string | null;
+  genero: string | null;
+  id_centro_principal: number | null;
+  id_sucursal_principal: number | null;
+  
   rol: {
     id_rol: number;
     nombre: string;
     nivel_jerarquia: number;
     permisos: string[];
   };
+
+  centro_principal?: {
+    id_centro: number;
+    nombre: string;
+    plan: "basico" | "profesional" | "premium" | "empresarial";
+    logo_url: string | null;
+    ciudad: string;
+    region: string;
+  } | null;
+
   medico?: {
-    id_medico: number;
+    id_profesional: number;
     numero_registro_medico: string;
     titulo_profesional: string;
+    anos_experiencia?: number;
+    especialidad_principal?: string;
     especialidades: Array<{
       id_especialidad: number;
       nombre: string;
       es_principal: boolean;
     }>;
-    id_centro_principal: number;
+    id_centro_principal: number | null;
     centro_principal: {
       id_centro: number;
       nombre: string;
-      // ampliamos los planes que usas en FE
       plan: "basico" | "profesional" | "premium" | "empresarial";
       logo_url: string | null;
       ciudad: string;
       region: string;
-    };
+    } | null;
+  };
+
+  administrativo?: {
+    id_administrativo: number;
+    cargo: string;
+    nivel_acceso: "basico" | "intermedio" | "avanzado" | "administrador";
+    id_centro: number;
+    id_sucursal: number | null;
+  };
+
+  secretaria?: {
+    id_secretaria: number;
+    id_centro: number;
+    id_sucursal: number | null;
+  };
+
+  tecnico?: {
+    id_tecnico: number;
+    area_tecnica: string;
+    nivel_acceso: "basico" | "intermedio" | "avanzado" | "administrador";
+    id_centro: number;
+  };
+
+  paciente?: {
+    id_paciente: number;
+    numero_historia_clinica: string | null;
+    fecha_nacimiento: string | null;
+  };
+
+  // Metadata de sesión (usando campos existentes)
+  sesion_metadata?: {
+    id_sesion: number;
+    token_expira_en: number; // segundos
+    ultima_actividad: string;
+    ip_address: string | null;
+    user_agent: string | null;
+    fecha_creacion: string;
+    activa: boolean;
   };
 }
 
-// ----------------------------------------
-// Helpers
-// ----------------------------------------
+interface SesionUsuarioRow extends RowDataPacket {
+  id_sesion: number;
+  id_usuario: number;
+  token: string;
+  ip_address: string | null;
+  user_agent: string | null;
+  activa: number;
+  fecha_creacion: string;
+  fecha_expiracion: string;
+  ultima_actividad: string;
+}
+
+// ========================================
+// HELPERS
+// ========================================
+
 function normalizeRole(s: string): string {
   return (s || "")
     .normalize("NFD")
@@ -66,19 +142,20 @@ function prettyRole(s: string): string {
   if (n.includes("tecnico")) return "Técnico";
   if (n.includes("superadmin")) return "SuperAdministrador";
   if (n.includes("administrativo")) return "Administrativo";
+  if (n.includes("paciente")) return "Paciente";
   return s || "Usuario";
 }
 
-// toma token desde cookie o desde Authorization
 function getTokenFromRequest(req: NextRequest): string | null {
-  // 1) cookie "session"
+  // 1. Cookie
   const cookieToken = req.cookies.get("session")?.value;
   if (cookieToken) return cookieToken;
 
-  // 2) Authorization: Bearer ...
-  const authLower = req.headers.get("authorization");
-  const authUpper = req.headers.get("Authorization");
-  const auth = authLower || authUpper;
+  // 2. Authorization header (case-insensitive)
+  const auth = 
+    req.headers.get("authorization") || 
+    req.headers.get("Authorization");
+  
   if (auth && auth.startsWith("Bearer ")) {
     return auth.slice(7);
   }
@@ -86,43 +163,83 @@ function getTokenFromRequest(req: NextRequest): string | null {
   return null;
 }
 
-// ----------------------------------------
-// Handler principal
-// ----------------------------------------
+function getClientIp(req: NextRequest): string | null {
+  return (
+    req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ||
+    req.headers.get("x-real-ip") ||
+    req.headers.get("cf-connecting-ip") ||
+    req.headers.get("x-client-ip") ||
+    null
+  );
+}
+
+function calculateTokenExpiry(expirationDate: string): number {
+  const expiry = new Date(expirationDate).getTime();
+  const now = Date.now();
+  return Math.max(0, Math.floor((expiry - now) / 1000));
+}
+
+// ========================================
+// HANDLER PRINCIPAL
+// ========================================
+
 export async function GET(req: NextRequest) {
+  const startTime = Date.now();
+  const clientIp = getClientIp(req);
+  const userAgent = req.headers.get("user-agent");
+
   try {
-    // 1️⃣ leer token de la request
+    // 1️⃣ OBTENER TOKEN
     const token = getTokenFromRequest(req);
     if (!token) {
       return NextResponse.json(
-        { success: false, error: "No hay sesión activa" },
+        { 
+          success: false, 
+          error: "No hay sesión activa",
+          code: "NO_SESSION"
+        },
         { status: 401 }
       );
     }
 
-    // 2️⃣ verificar JWT
+    // 2️⃣ VERIFICAR JWT
     const payload = verifyToken(token);
     if (!payload) {
       return NextResponse.json(
-        { success: false, error: "Sesión inválida o expirada (token)" },
+        { 
+          success: false, 
+          error: "Sesión inválida o expirada (token)",
+          code: "INVALID_TOKEN"
+        },
         { status: 401 }
       );
     }
 
-    // id dentro del JWT (según tu login)
     const idUsuario = Number(payload.id ?? payload.userId ?? payload.uid);
     if (!idUsuario) {
       return NextResponse.json(
-        { success: false, error: "Token sin id de usuario" },
+        { 
+          success: false, 
+          error: "Token sin id de usuario",
+          code: "MISSING_USER_ID"
+        },
         { status: 401 }
       );
     }
 
-    // 3️⃣ comprobar que esa sesión está viva en tu tabla sesiones_usuarios
-    // (esto lo hicimos en el login nuevo, así que lo chequeamos aquí también)
-    const [sesRows] = await pool.query<RowDataPacket[]>(
+    // 3️⃣ VALIDAR SESIÓN EN BD (usando campos existentes)
+    const [sesRows] = await pool.query<SesionUsuarioRow[]>(
       `
-      SELECT su.id_usuario
+      SELECT 
+        su.id_sesion,
+        su.id_usuario,
+        su.token,
+        su.ip_address,
+        su.user_agent,
+        su.activa,
+        su.fecha_creacion,
+        su.fecha_expiracion,
+        su.ultima_actividad
       FROM sesiones_usuarios su
       INNER JOIN usuarios u ON u.id_usuario = su.id_usuario
       WHERE su.token = ?
@@ -135,20 +252,29 @@ export async function GET(req: NextRequest) {
     );
 
     if (sesRows.length === 0) {
-      // hay token JWT, pero no hay sesión en tabla → la consideramos expirada
       return NextResponse.json(
-        { success: false, error: "Sesión inválida o expirada" },
+        { 
+          success: false, 
+          error: "Sesión inválida o expirada",
+          code: "INVALID_SESSION"
+        },
         { status: 401 }
       );
     }
 
-    // opcional: actualizar última actividad
+    const sesionRow = sesRows[0];
+
+    // 4️⃣ ACTUALIZAR ÚLTIMA ACTIVIDAD (solo campos existentes)
     await pool.query(
-      `UPDATE sesiones_usuarios SET ultima_actividad = NOW() WHERE token = ?`,
+      `
+      UPDATE sesiones_usuarios 
+      SET ultima_actividad = NOW()
+      WHERE token = ?
+      `,
       [token]
     );
 
-    // 4️⃣ Cargar usuario + roles
+    // 5️⃣ CARGAR USUARIO + ROL PRINCIPAL
     const [rolesUsuario] = await pool.query<RowDataPacket[]>(
       `
       SELECT
@@ -160,34 +286,51 @@ export async function GET(req: NextRequest) {
         u.apellido_materno,
         u.foto_perfil_url,
         u.estado,
+        u.telefono,
+        u.celular,
+        u.direccion,
+        u.ciudad,
+        u.region,
+        u.fecha_nacimiento,
+        u.genero,
+        u.id_centro_principal,
+        u.id_sucursal_principal,
         r.id_rol,
         r.nombre AS rol_nombre,
         r.nivel_jerarquia
       FROM usuarios u
-      INNER JOIN usuarios_roles ur ON ur.id_usuario = u.id_usuario AND ur.activo = 1
-      INNER JOIN roles r ON r.id_rol = ur.id_rol AND r.estado = 'activo'
+      INNER JOIN usuarios_roles ur 
+        ON ur.id_usuario = u.id_usuario AND ur.activo = 1
+      INNER JOIN roles r 
+        ON r.id_rol = ur.id_rol AND r.estado = 'activo'
       WHERE u.id_usuario = ? AND u.estado = 'activo'
       ORDER BY
         CASE
           WHEN LOWER(r.nombre) LIKE '%medico%' THEN 1
           WHEN LOWER(r.nombre) LIKE '%super%' THEN 2
-          ELSE 3
+          WHEN LOWER(r.nombre) LIKE '%admin%' THEN 3
+          ELSE 4
         END,
         r.nivel_jerarquia DESC
+      LIMIT 1
       `,
       [idUsuario]
     );
 
     if (rolesUsuario.length === 0) {
       return NextResponse.json(
-        { success: false, error: "Usuario no encontrado o inactivo" },
+        { 
+          success: false, 
+          error: "Usuario no encontrado o inactivo",
+          code: "USER_NOT_FOUND"
+        },
         { status: 404 }
       );
     }
 
     const u = rolesUsuario[0];
 
-    // 5️⃣ Permisos del rol
+    // 6️⃣ CARGAR PERMISOS DEL ROL
     const [permRows] = await pool.query<RowDataPacket[]>(
       `
       SELECT p.codigo
@@ -200,6 +343,7 @@ export async function GET(req: NextRequest) {
 
     const permisos = permRows.map((p) => String(p.codigo));
 
+    // 7️⃣ CONSTRUIR OBJETO USUARIO BASE
     const usuarioSesion: UsuarioSesion = {
       id_usuario: u.id_usuario,
       username: u.username,
@@ -208,104 +352,335 @@ export async function GET(req: NextRequest) {
       apellido_paterno: u.apellido_paterno,
       apellido_materno: u.apellido_materno,
       foto_perfil_url: u.foto_perfil_url,
+      telefono: u.telefono,
+      celular: u.celular,
+      direccion: u.direccion,
+      ciudad: u.ciudad,
+      region: u.region,
+      fecha_nacimiento: u.fecha_nacimiento,
+      genero: u.genero,
+      id_centro_principal: u.id_centro_principal ?? null,
+      id_sucursal_principal: u.id_sucursal_principal ?? null,
       rol: {
         id_rol: u.id_rol,
         nombre: prettyRole(u.rol_nombre),
         nivel_jerarquia: u.nivel_jerarquia,
         permisos,
       },
+      sesion_metadata: {
+        id_sesion: sesionRow.id_sesion,
+        token_expira_en: calculateTokenExpiry(sesionRow.fecha_expiracion),
+        ultima_actividad: sesionRow.ultima_actividad,
+        ip_address: sesionRow.ip_address,
+        user_agent: sesionRow.user_agent,
+        fecha_creacion: sesionRow.fecha_creacion,
+        activa: Boolean(sesionRow.activa),
+      },
     };
 
-    // 6️⃣ Si el rol principal es médico → anexar info de médico y centro (con plan premium/profesional)
-    if (normalizeRole(u.rol_nombre).includes("medico")) {
-      const [medRows] = await pool.query<RowDataPacket[]>(
+    // 8️⃣ CARGAR CENTRO PRINCIPAL (si existe)
+    if (usuarioSesion.id_centro_principal) {
+      const [centroRows] = await pool.query<RowDataPacket[]>(
         `
-        SELECT
-          m.id_medico,
-          m.numero_registro_medico,
-          m.titulo_profesional,
-          m.id_centro_principal,
-          cm.nombre AS centro_nombre,
-          cm.plan,
-          cm.logo_url,
-          cm.ciudad,
-          cm.region
-        FROM medicos m
-        LEFT JOIN centros_medicos cm ON cm.id_centro = m.id_centro_principal
-        WHERE m.id_usuario = ? AND m.estado IN ('activo', 'habilitado')
-        ORDER BY m.id_medico DESC
+        SELECT 
+          id_centro,
+          nombre,
+          plan,
+          logo_url,
+          ciudad,
+          region
+        FROM centros_medicos
+        WHERE id_centro = ? AND estado = 'activo'
         LIMIT 1
         `,
-        [idUsuario]
+        [usuarioSesion.id_centro_principal]
       );
 
-      if (medRows.length > 0) {
-        const med = medRows[0];
-
-        const [espRows] = await pool.query<RowDataPacket[]>(
-          `
-          SELECT e.id_especialidad, e.nombre, me.es_principal
-          FROM medicos_especialidades me
-          INNER JOIN especialidades e ON e.id_especialidad = me.id_especialidad
-          WHERE me.id_medico = ?
-          ORDER BY me.es_principal DESC, e.nombre ASC
-          `,
-          [med.id_medico]
-        );
-
-        // normalizamos el plan a los que usas en FE
-        const planDb = (med.plan as string) || "basico";
-        const planNormalizado =
-          planDb === "premium" ||
-          planDb === "profesional" ||
-          planDb === "empresarial" ||
-          planDb === "basico"
-            ? (planDb as "basico" | "profesional" | "premium" | "empresarial")
-            : "basico";
-
-        usuarioSesion.medico = {
-          id_medico: med.id_medico,
-          numero_registro_medico: med.numero_registro_medico ?? "SIN-REGISTRO",
-          titulo_profesional: med.titulo_profesional ?? "Médico",
-          especialidades: espRows.map((e) => ({
-            id_especialidad: e.id_especialidad,
-            nombre: e.nombre,
-            es_principal: Boolean(e.es_principal),
-          })),
-          id_centro_principal: med.id_centro_principal ?? 0,
-          centro_principal: {
-            id_centro: med.id_centro_principal ?? 0,
-            nombre: med.centro_nombre ?? "Centro Médico No Asignado",
-            plan: planNormalizado,
-            logo_url: med.logo_url ?? null,
-            ciudad: med.ciudad ?? "No definida",
-            region: med.region ?? "No definida",
-          },
+      if (centroRows.length > 0) {
+        const centro = centroRows[0];
+        usuarioSesion.centro_principal = {
+          id_centro: centro.id_centro,
+          nombre: centro.nombre,
+          plan: (centro.plan as any) || "basico",
+          logo_url: centro.logo_url,
+          ciudad: centro.ciudad,
+          region: centro.region,
         };
-      } else {
-        console.warn(
-          `⚠️ Usuario ${idUsuario} tiene rol MÉDICO pero no registro en tabla 'medicos'.`
-        );
       }
     }
 
-    // 7️⃣ responder
+    // 9️⃣ CARGAR INFO DE MÉDICO (si aplica)
+    if (normalizeRole(u.rol_nombre).includes("medico")) {
+      await loadMedicoInfo(usuarioSesion, idUsuario);
+    }
+
+    // 🔟 CARGAR INFO DE ADMINISTRATIVO (si aplica)
+    if (normalizeRole(u.rol_nombre).includes("administrativo")) {
+      await loadAdministrativoInfo(usuarioSesion, idUsuario);
+    }
+
+    // 1️⃣1️⃣ CARGAR INFO DE SECRETARIA (si aplica)
+    if (normalizeRole(u.rol_nombre).includes("secretaria")) {
+      await loadSecretariaInfo(usuarioSesion, idUsuario);
+    }
+
+    // 1️⃣2️⃣ CARGAR INFO DE TÉCNICO (si aplica)
+    if (normalizeRole(u.rol_nombre).includes("tecnico")) {
+      await loadTecnicoInfo(usuarioSesion, idUsuario);
+    }
+
+    // 1️⃣3️⃣ CARGAR INFO DE PACIENTE (si aplica)
+    if (normalizeRole(u.rol_nombre).includes("paciente")) {
+      await loadPacienteInfo(usuarioSesion, idUsuario);
+    }
+
+    // ✅ RESPONDER
+    const responseTime = Date.now() - startTime;
     return NextResponse.json(
-      { success: true, usuario: usuarioSesion },
+      { 
+        success: true, 
+        usuario: usuarioSesion,
+        _meta: {
+          responseTime: `${responseTime}ms`,
+          timestamp: new Date().toISOString(),
+        }
+      },
       { status: 200 }
     );
+
   } catch (err: any) {
     console.error("❌ Error en GET /api/auth/session:", err);
+    
     return NextResponse.json(
       {
         success: false,
         error: "Error interno del servidor",
+        code: "INTERNAL_ERROR",
         details:
           process.env.NODE_ENV === "development"
-            ? String(err?.message ?? err)
+            ? {
+                message: err?.message,
+                stack: err?.stack?.split("\n").slice(0, 5),
+              }
             : undefined,
       },
       { status: 500 }
     );
+  }
+}
+
+// ========================================
+// FUNCIONES AUXILIARES PARA CARGAR DATOS
+// ========================================
+
+async function loadMedicoInfo(
+  usuarioSesion: UsuarioSesion,
+  idUsuario: number
+): Promise<void> {
+  try {
+    const [medRows] = await pool.query<RowDataPacket[]>(
+      `
+      SELECT
+        m.id_profesional,
+        m.numero_registro_profesional,
+        m.titulo_profesional,
+        m.anos_experiencia,
+        m.id_centro_principal AS med_id_centro_principal,
+        cm.nombre AS centro_nombre,
+        cm.plan,
+        cm.logo_url,
+        cm.ciudad AS centro_ciudad,
+        cm.region AS centro_region
+      FROM profesionales_salud m
+      LEFT JOIN centros_medicos cm 
+        ON cm.id_centro = m.id_centro_principal
+      WHERE m.id_usuario = ? 
+        AND m.estado = 'activo'
+      LIMIT 1
+      `,
+      [idUsuario]
+    );
+
+    // No existe profesional → no bloquear sesión
+    if (medRows.length === 0) {
+      console.warn(`⚠ Usuario ${idUsuario} tiene rol médico pero no tiene registro en profesionales_salud.`);
+      return;
+    }
+
+    const med = medRows[0];
+
+    // Cargar especialidades reales
+    const [espRows] = await pool.query<RowDataPacket[]>(
+      `
+      SELECT 
+        e.id_especialidad, 
+        e.nombre, 
+        pe.es_principal
+      FROM profesionales_especialidades pe
+      INNER JOIN especialidades e 
+        ON e.id_especialidad = pe.id_especialidad
+      WHERE pe.id_profesional = ?
+      ORDER BY pe.es_principal DESC, e.nombre ASC
+      `,
+      [med.id_profesional]
+    );
+
+    usuarioSesion.medico = {
+      id_profesional: med.id_profesional,
+      numero_registro_medico: med.numero_registro_profesional ?? "SIN-REGISTRO",
+      titulo_profesional: med.titulo_profesional,
+      anos_experiencia: med.anos_experiencia ?? 0,
+      especialidad_principal:
+        espRows.find((e) => e.es_principal)?.nombre ?? null,
+      especialidades: espRows.map((e) => ({
+        id_especialidad: e.id_especialidad,
+        nombre: e.nombre,
+        es_principal: Boolean(e.es_principal),
+      })),
+      id_centro_principal: med.med_id_centro_principal,
+      centro_principal: med.med_id_centro_principal
+        ? {
+            id_centro: med.med_id_centro_principal,
+            nombre: med.centro_nombre,
+            plan: med.plan || "basico",
+            logo_url: med.logo_url,
+            ciudad: med.centro_ciudad,
+            region: med.centro_region,
+          }
+        : null,
+    };
+  } catch (err) {
+    console.error("❌ Error cargando info de médico:", err);
+  }
+}
+
+
+async function loadAdministrativoInfo(
+  usuarioSesion: UsuarioSesion,
+  idUsuario: number
+): Promise<void> {
+  try {
+    const [adminRows] = await pool.query<RowDataPacket[]>(
+      `
+      SELECT
+        id_administrativo,
+        cargo,
+        nivel_acceso,
+        id_centro,
+        id_sucursal
+      FROM administrativos
+      WHERE id_usuario = ? AND estado = 'activo'
+      LIMIT 1
+      `,
+      [idUsuario]
+    );
+
+    if (adminRows.length > 0) {
+      const admin = adminRows[0];
+      usuarioSesion.administrativo = {
+        id_administrativo: admin.id_administrativo,
+        cargo: admin.cargo,
+        nivel_acceso: admin.nivel_acceso,
+        id_centro: admin.id_centro,
+        id_sucursal: admin.id_sucursal,
+      };
+    }
+  } catch (err) {
+    console.error("❌ Error cargando info de administrativo:", err);
+  }
+}
+
+async function loadSecretariaInfo(
+  usuarioSesion: UsuarioSesion,
+  idUsuario: number
+): Promise<void> {
+  try {
+    const [secRows] = await pool.query<RowDataPacket[]>(
+      `
+      SELECT
+        id_secretaria,
+        id_centro,
+        id_sucursal
+      FROM secretarias
+      WHERE id_usuario = ? AND estado = 'activo'
+      LIMIT 1
+      `,
+      [idUsuario]
+    );
+
+    if (secRows.length > 0) {
+      const sec = secRows[0];
+      usuarioSesion.secretaria = {
+        id_secretaria: sec.id_secretaria,
+        id_centro: sec.id_centro,
+        id_sucursal: sec.id_sucursal,
+      };
+    }
+  } catch (err) {
+    console.error("❌ Error cargando info de secretaria:", err);
+  }
+}
+
+async function loadTecnicoInfo(
+  usuarioSesion: UsuarioSesion,
+  idUsuario: number
+): Promise<void> {
+  try {
+    const [tecRows] = await pool.query<RowDataPacket[]>(
+      `
+      SELECT
+        id_tecnico,
+        area_tecnica,
+        nivel_acceso,
+        id_centro
+      FROM tecnicos
+      WHERE id_usuario = ? AND estado = 'activo'
+      LIMIT 1
+      `,
+      [idUsuario]
+    );
+
+    if (tecRows.length > 0) {
+      const tec = tecRows[0];
+      usuarioSesion.tecnico = {
+        id_tecnico: tec.id_tecnico,
+        area_tecnica: tec.area_tecnica,
+        nivel_acceso: tec.nivel_acceso,
+        id_centro: tec.id_centro,
+      };
+    }
+  } catch (err) {
+    console.error("❌ Error cargando info de técnico:", err);
+  }
+}
+
+async function loadPacienteInfo(
+  usuarioSesion: UsuarioSesion,
+  idUsuario: number
+): Promise<void> {
+  try {
+    const [pacRows] = await pool.query<RowDataPacket[]>(
+      `
+      SELECT
+        id_paciente,
+        numero_historia_clinica,
+        fecha_nacimiento
+      FROM pacientes
+      WHERE id_usuario = ? AND estado = 'activo'
+      LIMIT 1
+      `,
+      [idUsuario]
+    );
+
+    if (pacRows.length > 0) {
+      const pac = pacRows[0];
+      usuarioSesion.paciente = {
+        id_paciente: pac.id_paciente,
+        numero_historia_clinica: pac.numero_historia_clinica,
+        fecha_nacimiento: pac.fecha_nacimiento,
+      };
+    }
+  } catch (err) {
+    console.error("❌ Error cargando info de paciente:", err);
   }
 }

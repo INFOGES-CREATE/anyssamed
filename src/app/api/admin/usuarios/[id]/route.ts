@@ -1,4 +1,6 @@
 // frontend/src/app/api/admin/usuarios/[id]/route.ts
+export const dynamic = "force-dynamic";
+
 import { NextRequest, NextResponse } from "next/server";
 import pool from "@/lib/db";
 import { RowDataPacket, ResultSetHeader } from "mysql2";
@@ -280,7 +282,7 @@ export async function GET(
     // ========== 2. OBTENER IDS ASOCIADOS A ESTE USUARIO ==========
     // Puede ser médico y/o paciente
     const [medicoRows] = await connection.query<RowDataPacket[]>(
-      "SELECT id_medico FROM medicos WHERE id_usuario = ? LIMIT 1",
+      "SELECT id_profesional FROM profesionales_salud WHERE id_usuario = ? LIMIT 1",
       [idUsuario]
     );
     const [pacienteRows] = await connection.query<RowDataPacket[]>(
@@ -288,7 +290,7 @@ export async function GET(
       [idUsuario]
     );
 
-    const idMedico = medicoRows.length ? medicoRows[0].id_medico : null;
+    const idMedico = medicoRows.length ? medicoRows[0].id_profesional : null;
     const idPaciente = pacienteRows.length ? pacienteRows[0].id_paciente : null;
 
     // ========== 3. ESTADÍSTICAS ==========
@@ -296,16 +298,16 @@ export async function GET(
       `SELECT 
         (SELECT COUNT(*) 
            FROM citas 
-          WHERE (id_medico = ? OR id_paciente = ?)
+          WHERE (id_profesional = ? OR id_paciente = ?)
         ) AS total_citas,
         (SELECT COUNT(*) 
            FROM citas 
-          WHERE (id_medico = ? OR id_paciente = ?)
+          WHERE (id_profesional = ? OR id_paciente = ?)
             AND estado = 'completada'
         ) AS citas_completadas,
         (SELECT COUNT(*) 
            FROM citas 
-          WHERE (id_medico = ? OR id_paciente = ?)
+          WHERE (id_profesional = ? OR id_paciente = ?)
             AND estado = 'cancelada'
         ) AS citas_canceladas,
         (SELECT COUNT(*) 
@@ -1310,7 +1312,7 @@ export async function DELETE(
 
     // 2. Obtener IDs médico / paciente asociados (por si tiene citas históricas)
     const [medicoRows] = await connection.query<RowDataPacket[]>(
-      "SELECT id_medico FROM medicos WHERE id_usuario = ? LIMIT 1",
+      "SELECT id_profesional FROM profesionales_salud WHERE id_usuario = ? LIMIT 1",
       [idUsuario]
     );
     const [pacienteRows] = await connection.query<RowDataPacket[]>(
@@ -1318,14 +1320,14 @@ export async function DELETE(
       [idUsuario]
     );
 
-    const idMedico = medicoRows.length ? medicoRows[0].id_medico : null;
+    const idMedico = medicoRows.length ? medicoRows[0].id_profesional : null;
     const idPaciente = pacienteRows.length ? pacienteRows[0].id_paciente : null;
 
     // 3. Dependencias críticas históricas
     const [citasCount] = await connection.query<RowDataPacket[]>(
       `SELECT COUNT(*) AS total
        FROM citas
-       WHERE (id_medico = ? OR id_paciente = ?)`,
+       WHERE (id_profesional = ? OR id_paciente = ?)`,
       [idMedico ?? null, idPaciente ?? null]
     );
 

@@ -1,3 +1,4 @@
+// frontend/src/app/api/admin/recetas-medicas/actions/route.ts
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 import type { ResultSetHeader } from "mysql2/promise";
@@ -216,7 +217,7 @@ export async function POST(req: Request) {
       const camposCopia: Record<string, any> = {
         id_centro: receta.id_centro,
         id_paciente: receta.id_paciente,
-        id_medico: receta.id_medico,
+        id_profesional: receta.id_profesional,
         fecha_emision: new Date(),
         numero_receta: null,
         tipo_receta: receta.tipo_receta ?? null,

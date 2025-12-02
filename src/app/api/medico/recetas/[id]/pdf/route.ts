@@ -1,10 +1,11 @@
 // app/api/medico/recetas/[id]/pdf/route.ts
+export const dynamic = "force-dynamic";
+
 import { NextRequest, NextResponse } from "next/server";
 import pool from "@/lib/db";
 import { RowDataPacket } from "mysql2";
 import PDFDocument from "pdfkit";
 import QRCode from "qrcode";
-import { Readable } from "stream";
 
 // ========================================
 // TIPOS
@@ -243,13 +244,27 @@ function formatearFecha(fecha: string | Date): string {
 }
 
 /**
- * Genera el PDF de la receta
+ * Obtiene la etiqueta del tipo de receta
  */
-async function generarPDFReceta(datos: any): Promise<Buffer> {
-  return new Promise(async (resolve, reject) => {
+function getTipoRecetaLabel(tipo: string): string {
+  const tipoRecetaLabel: Record<string, string> = {
+    simple: "RECETA SIMPLE",
+    retenida: "RECETA RETENIDA",
+    controlada: "RECETA CONTROLADA",
+    magistral: "RECETA MAGISTRAL",
+  };
+  return tipoRecetaLabel[tipo] || "RECETA";
+}
+
+/**
+ * Genera el PDF de la receta (SIN async interno, usa el QR recibido)
+ */
+function generarPDFReceta(datos: any, qrCodeDataUrl: string): Promise<Buffer> {
+  return new Promise((resolve, reject) => {
     try {
       const doc = new PDFDocument({
         size: "LETTER",
+        bufferPages: true,
         margins: {
           top: 50,
           bottom: 50,
@@ -268,28 +283,32 @@ async function generarPDFReceta(datos: any): Promise<Buffer> {
 
       const buffers: Buffer[] = [];
 
-      doc.on("data", buffers.push.bind(buffers));
+      doc.on("data", (chunk: Buffer) => {
+        buffers.push(chunk);
+      });
+
       doc.on("end", () => {
         const pdfBuffer = Buffer.concat(buffers);
         resolve(pdfBuffer);
       });
-      doc.on("error", reject);
+
+      doc.on("error", (err: Error) => {
+        reject(err);
+      });
 
       // ========================================
       // ENCABEZADO
       // ========================================
 
-      // Logo del centro (si existe)
       if (datos.centro_logo_url) {
         try {
-          // Aquí deberías cargar el logo desde la URL
-          // doc.image(datos.centro_logo_url, 50, 50, { width: 100 });
+          // Si quieres usar logo remoto, debes traerlo como Buffer primero
+          // doc.image(logoBuffer, 50, 50, { width: 100 });
         } catch (error) {
           console.log("No se pudo cargar el logo");
         }
       }
 
-      // Información del centro
       doc
         .fontSize(16)
         .font("Helvetica-Bold")
@@ -313,11 +332,7 @@ async function generarPDFReceta(datos: any): Promise<Buffer> {
         });
       }
 
-      // Línea separadora
-      doc
-        .moveTo(50, 120)
-        .lineTo(562, 120)
-        .stroke();
+      doc.moveTo(50, 120).lineTo(562, 120).stroke();
 
       // ========================================
       // TÍTULO
@@ -328,13 +343,7 @@ async function generarPDFReceta(datos: any): Promise<Buffer> {
         .font("Helvetica-Bold")
         .text("RECETA MÉDICA", 50, 135, { align: "center" });
 
-      // Tipo de receta
-      const tipoRecetaLabel = {
-        simple: "RECETA SIMPLE",
-        retenida: "RECETA RETENIDA",
-        controlada: "RECETA CONTROLADA",
-        magistral: "RECETA MAGISTRAL",
-      }[datos.tipo_receta] || "RECETA";
+      const tipoRecetaLabel = getTipoRecetaLabel(datos.tipo_receta);
 
       doc
         .fontSize(12)
@@ -464,35 +473,29 @@ async function generarPDFReceta(datos: any): Promise<Buffer> {
 
       yPos += 20;
 
-      // Verificar si necesitamos una nueva página
       if (yPos > 650) {
         doc.addPage();
         yPos = 50;
       }
 
       datos.medicamentos.forEach((med: any, index: number) => {
-        // Verificar espacio disponible
         if (yPos > 680) {
           doc.addPage();
           yPos = 50;
         }
 
-        // Número de medicamento
         doc
           .fontSize(11)
           .font("Helvetica-Bold")
           .text(`${index + 1}. ${med.nombre_medicamento}`, 50, yPos);
 
         if (med.es_controlado) {
-          doc
-            .fillColor("#DC2626")
-            .text(" (CONTROLADO)", { continued: true });
+          doc.fillColor("#DC2626").text(" (CONTROLADO)", { continued: true });
           doc.fillColor("#000000");
         }
 
         yPos += 18;
 
-        // Detalles del medicamento
         doc
           .fontSize(10)
           .font("Helvetica")
@@ -501,37 +504,29 @@ async function generarPDFReceta(datos: any): Promise<Buffer> {
         yPos += 15;
 
         doc.text(`   Frecuencia: ${med.frecuencia}`, 50, yPos);
-
         yPos += 15;
 
         doc.text(`   Duración: ${med.duracion}`, 50, yPos);
-
         yPos += 15;
 
-        doc.text(
-          `   Cantidad: ${med.cantidad} ${med.unidad}`,
-          50,
-          yPos
-        );
-
+        doc.text(`   Cantidad: ${med.cantidad} ${med.unidad}`, 50, yPos);
         yPos += 15;
 
         doc.text(`   Vía: ${med.via_administracion}`, 50, yPos);
-
         yPos += 15;
 
         if (med.instrucciones) {
           doc.text(`   Instrucciones: ${med.instrucciones}`, 50, yPos, {
             width: 512,
           });
-          yPos += doc.heightOfString(`   Instrucciones: ${med.instrucciones}`, {
-            width: 512,
-          });
+          yPos += doc.heightOfString(
+            `   Instrucciones: ${med.instrucciones}`,
+            { width: 512 }
+          );
         }
 
         yPos += 10;
 
-        // Línea separadora entre medicamentos
         if (index < datos.medicamentos.length - 1) {
           doc
             .moveTo(50, yPos)
@@ -577,7 +572,6 @@ async function generarPDFReceta(datos: any): Promise<Buffer> {
       // DATOS DEL MÉDICO Y FIRMA
       // ========================================
 
-      // Verificar si necesitamos nueva página
       if (yPos > 600) {
         doc.addPage();
         yPos = 50;
@@ -600,22 +594,20 @@ async function generarPDFReceta(datos: any): Promise<Buffer> {
       yPos += 15;
 
       doc.text(`Especialidad: ${datos.medico_especialidad}`, 50, yPos);
-
       yPos += 15;
 
       doc.text(`RNM: ${datos.numero_registro_medico}`, 50, yPos);
-
       yPos += 15;
 
-      doc.text(`Tel: ${datos.medico_telefono} | Email: ${datos.medico_email}`, 50, yPos);
+      doc.text(
+        `Tel: ${datos.medico_telefono} | Email: ${datos.medico_email}`,
+        50,
+        yPos
+      );
 
       yPos += 40;
 
-      // Línea para firma
-      doc
-        .moveTo(50, yPos)
-        .lineTo(250, yPos)
-        .stroke();
+      doc.moveTo(50, yPos).lineTo(250, yPos).stroke();
 
       yPos += 10;
 
@@ -625,49 +617,49 @@ async function generarPDFReceta(datos: any): Promise<Buffer> {
         .text("Firma del Médico", 50, yPos);
 
       // ========================================
-      // CÓDIGO QR Y VERIFICACIÓN
+      // CÓDIGO QR Y VERIFICACIÓN (USANDO EL QR RECIBIDO)
       // ========================================
 
-      const qrCode = await generarCodigoQR(
-        datos.numero_receta,
-        datos.codigo_verificacion
-      );
+      if (qrCodeDataUrl) {
+        const base64 = qrCodeDataUrl.includes(",")
+          ? qrCodeDataUrl.split(",")[1]
+          : qrCodeDataUrl;
+        const qrBuffer = Buffer.from(base64, "base64");
 
-      // Posicionar QR en la esquina inferior derecha
-      const qrYPos = yPos - 100;
+        const qrYPos = yPos - 100;
 
-      // Insertar QR
-      doc.image(qrCode, 420, qrYPos, {
-        width: 120,
-        height: 120,
-      });
-
-      doc
-        .fontSize(8)
-        .font("Helvetica-Bold")
-        .text("Código de Verificación:", 420, qrYPos + 125, {
+        doc.image(qrBuffer, 420, qrYPos, {
           width: 120,
-          align: "center",
+          height: 120,
         });
 
-      doc
-        .fontSize(10)
-        .font("Helvetica-Bold")
-        .text(datos.codigo_verificacion, 420, qrYPos + 140, {
-          width: 120,
-          align: "center",
-        });
+        doc
+          .fontSize(8)
+          .font("Helvetica-Bold")
+          .text("Código de Verificación:", 420, qrYPos + 125, {
+            width: 120,
+            align: "center",
+          });
+
+        doc
+          .fontSize(10)
+          .font("Helvetica-Bold")
+          .text(datos.codigo_verificacion, 420, qrYPos + 140, {
+            width: 120,
+            align: "center",
+          });
+      }
 
       // ========================================
       // PIE DE PÁGINA
       // ========================================
 
-      const pageCount = (doc as any).bufferedPageRange().count;
+      const pageRange = (doc as any).bufferedPageRange();
+      const pageCount = pageRange.count;
 
       for (let i = 0; i < pageCount; i++) {
         doc.switchToPage(i);
 
-        // Línea superior del pie
         doc
           .moveTo(50, 742)
           .lineTo(562, 742)
@@ -675,7 +667,6 @@ async function generarPDFReceta(datos: any): Promise<Buffer> {
           .stroke()
           .strokeOpacity(1);
 
-        // Texto del pie
         doc
           .fontSize(8)
           .font("Helvetica")
@@ -686,12 +677,9 @@ async function generarPDFReceta(datos: any): Promise<Buffer> {
             { align: "left" }
           );
 
-        doc.text(
-          `Página ${i + 1} de ${pageCount}`,
-          0,
-          750,
-          { align: "center" }
-        );
+        doc.text(`Página ${i + 1} de ${pageCount}`, 0, 750, {
+          align: "center",
+        });
 
         doc.text(
           `Generado: ${formatearFecha(new Date())}`,
@@ -700,7 +688,6 @@ async function generarPDFReceta(datos: any): Promise<Buffer> {
           { align: "right", width: 512 }
         );
 
-        // Advertencia legal
         doc
           .fontSize(7)
           .font("Helvetica-Oblique")
@@ -712,7 +699,7 @@ async function generarPDFReceta(datos: any): Promise<Buffer> {
           );
       }
 
-      // Finalizar el documento
+      // Cerrar el PDF
       doc.end();
     } catch (error) {
       reject(error);
@@ -834,31 +821,46 @@ export async function GET(
       );
     }
 
-    // 5. Generar PDF
-    const pdfBuffer = await generarPDFReceta(datosReceta);
+    // 5. Generar QR una sola vez
+    const qrCode = await generarCodigoQR(
+      datosReceta.numero_receta,
+      datosReceta.codigo_verificacion
+    );
 
-    // 6. Registrar en auditoría
+    // 6. Generar PDF
+    const pdfBuffer = await generarPDFReceta(datosReceta, qrCode);
+
+    if (!pdfBuffer || pdfBuffer.length === 0) {
+      throw new Error("PDF vacío o no generado correctamente");
+    }
+
+    // 7. Registrar en auditoría
     await registrarGeneracionPDF(
       idReceta,
       idUsuario,
       request.headers.get("x-forwarded-for") || "0.0.0.0"
     );
 
-    // 7. Preparar nombre del archivo
-    const nombreArchivo = `Receta_${datosReceta.numero_receta.replace(/[^a-zA-Z0-9]/g, "_")}.pdf`;
+    // 8. Nombre archivo
+    const nombreArchivo = `Receta_${datosReceta.numero_receta.replace(
+      /[^a-zA-Z0-9]/g,
+      "_"
+    )}.pdf`;
 
-    // 8. Retornar PDF
-    return new NextResponse(pdfBuffer, {
-      status: 200,
-      headers: {
-        "Content-Type": "application/pdf",
-        "Content-Disposition": `attachment; filename="${nombreArchivo}"`,
-        "Content-Length": pdfBuffer.length.toString(),
-        "Cache-Control": "no-cache, no-store, must-revalidate",
-        Pragma: "no-cache",
-        Expires: "0",
-      },
-    });
+   // 9. Retornar PDF
+const blob = new Blob([], { type: "application/pdf" });
+
+return new Response(blob, {
+  status: 200,
+  headers: {
+    "Content-Type": "application/pdf",
+    "Content-Disposition": `attachment; filename="${nombreArchivo}"`,
+    "Cache-Control": "no-cache, no-store, must-revalidate",
+    Pragma: "no-cache",
+    Expires: "0",
+  },
+});
+
   } catch (error: any) {
     console.error("❌ Error en GET /api/medico/recetas/[id]/pdf:", error);
 

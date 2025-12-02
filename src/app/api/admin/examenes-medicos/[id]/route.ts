@@ -1,8 +1,10 @@
+// src/app/api/admin/examenes-medicos/[id]/route.ts
+export const dynamic = "force-dynamic";
+
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 import type { RowDataPacket } from "mysql2/promise";
 
-export const dynamic = "force-dynamic";
 
 /* Utils */
 async function safeQuery<T extends RowDataPacket[]>(sql: string, params: any[] = []): Promise<T> {
@@ -64,7 +66,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
       FROM examenes_medicos e
       JOIN pacientes p ON p.id_paciente = e.id_paciente
       JOIN tipos_examenes te ON te.id_tipo_examen = e.id_tipo_examen
-      JOIN medicos m ON m.id_medico = e.id_medico_solicitante
+      JOIN profesionales_salud m ON m.id_profesional = e.id_profesional_solicitante
       JOIN usuarios u ON u.id_usuario = m.id_usuario
       JOIN centros_medicos c ON c.id_centro = e.id_centro
       LEFT JOIN integracion_laboratorios l ON l.id_integracion = e.id_laboratorio

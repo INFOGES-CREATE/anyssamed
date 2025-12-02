@@ -1,4 +1,6 @@
 // frontend/src/app/api/admin/centros/[id]/micrositio/config/route.ts
+export const dynamic = "force-dynamic";
+
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 import { RowDataPacket, ResultSetHeader } from "mysql2";

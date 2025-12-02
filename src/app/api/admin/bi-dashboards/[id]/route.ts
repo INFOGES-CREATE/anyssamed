@@ -1,7 +1,9 @@
+//src\app\api\admin\bi-dashboards\[id]\route.ts
+export const dynamic = "force-dynamic";
+
 import { NextResponse } from "next/server";
 import mysql from "mysql2/promise";
 
-export const dynamic = "force-dynamic";
 
 function getPool() {
   const { MYSQL_HOST, MYSQL_PORT, MYSQL_DATABASE, MYSQL_USER, MYSQL_PASSWORD } = process.env;

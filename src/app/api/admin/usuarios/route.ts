@@ -1,4 +1,6 @@
 // frontend/src/app/api/admin/usuarios/route.ts
+export const dynamic = "force-dynamic";
+
 import { NextRequest, NextResponse } from "next/server";
 import pool from "@/lib/db";
 import { RowDataPacket, ResultSetHeader } from "mysql2";
@@ -110,7 +112,7 @@ export async function GET(request: NextRequest) {
         c.estado as centro_estado,
         s.nombre as sucursal_nombre,
         CONCAT(u.nombre, ' ', u.apellido_paterno, ' ', COALESCE(u.apellido_materno, '')) as nombre_completo,
-        (SELECT COUNT(*) FROM citas WHERE id_medico = u.id_usuario OR id_paciente = u.id_usuario) as total_citas,
+        (SELECT COUNT(*) FROM citas WHERE id_profesional = u.id_usuario OR id_paciente = u.id_usuario) as total_citas,
         (SELECT COUNT(*) FROM logs_sistema WHERE id_usuario = u.id_usuario) as total_logs
       FROM usuarios u
       LEFT JOIN usuarios_roles ur ON u.id_usuario = ur.id_usuario AND ur.activo = 1
@@ -149,7 +151,7 @@ export async function GET(request: NextRequest) {
         SUM(CASE WHEN u.estado = 'inactivo' THEN 1 ELSE 0 END) as inactivos,
         SUM(CASE WHEN u.estado = 'bloqueado' THEN 1 ELSE 0 END) as bloqueados,
         SUM(CASE WHEN u.estado = 'pendiente_activacion' THEN 1 ELSE 0 END) as pendientes,
-        SUM(CASE WHEN r.nombre LIKE '%medico%' OR r.nombre LIKE '%doctor%' THEN 1 ELSE 0 END) as medicos,
+        SUM(CASE WHEN r.nombre LIKE '%medico%' OR r.nombre LIKE '%doctor%' THEN 1 ELSE 0 END) as profesionales_salud,
         SUM(CASE WHEN r.nombre LIKE '%admin%' THEN 1 ELSE 0 END) as administrativos,
         SUM(CASE WHEN r.nombre LIKE '%secretaria%' THEN 1 ELSE 0 END) as secretarias,
         SUM(CASE WHEN r.nombre LIKE '%paciente%' THEN 1 ELSE 0 END) as pacientes,
@@ -305,7 +307,7 @@ export async function POST(request: NextRequest) {
         id_centro_principal, id_sucursal_principal, foto_perfil_url,
         estado, requiere_cambio_password, autenticacion_doble_factor, 
         fecha_creacion
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'activo', ?, ?, NOW())`,
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pendiente_activacion', ?, ?, NOW())`,
       [
         username,
         passwordHash,

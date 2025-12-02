@@ -89,7 +89,7 @@ interface UsuarioSesion {
     nivel_jerarquia: number;
   };
   medico?: {
-    id_medico: number;
+    id_profesional: number;
     numero_registro_medico: string;
     titulo_profesional: string;
     especialidades: Array<{
@@ -115,7 +115,7 @@ interface CertificadoMedico {
   id_certificado: number;
   id_centro: number;
   id_paciente: number;
-  id_medico: number;
+  id_profesional: number;
   id_plantilla: number | null;
   tipo_certificado: string;
   titulo: string;
@@ -351,19 +351,19 @@ export default function CertificadosPage() {
 
   useEffect(() => {
     const cargarDatos = async () => {
-      if (!usuario?.medico?.id_medico) return;
+      if (!usuario?.medico?.id_profesional) return;
       try {
         setLoadingData(true);
         const [resCertificados, resPlantillas, resAlertas] = await Promise.all([
-          fetch(`/api/medico/certificados?id_medico=${usuario.medico.id_medico}`, {
+          fetch(`/api/medico/certificados?id_profesional=${usuario.medico.id_profesional}`, {
             method: "GET",
             credentials: "include",
           }),
-          fetch(`/api/medico/certificados/plantillas?id_medico=${usuario.medico.id_medico}`, {
+          fetch(`/api/medico/certificados/plantillas?id_profesional=${usuario.medico.id_profesional}`, {
             method: "GET",
             credentials: "include",
           }),
-          fetch(`/api/medico/certificados/alertas?id_medico=${usuario.medico.id_medico}`, {
+          fetch(`/api/medico/certificados/alertas?id_profesional=${usuario.medico.id_profesional}`, {
             method: "GET",
             credentials: "include",
           }),
@@ -971,9 +971,9 @@ export default function CertificadosPage() {
             </Link>
             <button
               onClick={() => {
-                if (!usuario?.medico?.id_medico) return;
+                if (!usuario?.medico?.id_profesional) return;
                 setLoadingData(true);
-                fetch(`/api/medico/certificados?id_medico=${usuario.medico.id_medico}`, {
+                fetch(`/api/medico/certificados?id_profesional=${usuario.medico.id_profesional}`, {
                   method: "GET",
                   credentials: "include",
                 })

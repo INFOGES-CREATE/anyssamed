@@ -1,4 +1,5 @@
 //frontend\src\app\api\admin\facturacion\[id]\route.ts
+export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";

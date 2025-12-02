@@ -726,7 +726,7 @@ const AgendaMedicaPremium: React.FC = () => {
 
           <p className="text-xl text-blue-100 mb-12 leading-relaxed">
             Únase a más de 25,000 profesionales que optimizaron su agendamiento
-            con MediSuite Pro
+            con AnyssaMed
           </p>
 
           <div className="flex flex-col sm:flex-row gap-5 justify-center">
@@ -769,7 +769,7 @@ const AgendaMedicaPremium: React.FC = () => {
             <div className="w-12 h-12 bg-gradient-to-br from-blue-600 to-cyan-600 rounded-2xl flex items-center justify-center">
               <Stethoscope className="w-7 h-7 text-white" />
             </div>
-            <span className="text-2xl font-bold text-white">MediSuite Pro</span>
+            <span className="text-2xl font-bold text-white">AnyssaMed</span>
           </div>
           <p className="text-gray-400 mb-6">
             Sistema de Agendamiento Médico Premium
@@ -785,7 +785,7 @@ const AgendaMedicaPremium: React.FC = () => {
             </div>
           </div>
           <p className="text-gray-500 text-sm mt-8">
-            © 2025 MediSuite Pro. Todos los derechos reservados.
+            © 2025 AnyssaMed. Todos los derechos reservados.
           </p>
         </div>
       </footer>

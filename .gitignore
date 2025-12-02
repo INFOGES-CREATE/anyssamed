@@ -1,1 +1,27 @@
 node_modules
+
+# Next.js
+.next/
+out/
+dist/
+build/
+
+# Node
+node_modules/
+
+# Env
+.env
+.env.local
+.env.*.local
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Misc
+.DS_Store
+*.log
+
+# Uploads (solo si no deseas que imágenes subidas se guarden en git)
+public/uploads/

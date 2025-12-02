@@ -1,4 +1,6 @@
 // frontend/src/app/api/admin/centros/[id]/route.ts
+export const dynamic = "force-dynamic";
+
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 import { RowDataPacket, ResultSetHeader } from "mysql2";
@@ -15,34 +17,44 @@ export async function GET(
       `SELECT 
         cm.id_centro,
         cm.nombre,
+        cm.pais,
         cm.razon_social,
         cm.rut,
         cm.direccion,
         cm.ciudad,
         cm.region,
+        cm.comuna,
         cm.codigo_postal,
-        cm.telefono_principal as telefono,
-        cm.email_contacto as email,
+        cm.telefono_principal,
+        cm.telefono_secundario,
+        cm.email_contacto,
+        cm.email_secundario,
         cm.sitio_web,
         cm.logo_url,
         cm.descripcion,
         cm.horario_apertura,
         cm.horario_cierre,
         cm.dias_atencion,
+        cm.plan,
         cm.estado,
         cm.fecha_inicio_operacion,
         cm.capacidad_pacientes_dia,
         cm.nivel_complejidad,
         cm.especializacion_principal,
+        cm.tipo_establecimiento,
         cm.fecha_creacion,
         cm.fecha_modificacion as fecha_actualizacion,
+        cm.created_by,
+        cm.id_pais,
+        cm.id_region,
+        cm.id_comuna,
         
         COUNT(DISTINCT u.id_usuario) as usuarios_count,
         COUNT(DISTINCT CASE WHEN u.estado = 'activo' THEN u.id_usuario END) as usuarios_activos,
-        COUNT(DISTINCT m.id_medico) as medicos_count,
-        COUNT(DISTINCT CASE WHEN m.estado = 'activo' THEN m.id_medico END) as medicos_activos,
-        COUNT(DISTINCT p.id_paciente) as pacientes_count,
-        COUNT(DISTINCT CASE WHEN p.estado = 'activo' THEN p.id_paciente END) as pacientes_activos,
+        COUNT(DISTINCT m.id_profesional) as profesionales_salud_count,
+        COUNT(DISTINCT CASE WHEN m.estado = 'activo' THEN m.id_profesional END) as profesionales_salud_activos,
+        COUNT(DISTINCT pat.id_paciente) as pacientes_count,
+        COUNT(DISTINCT CASE WHEN pat.estado = 'activo' THEN pat.id_paciente END) as pacientes_activos,
         COUNT(DISTINCT s.id_sucursal) as sucursales_count,
         COUNT(DISTINCT CASE 
           WHEN MONTH(hc.fecha_atencion) = MONTH(CURDATE()) 
@@ -52,8 +64,8 @@ export async function GET(
         
       FROM centros_medicos cm
       LEFT JOIN usuarios u ON u.id_centro_principal = cm.id_centro
-      LEFT JOIN medicos m ON m.id_centro_principal = cm.id_centro
-      LEFT JOIN pacientes p ON p.id_centro_registro = cm.id_centro
+      LEFT JOIN profesionales_salud m ON m.id_centro_principal = cm.id_centro
+      LEFT JOIN pacientes pat ON pat.id_centro_registro = cm.id_centro
       LEFT JOIN sucursales s ON s.id_centro = cm.id_centro
       LEFT JOIN historial_clinico hc ON hc.id_centro = cm.id_centro
       WHERE cm.id_centro = ?
@@ -68,7 +80,7 @@ export async function GET(
       );
     }
 
-    console.log("✅ Centro encontrado:", centro[0].nombre);
+console.log("✅ Centro encontrado:", centro[0]?.nombre || "(sin nombre)");
 
     return NextResponse.json({
       success: true,
@@ -114,33 +126,75 @@ export async function PUT(
         );
       }
 
+      // Validaciones
+      if (body.nombre && !body.nombre.trim()) {
+        await connection.rollback();
+        return NextResponse.json(
+          { success: false, error: "El nombre del centro es requerido" },
+          { status: 400 }
+        );
+      }
+
+      if (body.email_contacto && !body.email_contacto.trim()) {
+        await connection.rollback();
+        return NextResponse.json(
+          { success: false, error: "El email de contacto es requerido" },
+          { status: 400 }
+        );
+      }
+
+      if (body.pais && !body.pais.trim()) {
+        await connection.rollback();
+        return NextResponse.json(
+          { success: false, error: "El país es requerido" },
+          { status: 400 }
+        );
+      }
+
+      if (body.region && !body.region.trim()) {
+        await connection.rollback();
+        return NextResponse.json(
+          { success: false, error: "La región es requerida" },
+          { status: 400 }
+        );
+      }
+
       const fieldsToUpdate: string[] = [];
       const values: any[] = [];
 
       const fieldMapping: Record<string, string> = {
         nombre: "nombre",
+        pais: "pais",
         razon_social: "razon_social",
         rut: "rut",
         direccion: "direccion",
         ciudad: "ciudad",
         region: "region",
+        comuna: "comuna",
         codigo_postal: "codigo_postal",
-        telefono: "telefono_principal",
-        email: "email_contacto",
+        telefono_principal: "telefono_principal",
+        telefono_secundario: "telefono_secundario",
+        email_contacto: "email_contacto",
+        email_secundario: "email_secundario",
         sitio_web: "sitio_web",
         logo_url: "logo_url",
         descripcion: "descripcion",
         horario_apertura: "horario_apertura",
         horario_cierre: "horario_cierre",
         dias_atencion: "dias_atencion",
+        plan: "plan",
         estado: "estado",
         capacidad_pacientes_dia: "capacidad_pacientes_dia",
         nivel_complejidad: "nivel_complejidad",
         especializacion_principal: "especializacion_principal",
+        tipo_establecimiento: "tipo_establecimiento",
+        id_pais: "id_pais",
+        id_region: "id_region",
+        id_comuna: "id_comuna",
       };
 
       Object.entries(fieldMapping).forEach(([bodyKey, dbColumn]) => {
-        if (body[bodyKey] !== undefined) {
+        if (body[bodyKey] !== undefined && body[bodyKey] !== null && body[bodyKey] !== "") {
           fieldsToUpdate.push(`${dbColumn} = ?`);
           values.push(body[bodyKey]);
         }
@@ -164,10 +218,39 @@ export async function PUT(
 
       const [updatedCentro] = await connection.query<RowDataPacket[]>(
         `SELECT 
-          cm.*,
-          cm.telefono_principal as telefono,
-          cm.email_contacto as email,
-          cm.fecha_modificacion as fecha_actualizacion
+          cm.id_centro,
+          cm.nombre,
+          cm.pais,
+          cm.razon_social,
+          cm.rut,
+          cm.direccion,
+          cm.ciudad,
+          cm.region,
+          cm.comuna,
+          cm.codigo_postal,
+          cm.telefono_principal,
+          cm.telefono_secundario,
+          cm.email_contacto,
+          cm.email_secundario,
+          cm.sitio_web,
+          cm.logo_url,
+          cm.descripcion,
+          cm.horario_apertura,
+          cm.horario_cierre,
+          cm.dias_atencion,
+          cm.plan,
+          cm.estado,
+          cm.fecha_inicio_operacion,
+          cm.capacidad_pacientes_dia,
+          cm.nivel_complejidad,
+          cm.especializacion_principal,
+          cm.tipo_establecimiento,
+          cm.fecha_creacion,
+          cm.fecha_modificacion as fecha_actualizacion,
+          cm.created_by,
+          cm.id_pais,
+          cm.id_region,
+          cm.id_comuna
         FROM centros_medicos cm
         WHERE cm.id_centro = ?`,
         [params.id]
@@ -232,8 +315,8 @@ export async function DELETE(
         [params.id]
       );
 
-      const [medicos] = await connection.query<RowDataPacket[]>(
-        "SELECT COUNT(*) as count FROM medicos WHERE id_centro_principal = ?",
+      const [profesionales_salud] = await connection.query<RowDataPacket[]>(
+        "SELECT COUNT(*) as count FROM profesionales_salud WHERE id_centro_principal = ?",
         [params.id]
       );
 
@@ -242,7 +325,7 @@ export async function DELETE(
         [params.id]
       );
 
-      if (usuarios[0].count > 0 || medicos[0].count > 0 || pacientes[0].count > 0) {
+      if (usuarios[0].count > 0 || profesionales_salud[0].count > 0 || pacientes[0].count > 0) {
         await connection.rollback();
         return NextResponse.json(
           {
@@ -250,7 +333,7 @@ export async function DELETE(
             error: "No se puede eliminar el centro porque tiene registros asociados",
             detalles: {
               usuarios: usuarios[0].count,
-              medicos: medicos[0].count,
+              medicos: profesionales_salud[0].count,
               pacientes: pacientes[0].count,
             },
           },

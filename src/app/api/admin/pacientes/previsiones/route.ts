@@ -1,3 +1,5 @@
+
+// frontend/src/app/api/admin/pacientes/previsiones/route.ts
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 

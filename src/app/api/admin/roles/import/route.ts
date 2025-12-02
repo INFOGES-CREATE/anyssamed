@@ -1,4 +1,6 @@
 // app/api/admin/roles/import/route.ts
+export const dynamic = "force-dynamic";
+
 import { NextRequest, NextResponse } from "next/server";
 import { getConnection } from "@/lib/db";
 import { RowDataPacket, ResultSetHeader } from "mysql2/promise";

@@ -1,11 +1,9 @@
+// app/layout.tsx
 import '../styles/globals.css'
 import type { Metadata, Viewport } from 'next'
 import { Inter, Poppins } from 'next/font/google'
 import MarketingChrome from '../components/layout/MarketingChrome'
 
-// ===============================
-// 🔹 FUENTES
-// ===============================
 const inter = Inter({
   subsets: ['latin'],
   display: 'swap',
@@ -19,13 +17,11 @@ const poppins = Poppins({
   weight: ['300', '400', '500', '600', '700', '800', '900'],
 })
 
-// ===============================
-// 🔹 METADATOS
-// ===============================
 export const metadata: Metadata = {
   title: {
-    default: 'MediSuite Pro - Sistema de Gestión Médica Premium | Líder en Chile',
-    template: '%s | MediSuite Pro',
+    default:
+      'AnyssaMed - Sistema de Gestión Médica Premium | Líder en Chile',
+    template: '%s | AnyssaMed',
   },
   description:
     'Plataforma integral de gestión médica con IA, telemedicina y analítica avanzada. Optimice su centro de salud con la tecnología más avanzada de Chile. +25,000 profesionales confían en nosotros.',
@@ -46,9 +42,9 @@ export const metadata: Metadata = {
     'recetas electrónicas',
     'certificados médicos digitales',
   ],
-  authors: [{ name: 'MediSuite Pro Team', url: 'https://medisuitepro.cl' }],
-  creator: 'MediSuite Pro',
-  publisher: 'MediSuite Pro',
+  authors: [{ name: 'AnyssaMed Team', url: 'https://medisuitepro.cl' }],
+  creator: 'AnyssaMed',
+  publisher: 'AnyssaMed',
   formatDetection: { email: false, address: false, telephone: false },
   metadataBase: new URL('https://medisuitepro.cl'),
   alternates: { canonical: '/', languages: { 'es-CL': '/' } },
@@ -56,24 +52,23 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'es_CL',
     url: 'https://medisuitepro.cl',
-    title: 'MediSuite Pro - Sistema de Gestión Médica Premium',
+    title: 'AnyssaMed - Sistema de Gestión Médica Premium',
     description:
       'Transforma tu centro médico con tecnología de vanguardia. IA, telemedicina y analítica avanzada. Líder en Chile con +25,000 profesionales.',
-    siteName: 'MediSuite Pro',
+    siteName: 'AnyssaMed',
     images: [
       {
         url: '/og-image.jpg',
         width: 1200,
         height: 630,
-        alt: 'MediSuite Pro - Gestión Médica Inteligente',
+        alt: 'AnyssaMed - Gestión Médica Inteligente',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'MediSuite Pro - Sistema de Gestión Médica Premium',
-    description:
-      'Transforma tu centro médico con tecnología de vanguardia.',
+    title: 'AnyssaMed - Sistema de Gestión Médica Premium',
+    description: 'Transforma tu centro médico con tecnología de vanguardia.',
     images: ['/twitter-image.jpg'],
     creator: '@medisuitepro',
   },
@@ -110,9 +105,6 @@ export const metadata: Metadata = {
   category: 'healthcare',
 }
 
-// ===============================
-// 🔹 VIEWPORT
-// ===============================
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
@@ -124,13 +116,10 @@ export const viewport: Viewport = {
   ],
 }
 
-// ===============================
-// 🔹 JSON-LD (Schema SEO)
-// ===============================
 const jsonLd = {
   '@context': 'https://schema.org',
   '@type': 'MedicalBusiness',
-  name: 'MediSuite Pro',
+  name: 'AnyssaMed',
   description: 'Sistema de gestión médica premium para centros de salud',
   url: 'https://medisuitepro.cl',
   logo: 'https://medisuitepro.cl/logo.png',
@@ -188,9 +177,6 @@ const jsonLd = {
   },
 }
 
-// ===============================
-// 🔹 LAYOUT ROOT
-// ===============================
 export default function RootLayout({
   children,
 }: {
@@ -228,8 +214,8 @@ export default function RootLayout({
           Saltar al contenido principal
         </a>
 
-        {/* 👇 Solo muestra Header/Footer en "/" */}
-        <MarketingChrome onlyOn={['/']}>{children}</MarketingChrome>
+        {/* 👇 Header global que aparece solo al hacer scroll en "/" */}
+        <MarketingChrome>{children}</MarketingChrome>
 
         {/* Portales para modales o tooltips */}
         <div id="portal-root" />

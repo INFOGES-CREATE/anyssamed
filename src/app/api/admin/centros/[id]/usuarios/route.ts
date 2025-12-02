@@ -1,4 +1,6 @@
 // frontend/src/app/api/admin/centros/[id]/usuarios/route.ts
+export const dynamic = "force-dynamic";
+
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 import { RowDataPacket } from "mysql2";
@@ -22,7 +24,7 @@ export async function GET(
         u.fecha_creacion,
         r.nombre as rol,
         CASE
-          WHEN EXISTS(SELECT 1 FROM medicos WHERE id_usuario = u.id_usuario) THEN 'medico'
+          WHEN EXISTS(SELECT 1 FROM profesionales_salud WHERE id_usuario = u.id_usuario) THEN 'medico'
           WHEN EXISTS(SELECT 1 FROM administrativos WHERE id_usuario = u.id_usuario) THEN 'administrativo'
           WHEN EXISTS(SELECT 1 FROM secretarias WHERE id_usuario = u.id_usuario) THEN 'secretaria'
           ELSE 'otro'

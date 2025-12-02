@@ -16,7 +16,7 @@ const toNull = (v: any) =>
 interface HcRow extends RowDataPacket {
   id_historial: number;
   id_paciente: number;
-  id_medico: number;
+  id_profesional: number;
   id_centro: number;
   id_especialidad: number | null;
   id_sucursal: number | null;
@@ -74,7 +74,7 @@ interface CentroRow extends RowDataPacket { id_centro: number; nombre: string; }
 interface SucursalRow extends RowDataPacket { id_sucursal: number; id_centro: number; nombre: string; }
 interface EspecialidadRow extends RowDataPacket { id_especialidad: number; nombre: string; }
 interface MedicoRow extends RowDataPacket {
-  id_medico: number; id_centro: number;
+  id_profesional: number; id_centro: number;
   nombre: string; apellido_paterno: string; apm: string;
 }
 interface PacienteRow extends RowDataPacket {
@@ -108,7 +108,7 @@ export async function GET(req: Request) {
 
     // Entidades
     const idPaciente = searchParams.get("id_paciente") ? Number(searchParams.get("id_paciente")) : null;
-    const idMedico   = searchParams.get("id_medico")   ? Number(searchParams.get("id_medico"))   : null;
+    const idMedico   = searchParams.get("id_profesional")   ? Number(searchParams.get("id_profesional"))   : null;
     const idCentro   = searchParams.get("id_centro")   ? Number(searchParams.get("id_centro"))   : null;
 
     // Rango de fechas
@@ -141,7 +141,7 @@ export async function GET(req: Request) {
     if (estado)        { where.push(`hc.estado_registro = ?`); params.push(estado); }
     if (tipoDocumento) { where.push(`hc.tipo_atencion = ?`);   params.push(tipoDocumento); }
     if (idPaciente)    { where.push(`hc.id_paciente = ?`);     params.push(idPaciente); }
-    if (idMedico)      { where.push(`hc.id_medico = ?`);       params.push(idMedico); }
+    if (idMedico)      { where.push(`hc.id_profesional = ?`);       params.push(idMedico); }
     if (idCentro)      { where.push(`hc.id_centro = ?`);       params.push(idCentro); }
     if (desde)         { where.push(`hc.fecha_atencion >= ?`); params.push(desde); }
     if (hasta)         { where.push(`hc.fecha_atencion <= ?`); params.push(hasta); }
@@ -165,7 +165,7 @@ export async function GET(req: Request) {
         SUM(CASE WHEN hc.estado_registro = 'bloqueado' THEN 1 ELSE 0 END) AS bloqueados
       FROM historial_clinico hc
       JOIN pacientes p ON p.id_paciente = hc.id_paciente
-      JOIN medicos md ON md.id_medico = hc.id_medico
+      JOIN profesionales_salud md ON md.id_profesional = hc.id_profesional
       JOIN usuarios musu ON musu.id_usuario = md.id_usuario
       JOIN centros_medicos c ON c.id_centro = hc.id_centro
       LEFT JOIN especialidades e ON e.id_especialidad = hc.id_especialidad
@@ -188,7 +188,7 @@ export async function GET(req: Request) {
         -- ====== REGISTRO (historial_clinico) ======
         hc.id_historial,
         hc.id_paciente,
-        hc.id_medico,
+        hc.id_profesional,
         hc.id_centro,
         hc.id_especialidad,
         hc.id_sucursal,
@@ -251,7 +251,7 @@ export async function GET(req: Request) {
 
       FROM historial_clinico hc
       JOIN pacientes p     ON p.id_paciente = hc.id_paciente
-      JOIN medicos md      ON md.id_medico  = hc.id_medico
+      JOIN profesionales_salud md      ON md.id_profesional  = hc.id_profesional
       JOIN usuarios musu   ON musu.id_usuario = md.id_usuario
       JOIN centros_medicos c ON c.id_centro = hc.id_centro
       LEFT JOIN especialidades e ON e.id_especialidad = hc.id_especialidad
@@ -299,9 +299,9 @@ export async function GET(req: Request) {
          ORDER BY nombre`
       ),
       pool.query<MedicoRow[]>(
-        `SELECT m.id_medico, m.id_centro,
+        `SELECT m.id_profesional, m.id_centro,
                 u.nombre, u.apellido_paterno, IFNULL(u.apellido_materno,'') AS apm
-         FROM medicos m
+         FROM profesionales_salud m
          JOIN usuarios u ON u.id_usuario = m.id_usuario
          ${idCentro ? "WHERE m.id_centro = ?" : ""}
          ORDER BY u.nombre, u.apellido_paterno`,
@@ -330,7 +330,7 @@ export async function GET(req: Request) {
       value: e.id_especialidad, label: e.nombre,
     }));
     const opMedicos = (medicos as MedicoRow[]).map(m => ({
-      value: m.id_medico,
+      value: m.id_profesional,
       label: `${m.nombre} ${m.apellido_paterno} ${m.apm}`.replace(/\s+/g, " ").trim(),
       id_centro: m.id_centro,
     }));
@@ -387,7 +387,7 @@ export async function POST(req: Request) {
       id_ficha:            toNull(body.id_ficha),
       id_paciente:         toNull(body.id_paciente),
       fecha_atencion:      toNull(body.fecha_atencion),
-      id_medico:           toNull(body.id_medico),
+      id_profesional:           toNull(body.id_profesional),
       id_especialidad:     toNull(body.id_especialidad),
       id_centro:           toNull(body.id_centro),
       id_sucursal:         toNull(body.id_sucursal),
@@ -411,7 +411,7 @@ export async function POST(req: Request) {
     };
 
     // Requeridos mínimos coherentes
-    const requeridos = ["id_paciente","fecha_atencion","id_medico","id_centro","tipo_atencion","motivo_consulta"] as const;
+    const requeridos = ["id_paciente","fecha_atencion","id_profesional","id_centro","tipo_atencion","motivo_consulta"] as const;
     const faltantes = requeridos.filter((k) => !(mapped as any)[k]);
     if (faltantes.length > 0) {
       return NextResponse.json(
@@ -422,7 +422,7 @@ export async function POST(req: Request) {
 
     // Inserción con columnas FIJAS reales (evita 1136)
     const fields = [
-      "id_ficha","id_paciente","fecha_atencion","id_medico","id_especialidad","id_centro","id_sucursal",
+      "id_ficha","id_paciente","fecha_atencion","id_profesional","id_especialidad","id_centro","id_sucursal",
       "motivo_consulta","anamnesis","examen_fisico","diagnostico_principal","codigo_cie10","plan_tratamiento",
       "observaciones","estado_registro","tipo_atencion","duracion_minutos","es_ges","es_cronica","proximo_control","id_cita",
     ] as const;

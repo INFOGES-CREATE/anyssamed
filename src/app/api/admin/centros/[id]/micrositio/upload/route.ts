@@ -1,8 +1,10 @@
+// frontend/src/app/api/admin/centros/[id]/micrositio/upload/route.ts
 // ============================================================
 // 📁 Subida de imágenes (logo/banner) de micrositios
 // ✅ Sin uso de Buffer
 // ✅ Compatible con Next.js 14+ (App Router)
 // ============================================================
+export const dynamic = "force-dynamic";
 
 import { NextRequest, NextResponse } from "next/server";
 import { writeFile, mkdir } from "fs/promises";

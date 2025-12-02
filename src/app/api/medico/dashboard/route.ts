@@ -1,4 +1,6 @@
 // app/api/medico/dashboard/route.ts
+export const dynamic = "force-dynamic";
+
 import { NextRequest, NextResponse } from "next/server";
 import pool from "@/lib/db";
 import { RowDataPacket } from "mysql2";
@@ -8,7 +10,7 @@ import { RowDataPacket } from "mysql2";
 // ========================================
 
 interface MedicoData {
-  id_medico: number;
+  id_profesional: number;
   id_usuario: number;
   id_centro_principal: number;
   numero_registro_medico: string;
@@ -179,7 +181,7 @@ async function obtenerMedicoAutenticado(
     const [rows] = await pool.query<RowDataPacket[]>(
       `
       SELECT 
-        m.id_medico,
+        m.id_profesional,
         m.id_usuario,
         m.id_centro_principal,
         m.numero_registro_medico,
@@ -187,7 +189,7 @@ async function obtenerMedicoAutenticado(
         m.especialidad_principal,
         m.anos_experiencia,
         m.calificacion_promedio
-      FROM medicos m
+      FROM profesionales_salud m
       WHERE m.id_usuario = ? AND m.estado = 'activo'
       LIMIT 1
       `,
@@ -247,7 +249,7 @@ async function obtenerEstadisticas(
       // Citas de hoy
       pool.query<RowDataPacket[]>(
         `SELECT COUNT(*) as total FROM citas 
-         WHERE id_medico = ? AND DATE(fecha_hora_inicio) = ? 
+         WHERE id_profesional = ? AND DATE(fecha_hora_inicio) = ? 
          AND estado NOT IN ('cancelada', 'no_asistio')`,
         [idMedico, hoy]
       ),
@@ -255,7 +257,7 @@ async function obtenerEstadisticas(
       // Citas pendientes
       pool.query<RowDataPacket[]>(
         `SELECT COUNT(*) as total FROM citas 
-         WHERE id_medico = ? AND estado IN ('programada', 'pendiente') 
+         WHERE id_profesional = ? AND estado IN ('programada', 'pendiente') 
          AND fecha_hora_inicio > NOW()`,
         [idMedico]
       ),
@@ -263,7 +265,7 @@ async function obtenerEstadisticas(
       // Citas completadas hoy
       pool.query<RowDataPacket[]>(
         `SELECT COUNT(*) as total FROM citas 
-         WHERE id_medico = ? AND DATE(fecha_hora_inicio) = ? 
+         WHERE id_profesional = ? AND DATE(fecha_hora_inicio) = ? 
          AND estado = 'completada'`,
         [idMedico, hoy]
       ),
@@ -272,7 +274,7 @@ async function obtenerEstadisticas(
       pool.query<RowDataPacket[]>(
         `SELECT COUNT(*) as total FROM citas c 
          INNER JOIN cancelaciones can ON c.id_cita = can.id_cita 
-         WHERE c.id_medico = ? AND DATE(can.fecha_cancelacion) = ?`,
+         WHERE c.id_profesional = ? AND DATE(can.fecha_cancelacion) = ?`,
         [idMedico, hoy]
       ),
 
@@ -280,42 +282,42 @@ async function obtenerEstadisticas(
       pool.query<RowDataPacket[]>(
         `SELECT COUNT(DISTINCT pm.id_paciente) as total 
          FROM pacientes_medico pm 
-         WHERE pm.id_medico = ? AND pm.fecha_asignacion >= ? AND pm.activo = 1`,
+         WHERE pm.id_profesional = ? AND pm.fecha_asignacion >= ? AND pm.activo = 1`,
         [idMedico, inicioMes]
       ),
 
       // Total pacientes activos
       pool.query<RowDataPacket[]>(
         `SELECT COUNT(DISTINCT id_paciente) as total 
-         FROM pacientes_medico WHERE id_medico = ? AND activo = 1`,
+         FROM pacientes_medico WHERE id_profesional = ? AND activo = 1`,
         [idMedico]
       ),
 
       // Consultas del mes
       pool.query<RowDataPacket[]>(
         `SELECT COUNT(*) as total FROM historial_clinico 
-         WHERE id_medico = ? AND fecha_atencion >= ? AND estado_registro != 'anulado'`,
+         WHERE id_profesional = ? AND fecha_atencion >= ? AND estado_registro != 'anulado'`,
         [idMedico, inicioMes]
       ),
 
       // Consultas del año
       pool.query<RowDataPacket[]>(
         `SELECT COUNT(*) as total FROM historial_clinico 
-         WHERE id_medico = ? AND fecha_atencion >= ? AND estado_registro != 'anulado'`,
+         WHERE id_profesional = ? AND fecha_atencion >= ? AND estado_registro != 'anulado'`,
         [idMedico, inicioAno]
       ),
 
       // Recetas del mes
       pool.query<RowDataPacket[]>(
         `SELECT COUNT(*) as total FROM recetas_medicas 
-         WHERE id_medico = ? AND fecha_emision >= ? AND estado != 'anulada'`,
+         WHERE id_profesional = ? AND fecha_emision >= ? AND estado != 'anulada'`,
         [idMedico, inicioMes]
       ),
 
       // Órdenes de examen del mes
       pool.query<RowDataPacket[]>(
         `SELECT COUNT(*) as total FROM ordenes_examenes 
-         WHERE id_medico = ? AND fecha_emision
+         WHERE id_profesional = ? AND fecha_emision
  >= ? AND estado != 'anulada'`,
         [idMedico, inicioMes]
       ),
@@ -323,14 +325,14 @@ async function obtenerEstadisticas(
       // Interconsultas pendientes
       pool.query<RowDataPacket[]>(
         `SELECT COUNT(*) as total FROM interconsultas 
-         WHERE id_medico_solicitante = ? AND estado IN ('pendiente', 'en_revision')`,
+         WHERE id_profesional_solicitante = ? AND estado IN ('pendiente', 'en_revision')`,
         [idMedico]
       ),
 
       // Mensajes sin leer
       pool.query<RowDataPacket[]>(
         `SELECT COUNT(*) as total FROM mensajes_chat 
-         WHERE id_destinatario = (SELECT id_usuario FROM medicos WHERE id_medico = ?) 
+         WHERE id_destinatario = (SELECT id_usuario FROM profesionales_salud WHERE id_profesional = ?) 
          AND leido = 0`,
         [idMedico]
       ),
@@ -338,35 +340,35 @@ async function obtenerEstadisticas(
       // Calificación promedio
       pool.query<RowDataPacket[]>(
         `SELECT COALESCE(AVG(calificacion), 0) as promedio, COUNT(*) as total 
-         FROM valoraciones_medicas WHERE id_medico = ? AND estado = 'visible'`,
+         FROM valoraciones_medicas WHERE id_profesional = ? AND estado = 'visible'`,
         [idMedico]
       ),
 
       // Ingresos del mes
       pool.query<RowDataPacket[]>(
         `SELECT COALESCE(SUM(monto), 0) as total FROM citas 
-         WHERE id_medico = ? AND fecha_hora_inicio >= ? AND pagada = 1 AND estado = 'completada'`,
+         WHERE id_profesional = ? AND fecha_hora_inicio >= ? AND pagada = 1 AND estado = 'completada'`,
         [idMedico, inicioMes]
       ),
 
       // Telemedicina activas
       pool.query<RowDataPacket[]>(
         `SELECT COUNT(*) as total FROM telemedicina_sesiones 
-         WHERE id_medico = ? AND estado IN ('en_espera', 'en_curso')`,
+         WHERE id_profesional = ? AND estado IN ('en_espera', 'en_curso')`,
         [idMedico]
       ),
 
       // Certificados emitidos del mes
       pool.query<RowDataPacket[]>(
         `SELECT COUNT(*) as total FROM certificados_medicos 
-         WHERE id_medico = ? AND fecha_emision >= ? AND estado != 'anulado'`,
+         WHERE id_profesional = ? AND fecha_emision >= ? AND estado != 'anulado'`,
         [idMedico, inicioMes]
       ),
 
       // Procedimientos del mes
       pool.query<RowDataPacket[]>(
         `SELECT COUNT(*) as total FROM procedimientos 
-         WHERE id_medico = ? AND fecha_procedimiento >= ? AND estado != 'cancelado'`,
+         WHERE id_profesional = ? AND fecha_procedimiento >= ? AND estado != 'cancelado'`,
         [idMedico, inicioMes]
       ),
     ]);
@@ -430,7 +432,7 @@ async function obtenerCitasProximas(
       FROM citas c
       INNER JOIN pacientes p ON c.id_paciente = p.id_paciente
       LEFT JOIN salas s ON c.id_sala = s.id_sala
-      WHERE c.id_medico = ?
+      WHERE c.id_profesional = ?
         AND DATE(c.fecha_hora_inicio) = ?
         AND c.estado NOT IN ('cancelada', 'no_asistio')
       ORDER BY c.fecha_hora_inicio ASC
@@ -489,7 +491,7 @@ async function obtenerAlertasUrgentes(
       FROM signos_vitales sv
       INNER JOIN pacientes p ON sv.id_paciente = p.id_paciente
       INNER JOIN pacientes_medico pm ON p.id_paciente = pm.id_paciente
-      WHERE pm.id_medico = ?
+      WHERE pm.id_profesional = ?
         AND pm.activo = 1
         AND sv.fecha_creacion >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
         AND (
@@ -552,7 +554,7 @@ async function obtenerAlertasUrgentes(
       INNER JOIN ordenes_examenes oe ON re.id_orden = oe.id_orden
       INNER JOIN pacientes p ON re.id_paciente = p.id_paciente
       INNER JOIN pacientes_medico pm ON p.id_paciente = pm.id_paciente
-      WHERE oe.id_medico = ?
+      WHERE oe.id_profesional = ?
         AND pm.activo = 1
         AND re.estado = 'disponible'
         AND re.revisado_por_medico = 0
@@ -596,7 +598,7 @@ async function obtenerAlertasUrgentes(
         c.tipo_cita
       FROM citas c
       INNER JOIN pacientes p ON c.id_paciente = p.id_paciente
-      WHERE c.id_medico = ?
+      WHERE c.id_profesional = ?
         AND c.estado = 'programada'
         AND c.confirmado_por_paciente = 0
         AND c.fecha_hora_inicio BETWEEN NOW() AND DATE_ADD(NOW(), INTERVAL 24 HOUR)
@@ -636,7 +638,7 @@ async function obtenerAlertasUrgentes(
       INNER JOIN receta_medicamentos rmed ON rm.id_receta = rmed.id_receta
       INNER JOIN pacientes p ON rm.id_paciente = p.id_paciente
       INNER JOIN pacientes_medico pm ON p.id_paciente = pm.id_paciente
-      WHERE rm.id_medico = ?
+      WHERE rm.id_profesional = ?
         AND pm.activo = 1
         AND rm.estado = 'activa'
         AND rm.fecha_fin_tratamiento < CURDATE()
@@ -677,7 +679,7 @@ async function obtenerAlertasUrgentes(
       FROM interconsultas i
       INNER JOIN pacientes p ON i.id_paciente = p.id_paciente
       INNER JOIN especialidades e ON i.id_especialidad_destino = e.id_especialidad
-      WHERE i.id_medico_solicitante = ?
+      WHERE i.id_profesional_solicitante = ?
         AND i.prioridad = 'urgente'
         AND i.estado = 'pendiente'
         AND i.fecha_solicitud < DATE_SUB(NOW(), INTERVAL 24 HOUR)
@@ -762,7 +764,7 @@ async function obtenerPacientesRecientes(
           SELECT MIN(fecha_hora_inicio)
           FROM citas
           WHERE id_paciente = p.id_paciente
-            AND id_medico = ?
+            AND id_profesional = ?
             AND fecha_hora_inicio > NOW()
             AND estado NOT IN ('cancelada', 'no_asistio')
         ) as proxima_cita,
@@ -783,11 +785,11 @@ async function obtenerPacientesRecientes(
       FROM pacientes p
       INNER JOIN pacientes_medico pm ON p.id_paciente = pm.id_paciente
       LEFT JOIN historial_clinico hc ON p.id_paciente = hc.id_paciente
-        AND hc.id_medico = ?
+        AND hc.id_profesional = ?
         AND hc.id_historial = (
           SELECT MAX(id_historial)
           FROM historial_clinico
-          WHERE id_paciente = p.id_paciente AND id_medico = ?
+          WHERE id_paciente = p.id_paciente AND id_profesional = ?
         )
       LEFT JOIN diagnosticos d ON p.id_paciente = d.id_paciente
         AND d.tipo = 'principal' AND d.estado = 'activo'
@@ -797,7 +799,7 @@ async function obtenerPacientesRecientes(
           WHERE id_paciente = p.id_paciente 
             AND tipo = 'principal' AND estado = 'activo'
         )
-      WHERE pm.id_medico = ?
+      WHERE pm.id_profesional = ?
         AND pm.activo = 1
         AND hc.fecha_atencion >= DATE_SUB(NOW(), INTERVAL 30 DAY)
       ORDER BY hc.fecha_atencion DESC
@@ -867,47 +869,47 @@ async function obtenerMetricasRendimiento(
     ] = await Promise.all([
       pool.query<RowDataPacket[]>(
         `SELECT COUNT(*) as total FROM historial_clinico 
-         WHERE id_medico = ? AND fecha_atencion >= ?`,
+         WHERE id_profesional = ? AND fecha_atencion >= ?`,
         [idMedico, inicioMesActual]
       ),
       pool.query<RowDataPacket[]>(
         `SELECT COUNT(*) as total FROM historial_clinico 
-         WHERE id_medico = ? AND fecha_atencion BETWEEN ? AND ?`,
+         WHERE id_profesional = ? AND fecha_atencion BETWEEN ? AND ?`,
         [idMedico, inicioMesAnterior, finMesAnterior]
       ),
       pool.query<RowDataPacket[]>(
         `SELECT COUNT(DISTINCT id_paciente) as total FROM historial_clinico 
-         WHERE id_medico = ? AND fecha_atencion >= ?`,
+         WHERE id_profesional = ? AND fecha_atencion >= ?`,
         [idMedico, inicioMesActual]
       ),
       pool.query<RowDataPacket[]>(
         `SELECT COUNT(DISTINCT id_paciente) as total FROM historial_clinico 
-         WHERE id_medico = ? AND fecha_atencion BETWEEN ? AND ?`,
+         WHERE id_profesional = ? AND fecha_atencion BETWEEN ? AND ?`,
         [idMedico, inicioMesAnterior, finMesAnterior]
       ),
       pool.query<RowDataPacket[]>(
         `SELECT 
           COUNT(CASE WHEN estado = 'completada' THEN 1 END) as completadas,
           COUNT(*) as total
-         FROM citas WHERE id_medico = ? AND fecha_hora_inicio >= ?`,
+         FROM citas WHERE id_profesional = ? AND fecha_hora_inicio >= ?`,
         [idMedico, inicioMesActual]
       ),
       pool.query<RowDataPacket[]>(
         `SELECT 
           COUNT(CASE WHEN estado = 'completada' THEN 1 END) as completadas,
           COUNT(*) as total
-         FROM citas WHERE id_medico = ? AND fecha_hora_inicio BETWEEN ? AND ?`,
+         FROM citas WHERE id_profesional = ? AND fecha_hora_inicio BETWEEN ? AND ?`,
         [idMedico, inicioMesAnterior, finMesAnterior]
       ),
       pool.query<RowDataPacket[]>(
         `SELECT COALESCE(SUM(monto), 0) as total FROM citas 
-         WHERE id_medico = ? AND fecha_hora_inicio >= ? 
+         WHERE id_profesional = ? AND fecha_hora_inicio >= ? 
          AND pagada = 1 AND estado = 'completada'`,
         [idMedico, inicioMesActual]
       ),
       pool.query<RowDataPacket[]>(
         `SELECT COALESCE(SUM(monto), 0) as total FROM citas 
-         WHERE id_medico = ? AND fecha_hora_inicio BETWEEN ? AND ? 
+         WHERE id_profesional = ? AND fecha_hora_inicio BETWEEN ? AND ? 
          AND pagada = 1 AND estado = 'completada'`,
         [idMedico, inicioMesAnterior, finMesAnterior]
       ),
@@ -1025,7 +1027,7 @@ async function obtenerEventosCalendario(
       FROM citas c
       INNER JOIN pacientes p ON c.id_paciente = p.id_paciente
       LEFT JOIN salas s ON c.id_sala = s.id_sala
-      WHERE c.id_medico = ?
+      WHERE c.id_profesional = ?
         AND DATE(c.fecha_hora_inicio) = ?
         AND c.estado NOT IN ('cancelada', 'no_asistio')
       ORDER BY c.fecha_hora_inicio ASC
@@ -1081,7 +1083,7 @@ async function obtenerActividadesRecientes(
         END as color
       FROM logs_sistema l
       INNER JOIN usuarios u ON l.id_usuario = u.id_usuario
-      WHERE l.id_usuario = (SELECT id_usuario FROM medicos WHERE id_medico = ?)
+      WHERE l.id_usuario = (SELECT id_usuario FROM profesionales_salud WHERE id_profesional = ?)
       ORDER BY l.fecha_hora DESC
       LIMIT 10
       `,
@@ -1180,13 +1182,13 @@ export async function GET(request: NextRequest) {
       eventosCalendario,
       actividadesRecientes,
     ] = await Promise.all([
-      obtenerEstadisticas(medico.id_medico),
-      obtenerCitasProximas(medico.id_medico),
-      obtenerAlertasUrgentes(medico.id_medico),
-      obtenerPacientesRecientes(medico.id_medico),
-      obtenerMetricasRendimiento(medico.id_medico),
-      obtenerEventosCalendario(medico.id_medico),
-      obtenerActividadesRecientes(medico.id_medico),
+      obtenerEstadisticas(medico.id_profesional),
+      obtenerCitasProximas(medico.id_profesional),
+      obtenerAlertasUrgentes(medico.id_profesional),
+      obtenerPacientesRecientes(medico.id_profesional),
+      obtenerMetricasRendimiento(medico.id_profesional),
+      obtenerEventosCalendario(medico.id_profesional),
+      obtenerActividadesRecientes(medico.id_profesional),
     ]);
 
     // 6. Respuesta exitosa
@@ -1194,7 +1196,7 @@ export async function GET(request: NextRequest) {
       {
         success: true,
         medico: {
-          id_medico: medico.id_medico,
+          id_profesional: medico.id_profesional,
           numero_registro_medico: medico.numero_registro_medico,
           titulo_profesional: medico.titulo_profesional,
           especialidad_principal: medico.especialidad_principal,

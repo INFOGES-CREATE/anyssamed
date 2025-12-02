@@ -150,7 +150,7 @@ interface UsuarioSesion {
     nivel_jerarquia: number;
   };
   medico?: {
-    id_medico: number;
+    id_profesional: number;
     numero_registro_medico: string;
     titulo_profesional: string;
     especialidades: Array<{
@@ -822,7 +822,7 @@ export default function DashboardMedicoPremiumPage() {
   // ========================================
 
   const cargarDatosDashboard = async (silencioso: boolean = false) => {
-    if (!usuario?.medico?.id_medico) return;
+    if (!usuario?.medico?.id_profesional) return;
 
     try {
       if (!silencioso) {
@@ -831,25 +831,25 @@ export default function DashboardMedicoPremiumPage() {
 
       const [resEstadisticas, resGraficos, resCitas, resAlertas, resPacientes, resMetricas, resActividades] =
         await Promise.all([
-          fetch(`/api/medico/dashboard/estadisticas?id_medico=${usuario.medico.id_medico}`, {
+          fetch(`/api/medico/dashboard/estadisticas?id_profesional=${usuario.medico.id_profesional}`, {
             credentials: "include",
           }),
-          fetch(`/api/medico/dashboard/graficos?id_medico=${usuario.medico.id_medico}`, {
+          fetch(`/api/medico/dashboard/graficos?id_profesional=${usuario.medico.id_profesional}`, {
             credentials: "include",
           }),
-          fetch(`/api/medico/dashboard/citas?id_medico=${usuario.medico.id_medico}`, {
+          fetch(`/api/medico/dashboard/citas?id_profesional=${usuario.medico.id_profesional}`, {
             credentials: "include",
           }),
-          fetch(`/api/medico/dashboard/alertas?id_medico=${usuario.medico.id_medico}`, {
+          fetch(`/api/medico/dashboard/alertas?id_profesional=${usuario.medico.id_profesional}`, {
             credentials: "include",
           }),
-          fetch(`/api/medico/dashboard/pacientes?id_medico=${usuario.medico.id_medico}`, {
+          fetch(`/api/medico/dashboard/pacientes?id_profesional=${usuario.medico.id_profesional}`, {
             credentials: "include",
           }),
-          fetch(`/api/medico/dashboard/metricas?id_medico=${usuario.medico.id_medico}`, {
+          fetch(`/api/medico/dashboard/metricas?id_profesional=${usuario.medico.id_profesional}`, {
             credentials: "include",
           }),
-          fetch(`/api/medico/dashboard/actividades?id_medico=${usuario.medico.id_medico}`, {
+          fetch(`/api/medico/dashboard/actividades?id_profesional=${usuario.medico.id_profesional}`, {
             credentials: "include",
           }),
         ]);
@@ -1222,169 +1222,190 @@ export default function DashboardMedicoPremiumPage() {
       className={`min-h-screen transition-all duration-500 bg-gradient-to-br ${tema.colores.fondo}`}
     >
       {/* ========================================
-          SIDEBAR PREMIUM
-          ======================================== */}
-      <aside
-        className={`fixed left-0 top-0 h-full z-50 transition-all duration-300 ${
-          sidebarAbierto ? "w-72" : "w-20"
-        } ${tema.colores.sidebar} ${tema.colores.borde} border-r ${tema.colores.sombra}`}
-      >
-        <div className="flex flex-col h-full">
-          {/* Logo y Toggle */}
-          <div className="flex items-center justify-between p-6 border-b border-gray-700/30">
-            {sidebarAbierto ? (
-              <div className="flex items-center gap-3">
-                <div
-                  className={`w-12 h-12 bg-gradient-to-br ${tema.colores.gradiente} rounded-xl flex items-center justify-center shadow-lg`}
-                >
-                  <Stethoscope className="w-6 h-6 text-white" />
-                </div>
-                <div>
-                  <h1 className={`text-xl font-black ${tema.colores.texto}`}>AnyssaMed</h1>
-                  <p className={`text-xs font-semibold ${tema.colores.acento}`}>
-                    Panel Médico Pro
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <div
-                className={`w-12 h-12 bg-gradient-to-br ${tema.colores.gradiente} rounded-xl flex items-center justify-center shadow-lg mx-auto`}
-              >
-                <Stethoscope className="w-6 h-6 text-white" />
-              </div>
-            )}
-
-            <button
-              onClick={() => setSidebarAbierto(!sidebarAbierto)}
-              className={`p-2 rounded-lg ${tema.colores.hover} transition-colors ${
-                !sidebarAbierto && "mx-auto mt-4"
-              }`}
-            >
-              <ChevronRight
-                className={`w-5 h-5 ${tema.colores.texto} transition-transform ${
-                  sidebarAbierto ? "rotate-180" : ""
-                }`}
-              />
-            </button>
-          </div>
-
-          {/* Menú de Navegación */}
-          <nav className="flex-1 overflow-y-auto py-6 px-3 custom-scrollbar">
-            {menuItems.map((item, index) => (
-              <div key={index} className="mb-1">
-                <div
-                  className="relative group"
-                  onMouseEnter={() => item.submenu && sidebarAbierto && setMenuExpandido(item.titulo)}
-                  onMouseLeave={() => setMenuExpandido(null)}
-                >
-                  <Link
-                    href={item.url}
-                    className={`flex items-center justify-between gap-3 px-4 py-3 rounded-xl font-semibold transition-all duration-300 ${
-                      item.activo
-                        ? `bg-gradient-to-r ${tema.colores.gradiente} text-white ${tema.colores.sombra}`
-                        : `${tema.colores.hover} ${tema.colores.texto}`
-                    }`}
-                  >
-                    <div className="flex items-center gap-3 min-w-0 flex-1">
-                      <item.icono
-                        className={`w-5 h-5 flex-shrink-0 ${
-                          item.activo ? "text-white" : tema.colores.acento
-                        }`}
-                      />
-                      {sidebarAbierto && <span className="truncate">{item.titulo}</span>}
-                    </div>
-
-                    {sidebarAbierto && item.badge && item.badge > 0 && (
-                      <span
-                        className={`px-2 py-1 text-xs font-bold rounded-full ${
-                          item.activo
-                            ? "bg-white/20 text-white"
-                            : "bg-red-500 text-white animate-pulse"
-                        }`}
-                      >
-                        {item.badge > 99 ? "99+" : item.badge}
-                      </span>
-                    )}
-
-                    {sidebarAbierto && item.submenu && (
-                      <ChevronDown
-                        className={`w-4 h-4 transition-transform ${
-                          menuExpandido === item.titulo ? "rotate-180" : ""
-                        }`}
-                      />
-                    )}
-                  </Link>
-
-                  {/* Submenú */}
-                  {sidebarAbierto && item.submenu && menuExpandido === item.titulo && (
-                    <div className="mt-2 ml-4 space-y-1 animate-fadeIn">
-                      {item.submenu.map((subitem, subindex) => (
-                        <Link
-                          key={subindex}
-                          href={subitem.url}
-                          className={`flex items-center gap-3 px-4 py-2 rounded-lg font-medium text-sm transition-all duration-300 ${tema.colores.hover} ${tema.colores.textoSecundario} hover:${tema.colores.acento}`}
-                        >
-                          <subitem.icono className="w-4 h-4" />
-                          <span>{subitem.titulo}</span>
-                        </Link>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))}
-          </nav>
-
-          {/* Usuario Info Bottom */}
-          <div className={`p-4 border-t ${tema.colores.borde}`}>
-            {sidebarAbierto ? (
-              <div className="flex items-center gap-3">
-                <div
-                  className={`relative w-12 h-12 rounded-xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center text-white font-bold shadow-lg`}
-                >
-                  {usuario.foto_perfil_url ? (
-                    <Image
-                      src={usuario.foto_perfil_url}
-                      alt={usuario.nombre}
-                      width={48}
-                      height={48}
-                      className="rounded-xl object-cover"
-                    />
-                  ) : (
-                    `${usuario.nombre[0]}${usuario.apellido_paterno[0]}`
-                  )}
-                  <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white animate-pulse"></div>
-                </div>
-                <div className="flex-1 min-w-0">
-                  <p className={`text-sm font-bold truncate ${tema.colores.texto}`}>
-                    Dr. {usuario.nombre} {usuario.apellido_paterno}
-                  </p>
-                  <p className={`text-xs font-medium truncate ${tema.colores.textoSecundario}`}>
-                    {usuario.medico.especialidades[0]?.nombre || "Médico General"}
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <div
-                className={`relative w-12 h-12 rounded-xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center text-white font-bold shadow-lg mx-auto`}
-              >
-                {usuario.foto_perfil_url ? (
-                  <Image
-                    src={usuario.foto_perfil_url}
-                    alt={usuario.nombre}
-                    width={48}
-                    height={48}
-                    className="rounded-xl object-cover"
-                  />
-                ) : (
-                  `${usuario.nombre[0]}${usuario.apellido_paterno[0]}`
-                )}
-                <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white animate-pulse"></div>
-              </div>
-            )}
+          SIDEBAR PREMIUM (Refinado)
+   ======================================== */}
+<aside
+  className={`fixed left-0 top-0 h-full z-50 transition-all duration-300 ${
+    sidebarAbierto ? "w-72" : "w-20"
+  } ${tema.colores.sidebar} ${tema.colores.borde} border-r ${tema.colores.sombra}`}
+>
+  <div className="flex flex-col h-full">
+    {/* Logo y Toggle */}
+    <div className="flex items-center justify-between p-6 border-b border-gray-700/30">
+      {sidebarAbierto ? (
+        <div className="flex items-center gap-3">
+          {/* Logo del centro */}
+          {usuario?.medico?.centro_principal?.logo_url && (
+            <Image
+              src={usuario.medico.centro_principal.logo_url}
+              alt={usuario.medico.centro_principal.nombre}
+              width={56}
+              height={56}
+              className="rounded-xl shadow-md object-contain bg-white p-1"
+            />
+          )}
+          <div className="flex flex-col">
+            <h2 className={`text-lg font-bold ${tema.colores.texto}`}>
+              {usuario.medico.centro_principal.nombre}
+            </h2>
+            <p className={`text-xs font-medium ${tema.colores.textoSecundario}`}>
+              {usuario.medico.centro_principal.ciudad},{" "}
+              {usuario.medico.centro_principal.region}
+            </p>
           </div>
         </div>
-      </aside>
+      ) : (
+        <div className="mx-auto">
+          {usuario?.medico?.centro_principal?.logo_url && (
+            <Image
+              src={usuario.medico.centro_principal.logo_url}
+              alt={usuario.medico.centro_principal.nombre}
+              width={40}
+              height={40}
+              className="rounded-lg object-contain bg-white p-1 shadow"
+            />
+          )}
+        </div>
+      )}
+
+      <button
+        onClick={() => setSidebarAbierto(!sidebarAbierto)}
+        className={`p-2 rounded-lg ${tema.colores.hover} transition-colors ${
+          !sidebarAbierto && "mx-auto mt-4"
+        }`}
+      >
+        <ChevronRight
+          className={`w-5 h-5 ${tema.colores.texto} transition-transform ${
+            sidebarAbierto ? "rotate-180" : ""
+          }`}
+        />
+      </button>
+    </div>
+
+    {/* Menú de Navegación */}
+    <nav className="flex-1 overflow-y-auto py-6 px-3 custom-scrollbar">
+      {menuItems.map((item, index) => (
+        <div key={index} className="mb-1">
+          <div
+            className="relative group"
+            onMouseEnter={() =>
+              item.submenu && sidebarAbierto && setMenuExpandido(item.titulo)
+            }
+            onMouseLeave={() => setMenuExpandido(null)}
+          >
+            <Link
+              href={item.url}
+              className={`flex items-center justify-between gap-3 px-4 py-3 rounded-xl font-semibold transition-all duration-300 ${
+                item.activo
+                  ? `bg-gradient-to-r ${tema.colores.gradiente} text-white ${tema.colores.sombra}`
+                  : `${tema.colores.hover} ${tema.colores.texto}`
+              }`}
+            >
+              <div className="flex items-center gap-3 min-w-0 flex-1">
+                <item.icono
+                  className={`w-5 h-5 flex-shrink-0 ${
+                    item.activo ? "text-white" : tema.colores.acento
+                  }`}
+                />
+                {sidebarAbierto && <span className="truncate">{item.titulo}</span>}
+              </div>
+
+              {sidebarAbierto && item.badge && item.badge > 0 && (
+                <span
+                  className={`px-2 py-1 text-xs font-bold rounded-full ${
+                    item.activo
+                      ? "bg-white/20 text-white"
+                      : "bg-red-500 text-white animate-pulse"
+                  }`}
+                >
+                  {item.badge > 99 ? "99+" : item.badge}
+                </span>
+              )}
+
+              {sidebarAbierto && item.submenu && (
+                <ChevronDown
+                  className={`w-4 h-4 transition-transform ${
+                    menuExpandido === item.titulo ? "rotate-180" : ""
+                  }`}
+                />
+              )}
+            </Link>
+
+            {/* Submenú */}
+            {sidebarAbierto &&
+              item.submenu &&
+              menuExpandido === item.titulo && (
+                <div className="mt-2 ml-4 space-y-1 animate-fadeIn">
+                  {item.submenu.map((subitem, subindex) => (
+                    <Link
+                      key={subindex}
+                      href={subitem.url}
+                      className={`flex items-center gap-3 px-4 py-2 rounded-lg font-medium text-sm transition-all duration-300 ${tema.colores.hover} ${tema.colores.textoSecundario} hover:${tema.colores.acento}`}
+                    >
+                      <subitem.icono className="w-4 h-4" />
+                      <span>{subitem.titulo}</span>
+                    </Link>
+                  ))}
+                </div>
+              )}
+          </div>
+        </div>
+      ))}
+    </nav>
+
+    {/* Usuario Info Abajo */}
+    <div className={`p-4 border-t ${tema.colores.borde}`}>
+      {sidebarAbierto ? (
+        <div className="flex items-center gap-3">
+          <div
+            className={`relative w-12 h-12 rounded-xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center text-white font-bold shadow-lg`}
+          >
+            {usuario.foto_perfil_url ? (
+              <Image
+                src={usuario.foto_perfil_url}
+                alt={usuario.nombre}
+                width={48}
+                height={48}
+                className="rounded-xl object-cover"
+              />
+            ) : (
+              `${usuario.nombre[0]}${usuario.apellido_paterno[0]}`
+            )}
+            <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white animate-pulse"></div>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className={`text-sm font-bold truncate ${tema.colores.texto}`}>
+              Dr. {usuario.nombre} {usuario.apellido_paterno}
+            </p>
+            <p
+              className={`text-xs font-medium truncate ${tema.colores.textoSecundario}`}
+            >
+              {usuario.medico.especialidades[0]?.nombre || "Médico General"}
+            </p>
+          </div>
+        </div>
+      ) : (
+        <div
+          className={`relative w-12 h-12 rounded-xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center text-white font-bold shadow-lg mx-auto`}
+        >
+          {usuario.foto_perfil_url ? (
+            <Image
+              src={usuario.foto_perfil_url}
+              alt={usuario.nombre}
+              width={48}
+              height={48}
+              className="rounded-xl object-cover"
+            />
+          ) : (
+            `${usuario.nombre[0]}${usuario.apellido_paterno[0]}`
+          )}
+          <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white animate-pulse"></div>
+        </div>
+      )}
+    </div>
+  </div>
+</aside>
+
 
       {/* ========================================
           HEADER PREMIUM

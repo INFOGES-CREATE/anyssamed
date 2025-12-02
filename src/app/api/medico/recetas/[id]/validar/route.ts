@@ -1,4 +1,6 @@
 // app/api/medico/recetas/[id]/validar/route.ts
+export const dynamic = "force-dynamic";
+
 import { NextRequest, NextResponse } from "next/server";
 import pool from "@/lib/db";
 import { RowDataPacket } from "mysql2";
@@ -88,8 +90,10 @@ function getSessionToken(request: NextRequest): string | null {
  * Obtiene la información del médico autenticado
  */
 async function obtenerMedicoAutenticado(
-  idUsuario: number
+  idUsuario: number | null  // ✅ Acepta null
 ): Promise<MedicoData | null> {
+  if (!idUsuario) return null;  // ✅ Valida al inicio
+  
   try {
     const [rows] = await pool.query<RowDataPacket[]>(
       `

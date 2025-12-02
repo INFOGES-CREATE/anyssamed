@@ -3,6 +3,7 @@
 // ============================================================
 // 🔐 Login API - MediSuite Pro (MySQL + JWT) | Next.js 14 App Router
 // ============================================================
+export const dynamic = "force-dynamic";
 
 export const runtime = "nodejs";
 

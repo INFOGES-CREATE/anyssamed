@@ -35,7 +35,7 @@ export async function GET(req: Request) {
     const estado   = (searchParams.get("estado") ?? "").trim();
     const tipo     = (searchParams.get("tipo_receta") ?? searchParams.get("tipo") ?? "").trim();
     const idCentro = searchParams.get("id_centro")   ? Number(searchParams.get("id_centro"))   : null;
-    const idMedico = searchParams.get("id_medico")   ? Number(searchParams.get("id_medico"))   : null;
+    const idMedico = searchParams.get("id_profesional")   ? Number(searchParams.get("id_profesional"))   : null;
     const idPaciente = searchParams.get("id_paciente") ? Number(searchParams.get("id_paciente")) : null;
     const desde    = (searchParams.get("desde") ?? "").trim();
     const hasta    = (searchParams.get("hasta") ?? "").trim();
@@ -54,7 +54,7 @@ export async function GET(req: Request) {
     if (estado && await colExists("recetas_medicas", "estado")) { where.push(`rm.estado = ?`); params.push(estado); }
     if (tipo   && await colExists("recetas_medicas", "tipo_receta")) { where.push(`rm.tipo_receta = ?`); params.push(tipo); }
     if (idCentro)   { where.push(`rm.id_centro = ?`); params.push(idCentro); }
-    if (idMedico)   { where.push(`rm.id_medico = ?`); params.push(idMedico); }
+    if (idMedico)   { where.push(`rm.id_profesional = ?`); params.push(idMedico); }
     if (idPaciente) { where.push(`rm.id_paciente = ?`); params.push(idPaciente); }
     if (desde && await colExists("recetas_medicas","fecha_emision")) { where.push(`rm.fecha_emision >= ?`); params.push(desde); }
     if (hasta && await colExists("recetas_medicas","fecha_emision")) { where.push(`rm.fecha_emision <= ?`); params.push(hasta); }
@@ -73,7 +73,7 @@ export async function GET(req: Request) {
            SUM(CASE WHEN rm.estado='anulada' THEN 1 ELSE 0 END) AS anuladas
          FROM recetas_medicas rm
          JOIN pacientes p ON p.id_paciente = rm.id_paciente
-         JOIN medicos md  ON md.id_medico  = rm.id_medico
+         JOIN profesionales_salud md  ON md.id_profesional  = rm.id_profesional
          JOIN usuarios mu ON mu.id_usuario = md.id_usuario
          JOIN centros_medicos c ON c.id_centro = rm.id_centro
          ${whereSql}`, params
@@ -90,7 +90,7 @@ export async function GET(req: Request) {
         `SELECT COUNT(*) AS total
          FROM recetas_medicas rm
          JOIN pacientes p ON p.id_paciente = rm.id_paciente
-         JOIN medicos md  ON md.id_medico  = rm.id_medico
+         JOIN profesionales_salud md  ON md.id_profesional  = rm.id_profesional
          JOIN usuarios mu ON mu.id_usuario = md.id_usuario
          JOIN centros_medicos c ON c.id_centro = rm.id_centro
          ${whereSql}`, params
@@ -106,7 +106,7 @@ export async function GET(req: Request) {
       SELECT
         rm.id_receta,
         rm.id_paciente,
-        rm.id_medico,
+        rm.id_profesional,
         rm.id_centro,
         ${fechaSel} AS fecha_emision,
         ${numeroSel} AS numero_receta,
@@ -122,7 +122,7 @@ export async function GET(req: Request) {
         COALESCE(ri.items_dispensados, 0) AS items_dispensados
       FROM recetas_medicas rm
       JOIN pacientes p ON p.id_paciente = rm.id_paciente
-      JOIN medicos md  ON md.id_medico  = rm.id_medico
+      JOIN profesionales_salud md  ON md.id_profesional  = rm.id_profesional
       JOIN usuarios mu ON mu.id_usuario = md.id_usuario
       JOIN centros_medicos c ON c.id_centro = rm.id_centro
       LEFT JOIN (
@@ -162,16 +162,16 @@ export async function POST(req: Request) {
     // Requeridos mínimos para maestro
     const id_centro   = body.id_centro;
     const id_paciente = body.id_paciente;
-    const id_medico   = body.id_medico;
+    const id_profesional   = body.id_profesional;
     const fecha_emision = body.fecha_emision ?? body.fecha ? null : null; // si no envían, confía en default/trigger
 
-    if (!id_centro || !id_paciente || !id_medico) {
-      return NextResponse.json({ success: false, error: "Faltan: id_centro, id_paciente, id_medico" }, { status: 400 });
+    if (!id_centro || !id_paciente || !id_profesional) {
+      return NextResponse.json({ success: false, error: "Faltan: id_centro, id_paciente, id_profesional" }, { status: 400 });
     }
 
     const masterCols = await getCols("recetas_medicas");
     const candidates: Record<string, any> = {
-      id_centro, id_paciente, id_medico,
+      id_centro, id_paciente, id_profesional,
       fecha_emision,
       numero_receta: body.numero_receta ?? null,
       tipo_receta: body.tipo_receta ?? null,

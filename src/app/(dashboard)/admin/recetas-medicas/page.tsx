@@ -7,6 +7,8 @@ import {
   Printer, ChevronDown, ChevronUp, Pill, Check, Package, Syringe, ClipboardCheck, Wrench, Repeat, Ban,
   FileSignature, ClipboardList, Undo2, Lock
 } from "lucide-react";
+import Link from "next/link";
+import { ArrowLeft } from "lucide-react";
 
 /* ==================== TIPOS ==================== */
 type Opcion = { value: number | string; label: string; [k: string]: any };
@@ -37,7 +39,7 @@ type EstadoReceta = "emitida" | "parcial" | "dispensada" | "anulada" | string;
 type Receta = {
   id_receta: number;
   id_paciente: number;
-  id_medico: number;
+  id_profesional: number;
   id_centro: number;
   fecha_emision: string;
   numero_receta?: string | null;
@@ -192,7 +194,7 @@ export default function AdminRecetasMedicasPage() {
     try {
       const q = new URLSearchParams({ pagina: String(page), pageSize: String(pageSize) });
       if (fCentro) q.append("id_centro", String(fCentro));
-      if (fMedico) q.append("id_medico", String(fMedico));
+      if (fMedico) q.append("id_profesional", String(fMedico));
       if (fPaciente) q.append("id_paciente", String(fPaciente));
       if (fEstado) q.append("estado", fEstado);
       if (fTipo) q.append("tipo_receta", fTipo);
@@ -289,7 +291,7 @@ export default function AdminRecetasMedicasPage() {
       if (!data?.success) return alert(data?.error || "No se pudo obtener el detalle");
       const payload = {
         id_centro: r.id_centro,
-        id_medico: r.id_medico,
+        id_profesional: r.id_profesional,
         id_paciente: r.id_paciente,
         fecha_emision: new Date().toISOString().slice(0, 19).replace("T", " "),
         numero_receta: null,
@@ -335,15 +337,32 @@ export default function AdminRecetasMedicasPage() {
       <div className="p-6 space-y-6">
         {/* HEADER */}
         <header className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold flex items-center gap-3 text-gray-900 dark:text-white">
-              <span className="p-2 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl shadow-lg">
-                <Pill className="w-8 h-8 text-white" />
-              </span>
-              Recetas médicas
-            </h1>
-            <p className="text-gray-600 dark:text-gray-400 mt-1">Emisión, control y dispensación de recetas.</p>
-          </div>
+          <div className="space-y-1 mb-6">
+  <h1 className="text-3xl font-bold flex items-center gap-3 text-gray-900 dark:text-white">
+    
+    {/* Botón regresar (solo flecha) */}
+    <Link
+      href="javascript:history.back()"
+      className="p-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600
+                 text-white shadow-lg hover:shadow-xl hover:scale-110 active:scale-95
+                 transition-all duration-200 inline-flex items-center justify-center"
+    >
+      <ArrowLeft className="w-6 h-6" />
+    </Link>
+
+    {/* Ícono original */}
+    <span className="p-2 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl shadow-lg">
+      <Pill className="w-8 h-8 text-white" />
+    </span>
+
+    Recetas médicas
+  </h1>
+
+  <p className="text-gray-600 dark:text-gray-400">
+    Emisión, control y dispensación de recetas.
+  </p>
+</div>
+
 
           <div className="flex items-center gap-3">
             <button onClick={() => setTheme(theme === "light" ? "dark" : "light")}
@@ -749,7 +768,7 @@ function ModalCE({ theme, onClose, onSaved, editReceta, opciones }:{
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState<any>(()=>({
     id_centro: editReceta?.id_centro ?? "",
-    id_medico: editReceta?.id_medico ?? "",
+    id_profesional: editReceta?.id_profesional ?? "",
     id_paciente: editReceta?.id_paciente ?? "",
     fecha_emision: editReceta?.fecha_emision?.slice(0,16) ?? "",
     numero_receta: editReceta?.numero_receta ?? "",
@@ -787,7 +806,7 @@ function ModalCE({ theme, onClose, onSaved, editReceta, opciones }:{
     try {
       const payload:any = {
         id_centro: Number(form.id_centro) || null,
-        id_medico: Number(form.id_medico) || null,
+        id_profesional: Number(form.id_profesional) || null,
         id_paciente: Number(form.id_paciente) || null,
         fecha_emision: form.fecha_emision || null,
         numero_receta: form.numero_receta || null,
@@ -833,7 +852,7 @@ function ModalCE({ theme, onClose, onSaved, editReceta, opciones }:{
           </select>
         </Field>
         <Field label="Médico" required>
-          <select value={form.id_medico} onChange={e=>setForm((f:any)=>({...f,id_medico:e.target.value}))} className={input}>
+          <select value={form.id_profesional} onChange={e=>setForm((f:any)=>({...f,id_profesional:e.target.value}))} className={input}>
             <option value="">Seleccione...</option>
             {opciones.opMedicos.map(o=><option key={o.value} value={o.value}>{o.label}</option>)}
           </select>

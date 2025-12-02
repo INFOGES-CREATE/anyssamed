@@ -3176,4 +3176,3 @@ const handleHoraSelect = (bloque: BloqueHorario) => {
     </div>
   );
 }
-

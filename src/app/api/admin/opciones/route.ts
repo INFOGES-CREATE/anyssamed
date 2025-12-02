@@ -1,3 +1,5 @@
+
+// frontend/src/app/api/admin/opciones/route.ts
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 import type { RowDataPacket } from "mysql2/promise";

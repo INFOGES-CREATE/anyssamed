@@ -1,4 +1,5 @@
 // frontend/src/app/api/admin/citas/route.ts
+export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
@@ -20,7 +21,7 @@ export async function GET(req: Request) {
 
     // ==================== PARÁMETROS DE FILTROS ====================
     const id_centro = searchParams.get("id_centro");
-    const id_medico = searchParams.get("id_medico");
+    const id_profesional = searchParams.get("id_profesional");
     const id_sucursal = searchParams.get("id_sucursal");
     const id_paciente = searchParams.get("id_paciente");
     const estado = searchParams.get("estado");
@@ -44,9 +45,9 @@ export async function GET(req: Request) {
       queryParams.push(Number(id_centro));
     }
 
-    if (id_medico) {
-      whereClauses.push("c.id_medico = ?");
-      queryParams.push(Number(id_medico));
+    if (id_profesional) {
+      whereClauses.push("c.id_profesional = ?");
+      queryParams.push(Number(id_profesional));
     }
 
     if (id_sucursal) {
@@ -143,13 +144,13 @@ export async function GET(req: Request) {
         GROUP_CONCAT(DISTINCT esp.nombre ORDER BY esp.nombre SEPARATOR ', ') AS medico_especialidad
        FROM citas c
        INNER JOIN pacientes p ON p.id_paciente = c.id_paciente
-       INNER JOIN medicos m ON m.id_medico = c.id_medico
+       INNER JOIN profesionales_salud m ON m.id_profesional = c.id_profesional
        INNER JOIN usuarios u ON u.id_usuario = m.id_usuario
        INNER JOIN centros_medicos cm ON cm.id_centro = c.id_centro
        LEFT JOIN sucursales s ON s.id_sucursal = c.id_sucursal
        LEFT JOIN salas sa ON sa.id_sala = c.id_sala
        LEFT JOIN especialidades e ON e.id_especialidad = c.id_especialidad
-       LEFT JOIN medicos_especialidades me ON me.id_medico = m.id_medico
+       LEFT JOIN profesionales_especialidades me ON me.id_profesional = m.id_profesional
        LEFT JOIN especialidades esp ON esp.id_especialidad = me.id_especialidad
        WHERE ${whereSQL}
        GROUP BY c.id_cita, p.rut, p.email, p.telefono, p.nombre, p.apellido_paterno, p.apellido_materno,
@@ -164,7 +165,7 @@ export async function GET(req: Request) {
       `SELECT COUNT(DISTINCT c.id_cita) AS total
        FROM citas c
        INNER JOIN pacientes p ON p.id_paciente = c.id_paciente
-       INNER JOIN medicos m ON m.id_medico = c.id_medico
+       INNER JOIN profesionales_salud m ON m.id_profesional = c.id_profesional
        INNER JOIN usuarios u ON u.id_usuario = m.id_usuario
        INNER JOIN centros_medicos cm ON cm.id_centro = c.id_centro
        LEFT JOIN sucursales s ON s.id_sucursal = c.id_sucursal
@@ -195,7 +196,7 @@ export async function GET(req: Request) {
         ROUND(AVG(c.duracion_minutos), 0) AS promedio_duracion
        FROM citas c
        INNER JOIN pacientes p ON p.id_paciente = c.id_paciente
-       INNER JOIN medicos m ON m.id_medico = c.id_medico
+       INNER JOIN profesionales_salud m ON m.id_profesional = c.id_profesional
        INNER JOIN usuarios u ON u.id_usuario = m.id_usuario
        INNER JOIN centros_medicos cm ON cm.id_centro = c.id_centro
        LEFT JOIN sucursales s ON s.id_sucursal = c.id_sucursal
@@ -255,7 +256,7 @@ export async function POST(req: Request) {
 
     const {
       id_paciente,
-      id_medico,
+      id_profesional,
       id_centro,
       id_sucursal = null,
       fecha_hora_inicio,
@@ -274,11 +275,11 @@ export async function POST(req: Request) {
     } = body;
 
     // ==================== VALIDACIONES ====================
-    if (!id_paciente || !id_medico || !id_centro || !fecha_hora_inicio || !tipo_cita) {
+    if (!id_paciente || !id_profesional || !id_centro || !fecha_hora_inicio || !tipo_cita) {
       return NextResponse.json(
         {
           success: false,
-          error: "Faltan campos requeridos: id_paciente, id_medico, id_centro, fecha_hora_inicio, tipo_cita",
+          error: "Faltan campos requeridos: id_paciente, id_profesional, id_centro, fecha_hora_inicio, tipo_cita",
         },
         { status: 400 }
       );
@@ -308,10 +309,10 @@ export async function POST(req: Request) {
       const [overlap]: any = await conn.query(
         `SELECT COUNT(*) AS solapes
          FROM citas
-         WHERE id_medico = ?
+         WHERE id_profesional = ?
            AND estado IN ('programada', 'confirmada', 'en_sala_espera', 'en_atencion')
            AND (? < fecha_hora_fin) AND (? > fecha_hora_inicio)`,
-        [id_medico, inicio, fin]
+        [id_profesional, inicio, fin]
       );
 
       if (overlap?.[0]?.solapes > 0) {
@@ -353,7 +354,7 @@ export async function POST(req: Request) {
       // ==================== INSERTAR CITA ====================
       const [result]: any = await conn.query(
         `INSERT INTO citas (
-          id_paciente, id_medico, id_centro, id_sucursal,
+          id_paciente, id_profesional, id_centro, id_sucursal,
           fecha_hora_inicio, fecha_hora_fin, duracion_minutos,
           tipo_cita, motivo, estado, prioridad, id_especialidad,
           origen, pagada, monto, id_sala, notas, notas_privadas,
@@ -362,7 +363,7 @@ export async function POST(req: Request) {
         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'programada', ?, ?, ?, ?, ?, ?, ?, ?, 0, 0, 0, ?)`,
         [
           id_paciente,
-          id_medico,
+          id_profesional,
           id_centro,
           id_sucursal,
           inicio,

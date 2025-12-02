@@ -1,3 +1,5 @@
+//src\app\(dashboard)\admin\medicos\[id]\edit\page.tsx
+
 "use client";
 
 import { useState, useEffect, useCallback, FormEvent } from "react";
@@ -40,9 +42,11 @@ interface Disponibilidad {
   hora_inicio: string;
   hora_fin: string;
   tipo_atencion: string;
+  id_sucursal: number; // ← agregado
   estado: string;
   sucursal_nombre?: string | null;
 }
+
 
 interface RolAsignado {
   id_rol: number;
@@ -51,7 +55,7 @@ interface RolAsignado {
 }
 
 interface MedicoFull {
-  id_medico: number;
+  id_profesional: number;
   id_usuario: number;
   nombre_completo: string;
   rut?: string | null;
@@ -201,6 +205,12 @@ export default function MedicoEditPage() {
   const [autenticacion2FA, setAutenticacion2FA] = useState(false);
   const [rolesSeleccionados, setRolesSeleccionados] = useState<number[]>([]);
 
+const [centroPrincipal, setCentroPrincipal] = useState<number>(0);
+const [sucursal, setSucursal] = useState<number>(0);
+const [especialidadPrincipal, setEspecialidadPrincipal] = useState<number>(0);
+const [especialidadesMedico, setEspecialidadesMedico] = useState<Especialidad[]>([]);
+
+
   // ========== helpers UI ==========
   const getEstadoStyles = (estado: string) => {
     if (darkMode) {
@@ -244,78 +254,104 @@ export default function MedicoEditPage() {
   };
 
   // ========== cargar datos iniciales ==========
-  const fetchMedico = useCallback(async () => {
-    if (!medicoId) return;
-    try {
-      setLoading(true);
-      setError(null);
+ const fetchMedico = useCallback(async () => {
+  if (!medicoId) return;
 
-      const [medRes, rolesRes] = await Promise.all([
-        fetch(`/api/admin/medicos/${medicoId}`, {
-          method: "GET",
-          credentials: "include",
-        }),
-        fetch(`/api/admin/roles?tipo=profesional`, {
-          method: "GET",
-          credentials: "include",
-        }),
-      ]);
+  try {
+    setLoading(true);
+    setError(null);
 
-      if (!medRes.ok) {
-        throw new Error(`Error al cargar el médico (${medRes.status})`);
-      }
-      const medJson: ApiMedicoDetailResponse = await medRes.json();
-      if (!medJson.success || !medJson.data) {
-        throw new Error(
-          medJson.error || "No se encontró información del médico"
-        );
-      }
+    // === Fetch paralelo ===
+    const [medRes, rolesRes] = await Promise.all([
+      fetch(`/api/admin/medicos/${medicoId}`, {
+        method: "GET",
+        credentials: "include",
+      }),
+      fetch(`/api/admin/roles?tipo=profesional`, {
+        method: "GET",
+        credentials: "include",
+      }),
+    ]);
 
-      let rolesJson: ApiRolesResponse = { success: true, data: [] };
-      if (rolesRes.ok) {
-        rolesJson = await rolesRes.json();
-      }
-
-      setMedico(medJson.data);
-      setRolesDisponibles(rolesJson.data || []);
-
-      // Prefill form desde backend
-      const m = medJson.data;
-
-      setNombreCompleto(m.nombre_completo || "");
-      setEmail(m.email || "");
-      setTelefono(m.telefono || "");
-
-      setTituloProfesional(m.titulo_profesional || "");
-      setUniversidad(m.universidad || "");
-      setAnoGraduacion(m.ano_graduacion || "");
-      setBiografia(m.biografia || "");
-
-      setAceptaNuevosPacientes(m.acepta_nuevos_pacientes || false);
-      setPresencial(m.consulta_presencial || false);
-      setTelemedicina(m.consulta_telemedicina || false);
-      setDuracionConsulta(m.duracion_consulta_min || "");
-
-      setAtiendeParticular(m.atiende_particular || false);
-      setAtiendeFonasa(m.atiende_fonasa || false);
-      setAtiendeIsapre(m.atiende_isapre || false);
-
-      setRequiereCambioPassword(
-        m.permisos.requiere_cambio_password || false
-      );
-      setAutenticacion2FA(m.permisos.autenticacion_2fa || false);
-      setRolesSeleccionados(m.permisos.roles.map((r) => r.id_rol));
-    } catch (err: any) {
-      console.error(err);
-      setError(err.message || "Error inesperado");
-    } finally {
-      setLoading(false);
+    if (!medRes.ok) {
+      throw new Error(`Error al cargar el médico (${medRes.status})`);
     }
-  }, [medicoId]);
 
-  useEffect(() => {
-    fetchMedico();
-  }, [fetchMedico]);
+    const medJson: ApiMedicoDetailResponse = await medRes.json();
+    if (!medJson.success || !medJson.data) {
+      throw new Error(medJson.error || "No se encontró información del médico");
+    }
+
+    let rolesJson: ApiRolesResponse = { success: true, data: [] };
+    if (rolesRes.ok) {
+      rolesJson = await rolesRes.json();
+    }
+
+    setMedico(medJson.data);
+    setRolesDisponibles(rolesJson.data || []);
+
+    // =========================
+    // PREFILL FORMULARIO
+    // =========================
+    const m = medJson.data;
+
+    // --- básicos ---
+    setNombreCompleto(m.nombre_completo || "");
+    setEmail(m.email || "");
+    setTelefono(m.telefono || "");
+
+    // --- info profesional ---
+    setTituloProfesional(m.titulo_profesional || "");
+    setUniversidad(m.universidad || "");
+    setAnoGraduacion(m.ano_graduacion || "");
+    setBiografia(m.biografia || "");
+
+    // --- modalidad ---
+    setAceptaNuevosPacientes(m.acepta_nuevos_pacientes || false);
+    setPresencial(m.consulta_presencial || false);
+    setTelemedicina(m.consulta_telemedicina || false);
+    setDuracionConsulta(m.duracion_consulta_min || "");
+
+    // --- coberturas ---
+    setAtiendeParticular(m.atiende_particular || false);
+    setAtiendeFonasa(m.atiende_fonasa || false);
+    setAtiendeIsapre(m.atiende_isapre || false);
+
+    // =========================
+    // CAMPOS QUE FALTABAN 🔥
+    // =========================
+
+    // --- centro principal ---
+    setCentroPrincipal(m.centro_principal?.id_centro ?? 0);
+
+    // --- sucursal (si existe disponibilidad) ---
+    setSucursal(m.disponibilidad?.[0]?.id_sucursal ?? 0);
+
+    // --- especialidad principal ---
+    const espPrincipal = m.especialidades.find((e) => e.es_principal);
+    setEspecialidadPrincipal(espPrincipal?.id_especialidad ?? 0);
+
+    // --- lista completa de especialidades ---
+    setEspecialidadesMedico(m.especialidades || []);
+
+    // --- permisos ---
+    setRequiereCambioPassword(m.permisos.requiere_cambio_password || false);
+    setAutenticacion2FA(m.permisos.autenticacion_2fa || false);
+    setRolesSeleccionados(m.permisos.roles.map((r) => r.id_rol));
+
+  } catch (err: any) {
+    console.error(err);
+    setError(err.message || "Error inesperado");
+  } finally {
+    setLoading(false);
+  }
+
+}, [medicoId]);
+
+useEffect(() => {
+  fetchMedico();
+}, [fetchMedico]);
+
 
   // ========== handlers ==========
   const toggleRole = (idRol: number) => {
@@ -357,7 +393,7 @@ export default function MedicoEditPage() {
         },
       };
 
-      const res = await fetch(`/api/admin/medicos/${medico.id_medico}`, {
+      const res = await fetch(`/api/admin/medicos/${medico.id_profesional}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -399,7 +435,7 @@ export default function MedicoEditPage() {
       setDeleting(true);
       setBanner(null);
 
-      const res = await fetch(`/api/admin/medicos/${medico.id_medico}`, {
+      const res = await fetch(`/api/admin/medicos/${medico.id_profesional}`, {
         method: "DELETE",
         credentials: "include",
       });
@@ -711,7 +747,7 @@ export default function MedicoEditPage() {
               {/* acciones header */}
               <div className="flex flex-col md:flex-row items-stretch md:items-center gap-3">
                 <Link
-                  href={`/admin/medicos/${medico.id_medico}`}
+                  href={`/admin/medicos/${medico.id_profesional}`}
                   className={`inline-flex items-center justify-center gap-2 rounded-xl font-bold text-sm shadow-xl transition-all duration-300 hover:scale-[1.03] px-4 py-3 text-center border ${borderColor} ${hoverBg} ${
                     darkMode ? "text-slate-200" : "text-slate-700"
                   }`}
@@ -747,7 +783,7 @@ export default function MedicoEditPage() {
                 <div
                   className={`text-lg font-black leading-none ${textPrimary}`}
                 >
-                  {medico?.permisos.activo ? "Activo" : "Inactivo"}
+{medico?.estado === "activo" ? "Activo" : "Inactivo"}
                 </div>
                 <div className={`text-[10px] ${textMuted}`}>
                   Cuenta habilitada
@@ -789,7 +825,7 @@ export default function MedicoEditPage() {
                 <div
                   className={`text-[11px] font-bold leading-tight ${textPrimary}`}
                 >
-                  {formatDateTime(medico.auditoria.ultimo_login)}
+{formatDateTime(medico?.auditoria?.ultimo_login ?? null)}
                 </div>
               </div>
 
@@ -924,7 +960,7 @@ export default function MedicoEditPage() {
               </div>
             </div>
             <Link
-              href={`/admin/medicos/${medico.id_medico}`}
+              href={`/admin/medicos/${medico.id_profesional}`}
               className={`inline-flex items-center gap-2 text-[11px] font-bold px-3 py-2 rounded-xl border ${borderColor} ${hoverBg} ${textSecondary} transition-all duration-300`}
             >
               <Clock className="w-3.5 h-3.5" />
@@ -1360,7 +1396,7 @@ export default function MedicoEditPage() {
                 >
                   Último login:{" "}
                   <span className="font-bold text-xs text-indigo-500">
-                    {formatDateTime(medico.auditoria.ultimo_login)}
+{formatDateTime(medico?.auditoria?.ultimo_login ?? null)}
                   </span>
                 </div>
               </div>
@@ -1561,7 +1597,7 @@ export default function MedicoEditPage() {
                   try {
                     setSaving(true);
                     const res = await fetch(
-                      `/api/admin/medicos/${medico.id_medico}/estado`,
+                      `/api/admin/medicos/${medico.id_profesional}/estado`,
                       {
                         method: "PATCH",
                         headers: { "Content-Type": "application/json" },
@@ -1672,7 +1708,7 @@ export default function MedicoEditPage() {
 
           <div className="flex flex-wrap items-center gap-3">
             <Link
-              href={`/admin/medicos/${medico.id_medico}`}
+              href={`/admin/medicos/${medico.id_profesional}`}
               className={`inline-flex items-center gap-2 rounded-xl font-bold text-[11px] px-3 py-2 border ${borderColor} ${hoverBg} ${textSecondary} transition-all duration-300`}
             >
               <ArrowLeft className="w-3.5 h-3.5" />

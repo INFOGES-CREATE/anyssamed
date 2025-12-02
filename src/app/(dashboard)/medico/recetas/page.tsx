@@ -63,7 +63,7 @@ import {
 
 import Link from "next/link";
 import Image from "next/image";
-import * as QRCodeLib from "qrcode";
+import QRCode from "qrcode";
 
 // ========================================
 // TIPOS DE DATOS
@@ -893,39 +893,42 @@ export default function RecetasMedicasPage() {
   };
 
   const generarQRCode = async (receta: Receta) => {
-    try {
-      const datosQR = {
-        numero_receta: receta.numero_receta,
-        codigo_verificacion: receta.codigo_verificacion,
-        paciente: receta.paciente.nombre_completo,
-        paciente_rut: receta.paciente.rut,
-        medico: receta.medico.nombre_completo,
-        medico_rm: receta.medico.numero_registro_medico,
-        fecha_emision: receta.fecha_emision,
-        fecha_vencimiento: receta.fecha_vencimiento,
-        tipo_receta: receta.tipo_receta,
-        centro: receta.centro.nombre,
-        url_verificacion: `${window.location.origin}/verificar/${receta.codigo_verificacion}`,
-      };
+  try {
+    const datosQR = {
+      numero_receta: receta.numero_receta,
+      codigo_verificacion: receta.codigo_verificacion,
+      paciente: receta.paciente.nombre_completo,
+      paciente_rut: receta.paciente.rut,
+      medico: receta.medico.nombre_completo,
+      medico_rm: receta.medico.numero_registro_medico,
+      fecha_emision: receta.fecha_emision,
+      fecha_vencimiento: receta.fecha_vencimiento,
+      tipo_receta: receta.tipo_receta,
+      centro: receta.centro.nombre,
+      url_verificacion: `${window.location.origin}/verificar/${receta.codigo_verificacion}`,
+    };
 
-      const qrDataURL = await QRCodeLib.toDataURL(JSON.stringify(datosQR), {
-        width: 400,
-        margin: 2,
-        color: {
-          dark: "#000000",
-          light: "#FFFFFF",
-        },
-        errorCorrectionLevel: "H",
-      });
+    // ✅ CAMBIO: QRCodeLib → QRCode
+    const qrDataURL = await QRCode.toDataURL(JSON.stringify(datosQR), {
+      width: 400,
+      margin: 2,
+      color: {
+        dark: "#000000",
+        light: "#FFFFFF",
+      },
+      errorCorrectionLevel: "H",
+    });
 
-      setQrCodeURL(qrDataURL);
-      setRecetaSeleccionada(receta);
-      setModalQRCode(true);
-    } catch (error) {
-      console.error("Error al generar QR:", error);
-      alert("Error al generar código QR");
-    }
-  };
+    setQrCodeURL(qrDataURL);
+    setRecetaSeleccionada(receta);
+    setModalQRCode(true);
+  } catch (error) {
+    console.error("Error al generar QR:", error);
+    alert("Error al generar código QR");
+  }
+};
+
+
 
   const recetasFiltradas = useMemo(() => {
     let resultado = [...recetas];

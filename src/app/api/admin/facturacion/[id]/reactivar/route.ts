@@ -1,4 +1,5 @@
 //frontend\src\app\api\admin\facturacion\[id]\reactivar\route.ts
+export const dynamic = "force-dynamic";
 
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
@@ -13,7 +14,6 @@ import crypto from "crypto";
  * ============================================================
  */
 
-export const dynamic = "force-dynamic";
 
 export async function POST(_req: Request, { params }: { params: { id: string } }) {
   const conn = await pool.getConnection();

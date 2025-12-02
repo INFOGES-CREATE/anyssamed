@@ -1,4 +1,6 @@
 // frontend/src/app/api/admin/farmacia/convenios/route.ts
+export const dynamic = "force-dynamic";
+
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 import type { RowDataPacket, ResultSetHeader } from "mysql2/promise";

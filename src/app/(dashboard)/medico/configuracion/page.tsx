@@ -71,7 +71,7 @@ interface UsuarioSesion {
     nivel_jerarquia: number;
   };
   medico?: {
-    id_medico: number;
+    id_profesional: number;
     numero_registro_medico: string;
     titulo_profesional: string;
     especialidades: Array<{

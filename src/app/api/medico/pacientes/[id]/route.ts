@@ -1,9 +1,10 @@
 // app/api/medico/pacientes/[id]/route.ts
+export const dynamic = "force-dynamic";
+
 import { NextRequest, NextResponse } from "next/server";
 import pool from "@/lib/db";
-import { RowDataPacket, ResultSetHeader } from "mysql2";
+import { RowDataPacket } from "mysql2";
 
-// los mismos candidatos de cookie que usas en la lista
 const SESSION_COOKIE_CANDIDATES = [
   "session",
   "session_token",
@@ -13,6 +14,9 @@ const SESSION_COOKIE_CANDIDATES = [
   "__Secure-next-auth.session-token",
 ];
 
+// ============================
+// helpers de sesión
+// ============================
 function getSessionToken(request: NextRequest): string | null {
   const cookieHeader = request.headers.get("cookie") || "";
 
@@ -28,41 +32,22 @@ function getSessionToken(request: NextRequest): string | null {
       }, {} as Record<string, string>);
 
     for (const name of SESSION_COOKIE_CANDIDATES) {
-      if (cookies[name]) {
-        return decodeURIComponent(cookies[name]);
-      }
+      if (cookies[name]) return decodeURIComponent(cookies[name]);
     }
   }
 
   const auth = request.headers.get("authorization");
-  if (auth?.startsWith("Bearer ")) {
-    return auth.slice(7);
-  }
+  if (auth?.startsWith("Bearer ")) return auth.slice(7);
 
   return null;
 }
 
-interface MedicoData {
-  id_medico: number;
-  id_usuario: number;
-  id_centro_principal: number;
-  numero_registro_medico: string;
-  titulo_profesional: string;
-  especialidad_principal: string;
-}
-
-async function obtenerMedicoAutenticado(
-  idUsuario: number
-): Promise<MedicoData | null> {
+async function obtenerMedicoAutenticado(idUsuario: number) {
   const [rows] = await pool.query<RowDataPacket[]>(
     `
     SELECT 
       m.id_medico,
-      m.id_usuario,
-      m.id_centro_principal,
-      m.numero_registro_medico,
-      m.titulo_profesional,
-      m.especialidad_principal
+      m.id_centro_principal
     FROM medicos m
     WHERE m.id_usuario = ? AND m.estado = 'activo'
     LIMIT 1
@@ -71,25 +56,17 @@ async function obtenerMedicoAutenticado(
   );
 
   if (rows.length === 0) return null;
-  return rows[0] as MedicoData;
+  return rows[0];
 }
 
-// =====================================================
-// GET /api/medico/pacientes/[id]  -> obtener 1 paciente
-// =====================================================
+// ============================
+// GET: detalle de un paciente
+// ============================
 export async function GET(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const idPaciente = Number(params.id);
-    if (!idPaciente) {
-      return NextResponse.json(
-        { success: false, error: "ID de paciente inválido" },
-        { status: 400 }
-      );
-    }
-
     const sessionToken = getSessionToken(request);
     if (!sessionToken) {
       return NextResponse.json(
@@ -120,9 +97,7 @@ export async function GET(
       );
     }
 
-    const idUsuario = sesiones[0].id_usuario;
-    const medico = await obtenerMedicoAutenticado(idUsuario);
-
+    const medico = await obtenerMedicoAutenticado(sesiones[0].id_usuario);
     if (!medico) {
       return NextResponse.json(
         {
@@ -133,13 +108,15 @@ export async function GET(
       );
     }
 
-    // actualizar última actividad
-    await pool.query(
-      `UPDATE sesiones_usuarios SET ultima_actividad = NOW() WHERE token = ?`,
-      [sessionToken]
-    );
+    const idPaciente = parseInt(params.id, 10);
+    if (Number.isNaN(idPaciente)) {
+      return NextResponse.json(
+        { success: false, error: "ID de paciente inválido" },
+        { status: 400 }
+      );
+    }
 
-    // sacar datos del paciente, asegurando que sea de este médico
+    // traemos lo mismo que en el listado: datos + última consulta + próxima cita + diagnóstico principal
     const [rows] = await pool.query<RowDataPacket[]>(
       `
       SELECT 
@@ -148,9 +125,8 @@ export async function GET(
         p.nombre,
         p.apellido_paterno,
         p.apellido_materno,
-        CONCAT(p.nombre, ' ', p.apellido_paterno, ' ', COALESCE(p.apellido_materno, '')) as nombre_completo,
         p.fecha_nacimiento,
-        TIMESTAMPDIFF(YEAR, p.fecha_nacimiento, CURDATE()) as edad,
+        TIMESTAMPDIFF(YEAR, p.fecha_nacimiento, CURDATE()) AS edad,
         p.genero,
         p.email,
         p.telefono,
@@ -167,103 +143,33 @@ export async function GET(
         p.peso_kg,
         p.altura_cm,
         p.imc,
-        p.notas_importantes,
+        p.notas_administrativas,
         p.tags,
-
-        -- última consulta con este médico
-        (
-          SELECT MAX(hc.fecha_atencion)
-          FROM historial_clinico hc
-          WHERE hc.id_paciente = p.id_paciente
-            AND hc.id_medico = ?
-            AND hc.estado_registro != 'anulado'
-        ) as ultima_consulta,
-
-        -- próxima cita con este médico
-        (
-          SELECT MIN(c.fecha_hora_inicio)
-          FROM citas c
-          WHERE c.id_paciente = p.id_paciente
-            AND c.id_medico = ?
-            AND c.fecha_hora_inicio > NOW()
-            AND c.estado NOT IN ('cancelada', 'no_asistio')
-        ) as proxima_cita,
-
-        -- total consultas con este médico
-        (
-          SELECT COUNT(*)
-          FROM historial_clinico hc
-          WHERE hc.id_paciente = p.id_paciente
-            AND hc.id_medico = ?
-            AND hc.estado_registro != 'anulado'
-        ) as total_consultas,
-
-        -- total citas con este médico
-        (
-          SELECT COUNT(*)
-          FROM citas c
-          WHERE c.id_paciente = p.id_paciente
-            AND c.id_medico = ?
-        ) as total_citas,
-
-        -- alergias críticas
-        (
-          SELECT COUNT(*)
-          FROM alergias_pacientes ap
-          WHERE ap.id_paciente = p.id_paciente
-            AND ap.estado = 'activa'
-            AND ap.severidad IN ('severa', 'potencialmente_mortal')
-        ) as alergias_criticas,
-
-        -- condiciones crónicas
-        (
-          SELECT COUNT(*)
-          FROM condiciones_cronicas cc
-          WHERE cc.id_paciente = p.id_paciente
-            AND cc.estado IN ('activa', 'controlada', 'en_tratamiento')
-        ) as condiciones_cronicas,
-
-        -- medicamentos activos (usa tu tabla con fecha_fin_tratamiento)
-        (
-          SELECT COUNT(DISTINCT rm.id_medicamento)
-          FROM receta_medicamentos rm
-          INNER JOIN recetas_medicas rec ON rm.id_receta = rec.id_receta
-          WHERE rec.id_paciente = p.id_paciente
-            AND rec.id_medico = ?
-            AND rec.estado = 'activa'
-            AND (rec.fecha_fin_tratamiento IS NULL OR rec.fecha_fin_tratamiento >= CURDATE())
-        ) as medicamentos_activos,
-
-        -- exámenes pendientes
-        (
-          SELECT COUNT(*)
-          FROM ordenes_examenes oe
-          WHERE oe.id_paciente = p.id_paciente
-            AND oe.id_medico = ?
-            AND oe.estado IN ('pendiente', 'en_proceso')
-        ) as examenes_pendientes,
-
-        -- documentos pendientes
-        (
-          SELECT COUNT(*)
-          FROM documentos_adjuntos da
-          WHERE da.id_paciente = p.id_paciente
-            AND da.estado = 'activo'
-            AND da.es_publico = 0
-        ) as documentos_pendientes,
-
-        -- diagnóstico principal
         (
           SELECT d.diagnostico
           FROM diagnosticos d
           WHERE d.id_paciente = p.id_paciente
             AND d.id_medico = ?
             AND d.tipo = 'principal'
-            AND d.estado IN ('activo', 'cronico', 'en_tratamiento')
+            AND d.estado IN ('activo','cronico','en_tratamiento')
           ORDER BY d.fecha_diagnostico DESC
           LIMIT 1
-        ) as diagnostico_principal
-
+        ) AS diagnostico_principal,
+        (
+          SELECT MAX(hc.fecha_atencion)
+          FROM historial_clinico hc
+          WHERE hc.id_paciente = p.id_paciente
+            AND hc.id_medico = ?
+            AND hc.estado_registro != 'anulado'
+        ) AS ultima_consulta,
+        (
+          SELECT MIN(c.fecha_hora_inicio)
+          FROM citas c
+          WHERE c.id_paciente = p.id_paciente
+            AND c.id_medico = ?
+            AND c.fecha_hora_inicio > NOW()
+            AND c.estado NOT IN ('cancelada','no_asistio')
+        ) AS proxima_cita
       FROM pacientes p
       INNER JOIN pacientes_medico pm ON p.id_paciente = pm.id_paciente
       WHERE p.id_paciente = ?
@@ -272,13 +178,9 @@ export async function GET(
       LIMIT 1
       `,
       [
-        medico.id_medico, // ultima consulta
-        medico.id_medico, // proxima cita
-        medico.id_medico, // total consultas
-        medico.id_medico, // total citas
-        medico.id_medico, // medicamentos activos
-        medico.id_medico, // examenes pend
-        medico.id_medico, // diag principal
+        medico.id_medico,
+        medico.id_medico,
+        medico.id_medico,
         idPaciente,
         medico.id_medico,
       ]
@@ -286,57 +188,59 @@ export async function GET(
 
     if (rows.length === 0) {
       return NextResponse.json(
-        { success: false, error: "Paciente no encontrado o no asignado al médico" },
+        {
+          success: false,
+          error: "Paciente no encontrado o no asignado a este médico",
+        },
         { status: 404 }
       );
     }
 
-    const p = rows[0];
+    const paciente = rows[0];
+
+    // refrescamos actividad
+    await pool.query(
+      `UPDATE sesiones_usuarios SET ultima_actividad = NOW() WHERE token = ?`,
+      [sessionToken]
+    );
 
     return NextResponse.json(
       {
         success: true,
         paciente: {
-          id_paciente: p.id_paciente,
-          rut: p.rut,
-          nombre: p.nombre,
-          apellido_paterno: p.apellido_paterno,
-          apellido_materno: p.apellido_materno,
-          nombre_completo: p.nombre_completo,
-          fecha_nacimiento: p.fecha_nacimiento,
-          edad: p.edad,
-          genero: p.genero,
-          email: p.email,
-          telefono: p.telefono,
-          celular: p.celular,
-          direccion: p.direccion,
-          ciudad: p.ciudad,
-          region: p.region,
-          foto_url: p.foto_url,
-          grupo_sanguineo: p.grupo_sanguineo || "desconocido",
-          estado: p.estado,
-          es_vip: Boolean(p.es_vip),
-          fecha_registro: p.fecha_registro,
-          clasificacion_riesgo: p.clasificacion_riesgo,
-          peso_kg: p.peso_kg,
-          altura_cm: p.altura_cm,
-          imc: p.imc,
-          notas_importantes: p.notas_importantes,
-          tags: p.tags
-            ? typeof p.tags === "string"
-              ? JSON.parse(p.tags)
-              : p.tags
+          id_paciente: paciente.id_paciente,
+          rut: paciente.rut,
+          nombre: paciente.nombre,
+          apellido_paterno: paciente.apellido_paterno,
+          apellido_materno: paciente.apellido_materno,
+          nombre_completo: `${paciente.nombre} ${paciente.apellido_paterno} ${paciente.apellido_materno ?? ""}`.trim(),
+          fecha_nacimiento: paciente.fecha_nacimiento,
+          edad: paciente.edad,
+          genero: paciente.genero,
+          email: paciente.email,
+          telefono: paciente.telefono,
+          celular: paciente.celular,
+          direccion: paciente.direccion,
+          ciudad: paciente.ciudad,
+          region: paciente.region,
+          foto_url: paciente.foto_url,
+          grupo_sanguineo: paciente.grupo_sanguineo,
+          estado: paciente.estado,
+          es_vip: Boolean(paciente.es_vip),
+          fecha_registro: paciente.fecha_registro,
+          ultima_consulta: paciente.ultima_consulta,
+          proxima_cita: paciente.proxima_cita,
+          clasificacion_riesgo: paciente.clasificacion_riesgo,
+          peso_kg: paciente.peso_kg,
+          altura_cm: paciente.altura_cm,
+          imc: paciente.imc,
+          diagnostico_principal: paciente.diagnostico_principal ?? null,
+          notas_importantes: paciente.notas_administrativas ?? null,
+          tags: paciente.tags
+            ? typeof paciente.tags === "string"
+              ? JSON.parse(paciente.tags)
+              : paciente.tags
             : [],
-          ultima_consulta: p.ultima_consulta,
-          proxima_cita: p.proxima_cita,
-          total_consultas: p.total_consultas || 0,
-          total_citas: p.total_citas || 0,
-          alergias_criticas: p.alergias_criticas || 0,
-          condiciones_cronicas: p.condiciones_cronicas || 0,
-          medicamentos_activos: p.medicamentos_activos || 0,
-          examenes_pendientes: p.examenes_pendientes || 0,
-          documentos_pendientes: p.documentos_pendientes || 0,
-          diagnostico_principal: p.diagnostico_principal,
         },
       },
       { status: 200 }
@@ -355,22 +259,14 @@ export async function GET(
   }
 }
 
-// =====================================================
-// PUT /api/medico/pacientes/[id]  -> actualizar 1 paciente
-// =====================================================
+// ============================
+// PUT: actualizar paciente
+// ============================
 export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
 ) {
   try {
-    const idPaciente = Number(params.id);
-    if (!idPaciente) {
-      return NextResponse.json(
-        { success: false, error: "ID de paciente inválido" },
-        { status: 400 }
-      );
-    }
-
     const sessionToken = getSessionToken(request);
     if (!sessionToken) {
       return NextResponse.json(
@@ -379,7 +275,6 @@ export async function PUT(
       );
     }
 
-    // validar sesión
     const [sesiones] = await pool.query<RowDataPacket[]>(
       `
       SELECT su.id_usuario
@@ -401,22 +296,30 @@ export async function PUT(
       );
     }
 
-    const idUsuario = sesiones[0].id_usuario;
-    const medico = await obtenerMedicoAutenticado(idUsuario);
-
+    const medico = await obtenerMedicoAutenticado(sesiones[0].id_usuario);
     if (!medico) {
       return NextResponse.json(
-        { success: false, error: "No tienes un registro de médico activo." },
+        { success: false, error: "No tienes un registro de médico activo" },
         { status: 403 }
       );
     }
 
-    // asegurarnos que el paciente está asignado a este médico
+    const idPaciente = parseInt(params.id, 10);
+    if (Number.isNaN(idPaciente)) {
+      return NextResponse.json(
+        { success: false, error: "ID de paciente inválido" },
+        { status: 400 }
+      );
+    }
+
+    // verificar que el paciente esté asignado a este médico
     const [asignacion] = await pool.query<RowDataPacket[]>(
       `
       SELECT 1
       FROM pacientes_medico
-      WHERE id_paciente = ? AND id_medico = ? AND activo = 1
+      WHERE id_paciente = ?
+        AND id_medico = ?
+        AND activo = 1
       LIMIT 1
       `,
       [idPaciente, medico.id_medico]
@@ -426,7 +329,7 @@ export async function PUT(
       return NextResponse.json(
         {
           success: false,
-          error: "Paciente no asignado a este médico",
+          error: "Este paciente no está asignado a este médico",
         },
         { status: 403 }
       );
@@ -434,104 +337,97 @@ export async function PUT(
 
     const body = await request.json();
 
-    // los mismos campos que manda tu frontend
-    const {
-      rut,
-      nombre,
-      apellido_paterno,
-      apellido_materno,
-      fecha_nacimiento,
-      genero,
-      email,
-      telefono,
-      celular,
-      direccion,
-      ciudad,
-      region,
-      grupo_sanguineo,
-      es_vip,
-      clasificacion_riesgo,
-      peso_kg,
-      altura_cm,
-      imc,
-      estado_civil,
-      ocupacion,
-      notas_importantes,
-      id_centro_registro,
-    } = body;
+    // armamos el update dinámico
+    const campos: string[] = [];
+    const valores: any[] = [];
 
-    // armamos UPDATE solo con columnas reales de tu tabla `pacientes`
-    const [result] = await pool.query<ResultSetHeader>(
-      `
-      UPDATE pacientes
-      SET
-        rut = ?,
-        nombre = ?,
-        apellido_paterno = ?,
-        apellido_materno = ?,
-        fecha_nacimiento = ?,
-        genero = ?,
-        email = ?,
-        telefono = ?,
-        celular = ?,
-        direccion = ?,
-        ciudad = ?,
-        region = ?,
-        grupo_sanguineo = ?,
-        es_vip = ?,
-        clasificacion_riesgo = ?,
-        peso_kg = ?,
-        altura_cm = ?,
-        imc = ?,
-        estado_civil = ?,
-        ocupacion = ?,
-        notas_importantes = ?,
-        id_centro_registro = ?
-      WHERE id_paciente = ?
-      LIMIT 1
-      `,
-      [
-        rut || null,
-        nombre,
-        apellido_paterno,
-        apellido_materno || null,
-        fecha_nacimiento,
-        genero,
-        email || null,
-        telefono || null,
-        celular || null,
-        direccion || null,
-        ciudad || null,
-        region || null,
-        grupo_sanguineo || "desconocido",
-        es_vip ? 1 : 0,
-        clasificacion_riesgo || null,
-        // numéricos a null si vienen vacíos
-        peso_kg !== "" && peso_kg !== undefined ? peso_kg : null,
-        altura_cm !== "" && altura_cm !== undefined ? altura_cm : null,
-        imc !== "" && imc !== undefined ? imc : null,
-        estado_civil || null,
-        ocupacion || null,
-        notas_importantes || null,
-        id_centro_registro || null,
-        idPaciente,
-      ]
-    );
+    // mapeo body -> campos de tabla pacientes
+    const mapeo: Record<string, string> = {
+      rut: "rut",
+      nombre: "nombre",
+      apellido_paterno: "apellido_paterno",
+      apellido_materno: "apellido_materno",
+      fecha_nacimiento: "fecha_nacimiento",
+      genero: "genero",
+      email: "email",
+      telefono: "telefono",
+      celular: "celular",
+      direccion: "direccion",
+      ciudad: "ciudad",
+      region: "region",
+      grupo_sanguineo: "grupo_sanguineo",
+      clasificacion_riesgo: "clasificacion_riesgo",
+      peso_kg: "peso_kg",
+      altura_cm: "altura_cm",
+      imc: "imc",
+      estado: "estado",
+      foto_url: "foto_url",
+      // en tu tabla este campo se llama notas_administrativas
+      notas_importantes: "notas_administrativas",
+    };
 
-    if (result.affectedRows === 0) {
+    for (const [campoBody, campoDB] of Object.entries(mapeo)) {
+      if (body[campoBody] !== undefined) {
+        // limpiar rut si viene
+        if (campoBody === "rut" && typeof body[campoBody] === "string") {
+          const rutLimpio = (body[campoBody] as string).replace(/[^0-9kK]/g, "");
+          campos.push(`${campoDB} = ?`);
+          valores.push(rutLimpio);
+        } else {
+          campos.push(`${campoDB} = ?`);
+          valores.push(body[campoBody]);
+        }
+      }
+    }
+
+    // es_vip
+    if (body.es_vip !== undefined) {
+      campos.push("es_vip = ?");
+      valores.push(body.es_vip ? 1 : 0);
+    }
+
+    // tags (json)
+    if (body.tags !== undefined) {
+      campos.push("tags = ?");
+      valores.push(JSON.stringify(body.tags ?? []));
+    }
+
+    if (campos.length === 0) {
       return NextResponse.json(
-        { success: false, error: "No se pudo actualizar el paciente" },
+        { success: false, error: "No hay campos para actualizar" },
         { status: 400 }
       );
     }
 
-    return NextResponse.json({ success: true }, { status: 200 });
+    const sql = `
+      UPDATE pacientes
+      SET ${campos.join(", ")}
+      WHERE id_paciente = ?
+      LIMIT 1
+    `;
+    valores.push(idPaciente);
+
+    await pool.query(sql, valores);
+
+    // refrescar sesión
+    await pool.query(
+      `UPDATE sesiones_usuarios SET ultima_actividad = NOW() WHERE token = ?`,
+      [sessionToken]
+    );
+
+    return NextResponse.json(
+      {
+        success: true,
+        message: "Paciente actualizado",
+      },
+      { status: 200 }
+    );
   } catch (error: any) {
     console.error("❌ Error en PUT /api/medico/pacientes/[id]:", error);
     return NextResponse.json(
       {
         success: false,
-        error: "Error al guardar el paciente",
+        error: "Error interno del servidor",
         details:
           process.env.NODE_ENV === "development" ? error.message : undefined,
       },
@@ -540,10 +436,98 @@ export async function PUT(
   }
 }
 
-// si quieres bloquear DELETE por ahora
-export async function DELETE() {
-  return NextResponse.json(
-    { success: false, error: "Método no permitido" },
-    { status: 405 }
-  );
+// ============================
+// DELETE: desasignar paciente
+// ============================
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: { id: string } }
+) {
+  try {
+    const sessionToken = getSessionToken(request);
+    if (!sessionToken) {
+      return NextResponse.json(
+        { success: false, error: "No hay sesión activa" },
+        { status: 401 }
+      );
+    }
+
+    const [sesiones] = await pool.query<RowDataPacket[]>(
+      `
+      SELECT su.id_usuario
+      FROM sesiones_usuarios su
+      INNER JOIN usuarios u ON su.id_usuario = u.id_usuario
+      WHERE su.token = ?
+        AND su.activa = 1
+        AND su.fecha_expiracion > NOW()
+        AND u.estado = 'activo'
+      LIMIT 1
+      `,
+      [sessionToken]
+    );
+
+    if (sesiones.length === 0) {
+      return NextResponse.json(
+        { success: false, error: "Sesión inválida o expirada" },
+        { status: 401 }
+      );
+    }
+
+    const medico = await obtenerMedicoAutenticado(sesiones[0].id_usuario);
+    if (!medico) {
+      return NextResponse.json(
+        { success: false, error: "No tienes un registro de médico activo" },
+        { status: 403 }
+      );
+    }
+
+    const idPaciente = parseInt(params.id, 10);
+    if (Number.isNaN(idPaciente)) {
+      return NextResponse.json(
+        { success: false, error: "ID de paciente inválido" },
+        { status: 400 }
+      );
+    }
+
+    // desasignar del médico (deja el registro, solo lo marca inactivo)
+    await pool.query(
+      `
+      UPDATE pacientes_medico
+      SET 
+        activo = 0,
+        fecha_desasignacion = NOW(),
+        modificado_por = ?,
+        fecha_modificacion = NOW()
+      WHERE id_paciente = ?
+        AND id_medico = ?
+        AND activo = 1
+      `,
+      [sesiones[0].id_usuario, idPaciente, medico.id_medico]
+    );
+
+    // refrescar sesión
+    await pool.query(
+      `UPDATE sesiones_usuarios SET ultima_actividad = NOW() WHERE token = ?`,
+      [sessionToken]
+    );
+
+    return NextResponse.json(
+      {
+        success: true,
+        message: "Paciente desasignado del médico",
+      },
+      { status: 200 }
+    );
+  } catch (error: any) {
+    console.error("❌ Error en DELETE /api/medico/pacientes/[id]:", error);
+    return NextResponse.json(
+      {
+        success: false,
+        error: "Error interno del servidor",
+        details:
+          process.env.NODE_ENV === "development" ? error.message : undefined,
+      },
+      { status: 500 }
+    );
+  }
 }

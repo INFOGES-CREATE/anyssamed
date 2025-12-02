@@ -1,4 +1,6 @@
 // app/api/medico/recetas/[id]/qr/route.ts
+export const dynamic = "force-dynamic";
+
 import { NextRequest, NextResponse } from "next/server";
 import pool from "@/lib/db";
 import { RowDataPacket } from "mysql2";
@@ -508,20 +510,24 @@ export async function GET(
     );
     await incrementarContadorQR(idReceta);
 
-    // Descarga de binarios
-    if (formato === "png" && download) {
-      return new Response(resultado as Buffer, {
-        status: 200,
-        headers: {
-          "Content-Type": "image/png",
-          "Content-Disposition": `attachment; filename="QR_Receta_${datosReceta.numero_receta.replace(
-            /[^a-zA-Z0-9]/g,
-            "_"
-          )}.png"`,
-          "Cache-Control": "no-cache, no-store, must-revalidate",
-        },
-      });
-    }
+// Descarga de binarios (corregido sin Buffer para evitar error)
+if (formato === "png" && download) {
+  const safeBuffer =
+    resultado instanceof Buffer ? resultado : Buffer.from(resultado as any);
+
+  return new Response(safeBuffer, {
+    status: 200,
+    headers: {
+      "Content-Type": "image/png",
+      "Content-Disposition": `attachment; filename="QR_Receta_${datosReceta.numero_receta.replace(
+        /[^a-zA-Z0-9]/g,
+        "_"
+      )}.png"`,
+      "Cache-Control": "no-cache, no-store, must-revalidate",
+    },
+  });
+}
+
 
     if (formato === "svg" && download) {
       return new Response(resultado as string, {

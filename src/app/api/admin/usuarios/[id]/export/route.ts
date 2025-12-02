@@ -1,4 +1,6 @@
 // frontend/src/app/api/admin/usuarios/[id]/export/route.ts
+export const dynamic = "force-dynamic";
+
 
 import { NextRequest, NextResponse } from "next/server";
 import pool from "@/lib/db";
@@ -209,9 +211,9 @@ export async function GET(
     // 2. Estadísticas generales
     const [estadisticasRows] = await connection.query<Estadisticas[]>(
       `SELECT 
-        COALESCE((SELECT COUNT(*) FROM citas WHERE id_paciente = ? OR id_medico = ?), 0) AS total_citas,
-        COALESCE((SELECT COUNT(*) FROM citas WHERE (id_paciente = ? OR id_medico = ?) AND estado = 'completada'), 0) AS citas_completadas,
-        COALESCE((SELECT COUNT(*) FROM citas WHERE (id_paciente = ? OR id_medico = ?) AND estado = 'cancelada'), 0) AS citas_canceladas,
+        COALESCE((SELECT COUNT(*) FROM citas WHERE id_paciente = ? OR id_profesional = ?), 0) AS total_citas,
+        COALESCE((SELECT COUNT(*) FROM citas WHERE (id_paciente = ? OR id_profesional = ?) AND estado = 'completada'), 0) AS citas_completadas,
+        COALESCE((SELECT COUNT(*) FROM citas WHERE (id_paciente = ? OR id_profesional = ?) AND estado = 'cancelada'), 0) AS citas_canceladas,
         COALESCE((SELECT COUNT(*) FROM logs_sistema WHERE id_usuario = ?), 0) AS total_logs,
         COALESCE((SELECT COUNT(*) FROM logs_sistema WHERE id_usuario = ? AND tipo = 'error'), 0) AS logs_error,
         (SELECT fecha_hora FROM logs_sistema WHERE id_usuario = ? ORDER BY fecha_hora DESC LIMIT 1) AS ultima_actividad

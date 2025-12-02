@@ -1,9 +1,10 @@
 // frontend/src/app/api/admin/examenes-medicos/tipos/route.ts
+export const dynamic = "force-dynamic";
+
 import { NextResponse } from "next/server";
 import type { RowDataPacket } from "mysql2/promise";
 import pool from "@/lib/db";
 
-export const dynamic = "force-dynamic";
 
 const like = (s: string) => `%${s}%`;
 const toInt = (v: any, d = 0) => (Number.isFinite(Number(v)) ? Number(v) : d);

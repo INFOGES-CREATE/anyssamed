@@ -65,7 +65,7 @@ async function getColMeta(table: string, column: string): Promise<{ isNullable: 
 /* ================ Citas (tolerante a esquema) ================= */
 async function fetchCitas(params: {
   id_centro?: number | null;
-  id_medico?: number | null;
+  id_profesional?: number | null;
   id_paciente?: number | null;
   desde?: string | null;
   hasta?: string | null;
@@ -99,7 +99,7 @@ async function fetchCitas(params: {
   const where: string[] = [];
   const qparams: any[] = [];
 
-  if (params.id_medico) { where.push("c.id_medico = ?"); qparams.push(params.id_medico); }
+  if (params.id_profesional) { where.push("c.id_profesional = ?"); qparams.push(params.id_profesional); }
   if (params.id_paciente) { where.push("c.id_paciente = ?"); qparams.push(params.id_paciente); }
   if (params.id_centro) { where.push("m.id_centro = ?"); qparams.push(params.id_centro); }
 
@@ -114,14 +114,14 @@ async function fetchCitas(params: {
     SELECT
       c.id_cita,
       c.id_paciente,
-      c.id_medico,
+      c.id_profesional,
       ${startCol}  AS inicio,
       ${endCol}    AS fin,
       u.nombre AS medico_nombre, u.apellido_paterno AS medico_ap, IFNULL(u.apellido_materno,'') AS medico_am,
       p.nombre AS paciente_nombre, p.apellido_paterno AS paciente_ap, IFNULL(p.apellido_materno,'') AS paciente_am,
       m.id_centro
     FROM citas c
-    JOIN medicos m   ON m.id_medico = c.id_medico
+    JOIN profesionales_salud m   ON m.id_profesional = c.id_profesional
     JOIN usuarios u  ON u.id_usuario  = m.id_usuario
     JOIN pacientes p ON p.id_paciente = c.id_paciente
     ${whereSql}
@@ -133,7 +133,7 @@ async function fetchCitas(params: {
     value: r.id_cita,
     label: `${new Date(r.inicio).toLocaleString()} · ${r.paciente_nombre} ${r.paciente_ap} · ${r.medico_nombre} ${r.medico_ap}`.replace(/\s+/g, " ").trim(),
     id_centro: r.id_centro,
-    id_medico: r.id_medico,
+    id_profesional: r.id_profesional,
     id_paciente: r.id_paciente,
     inicio: r.inicio,
     fin: r.fin,
@@ -144,7 +144,7 @@ async function fetchCitas(params: {
 /**
  * GET /api/admin/telemedicina-sesiones/opciones
  * Query:
- *  - id_centro?, id_medico?, id_paciente?
+ *  - id_centro?, id_profesional?, id_paciente?
  *  - q?: filtra pacientes
  *  - limit?: límite pacientes
  *  - only=citas -> devuelve sólo citas (útil para recarga dinámica en el modal)
@@ -153,7 +153,7 @@ export async function GET(req: Request) {
   try {
     const { searchParams } = new URL(req.url);
     const id_centro = searchParams.get("id_centro");
-    const id_medico = searchParams.get("id_medico");
+    const id_profesional = searchParams.get("id_profesional");
     const id_paciente = searchParams.get("id_paciente");
     const q = (searchParams.get("q") || "").trim();
     const limit = Math.min(5000, Math.max(50, toInt(searchParams.get("limit") ?? 1000)));
@@ -167,7 +167,7 @@ export async function GET(req: Request) {
     if (only === "citas") {
       const citas = await fetchCitas({
         id_centro: id_centro ? Number(id_centro) : undefined,
-        id_medico: id_medico ? Number(id_medico) : undefined,
+        id_profesional: id_profesional ? Number(id_profesional) : undefined,
         id_paciente: id_paciente ? Number(id_paciente) : undefined,
         desde: searchParams.get("desde"),
         hasta: searchParams.get("hasta"),
@@ -207,10 +207,10 @@ export async function GET(req: Request) {
       safeQuery<RowDataPacket[]>(
         `
         SELECT
-          m.id_medico,
+          m.id_profesional,
           COALESCE(m.id_centro, m.id_centro_principal) AS id_centro,
           u.nombre, u.apellido_paterno, IFNULL(u.apellido_materno,'') AS apm
-        FROM medicos m
+        FROM profesionales_salud m
         JOIN usuarios u ON u.id_usuario = m.id_usuario
         ${whereCentroMed}
         ORDER BY u.nombre, u.apellido_paterno
@@ -232,7 +232,7 @@ export async function GET(req: Request) {
       ),
       safeQuery<RowDataPacket[]>(
         `
-        SELECT id_sala_virtual, id_centro, IFNULL(id_medico,0) AS id_medico,
+        SELECT id_sala_virtual, id_centro, IFNULL(id_profesional,0) AS id_profesional,
                nombre, tipo, proveedor_servicio, estado
         FROM telemedicina_salas_virtuales
         ${whereCentroSala}
@@ -260,9 +260,9 @@ export async function GET(req: Request) {
         const params: any[] = [];
         let where = "WHERE activo = 1";
         if (id_centro) { where += " AND id_centro = ?"; params.push(Number(id_centro)); }
-        if (id_medico) { where += " AND (id_medico IS NULL OR id_medico = ?)"; params.push(Number(id_medico)); }
+        if (id_profesional) { where += " AND (id_profesional IS NULL OR id_profesional = ?)"; params.push(Number(id_profesional)); }
         const rows = await safeQuery<RowDataPacket[]>(
-          `SELECT * FROM telemedicina_configuraciones ${where} ORDER BY (id_medico IS NOT NULL) DESC, fecha_modificacion DESC LIMIT 1`,
+          `SELECT * FROM telemedicina_configuraciones ${where} ORDER BY (id_profesional IS NOT NULL) DESC, fecha_modificacion DESC LIMIT 1`,
           params
         );
         return rows?.[0] || null;
@@ -270,7 +270,7 @@ export async function GET(req: Request) {
       // Citas iniciales (filtradas si hay parámetros)
       fetchCitas({
         id_centro: id_centro ? Number(id_centro) : undefined,
-        id_medico: id_medico ? Number(id_medico) : undefined,
+        id_profesional: id_profesional ? Number(id_profesional) : undefined,
         id_paciente: id_paciente ? Number(id_paciente) : undefined,
         limit: 500,
       }),
@@ -279,7 +279,7 @@ export async function GET(req: Request) {
     /* ---------- Map a opciones ---------- */
     const centros = centrosRows.map((c: any) => ({ value: c.id_centro, label: c.nombre, id_centro: c.id_centro }));
     const medicos = medicosRows.map((m: any) => ({
-      value: m.id_medico, label: `${m.nombre} ${m.apellido_paterno} ${m.apm}`.replace(/\s+/g, " ").trim(), id_centro: m.id_centro
+      value: m.id_profesional, label: `${m.nombre} ${m.apellido_paterno} ${m.apm}`.replace(/\s+/g, " ").trim(), id_centro: m.id_centro
     }));
     const pacientes = pacientesRows.map((p: any) => ({
       value: p.id_paciente,
@@ -287,7 +287,7 @@ export async function GET(req: Request) {
       rut: p.rut ?? null,
     }));
     const salas = salasRows.map((s: any) => ({
-      value: s.id_sala_virtual, label: s.nombre, id_centro: s.id_centro, id_medico: s.id_medico,
+      value: s.id_sala_virtual, label: s.nombre, id_centro: s.id_centro, id_profesional: s.id_profesional,
       tipo: s.tipo, proveedor_servicio: s.proveedor_servicio, estado: s.estado,
     }));
     const proveedoresFallback = ["Zoom", "Google Meet", "Microsoft Teams", "Whereby", "Vonage", "Twilio", "Jitsi", "Daily"];
@@ -333,7 +333,7 @@ export async function GET(req: Request) {
       meta: {
         pacientes_limit: limit,
         filtered_by_centro: id_centro ? Number(id_centro) : null,
-        filtered_by_medico: id_medico ? Number(id_medico) : null,
+        filtered_by_medico: id_profesional ? Number(id_profesional) : null,
       },
       opciones: {
         centros, medicos, pacientes, salas, proveedores, estados, calidad_conexion, tipos_sala_virtual,

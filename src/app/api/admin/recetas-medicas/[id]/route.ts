@@ -1,3 +1,4 @@
+// frontend/src/app/api/admin/recetas-medicas/[id]/route.ts
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 import type { ResultSetHeader } from "mysql2/promise";
@@ -21,7 +22,7 @@ export async function GET(_req: Request, { params }: { params: { id: string } })
               c.nombre AS centro_nombre
        FROM recetas_medicas rm
        JOIN pacientes p ON p.id_paciente = rm.id_paciente
-       JOIN medicos md  ON md.id_medico  = rm.id_medico
+       JOIN profesionales_salud md  ON md.id_profesional  = rm.id_profesional
        JOIN usuarios mu ON mu.id_usuario = md.id_usuario
        JOIN centros_medicos c ON c.id_centro = rm.id_centro
        WHERE rm.id_receta = ?`, [id]

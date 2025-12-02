@@ -19,7 +19,7 @@ interface EspecialidadRow extends RowDataPacket {
   nombre: string;
 }
 interface MedicoRow extends RowDataPacket {
-  id_medico: number;
+  id_profesional: number;
   id_centro: number;
   nombre: string;
   apellido_paterno: string;
@@ -88,9 +88,9 @@ export async function GET(req: Request) {
          ORDER BY nombre`
       ),
       pool.query<MedicoRow[]>(
-        `SELECT m.id_medico, m.id_centro,
+        `SELECT m.id_profesional, m.id_centro,
                 u.nombre, u.apellido_paterno, IFNULL(u.apellido_materno,'') AS apm
-         FROM medicos m
+         FROM profesionales_salud m
          JOIN usuarios u ON u.id_usuario = m.id_usuario
          ${id_centro ? "WHERE m.id_centro = ?" : ""}
          ORDER BY u.nombre, u.apellido_paterno`,
@@ -125,7 +125,7 @@ export async function GET(req: Request) {
     }));
 
     const opMedicos = (medicos as MedicoRow[]).map((m) => ({
-      value: m.id_medico,
+      value: m.id_profesional,
       label: `${m.nombre} ${m.apellido_paterno} ${m.apm}`.replace(/\s+/g, " ").trim(),
       id_centro: m.id_centro,
     }));

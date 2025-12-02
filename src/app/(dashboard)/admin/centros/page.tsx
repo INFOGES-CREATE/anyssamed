@@ -39,38 +39,83 @@ import {
   Shield,
   Heart,
   Crown,
+  Flag,
+  Clock,
+  Briefcase,
+  BarChart3,
+  PieChart,
+  LineChart,
+  Settings,
+  Bell,
+  Search as SearchIcon,
+  X,
+  Copy,
+  Share2,
+  Download as DownloadIcon,
+  FileText,
+  Printer,
+  Send,
+  MessageSquare,
+  ThumbsUp,
+  TrendingDown,
+  AlertTriangle,
+  Info,
+  HelpCircle,
+  Maximize2,
+  Minimize2,
+  Grid3x3,
+  Rows,
+  Sun,
+  Moon,
 } from "lucide-react";
+
+// ============================================================
+// INTERFACES - Tipado completo según tabla
+// ============================================================
+
+type ThemeMode = "light" | "dark";
 
 interface Centro {
   id_centro: number;
   nombre: string;
+  pais: string | null;
   razon_social: string;
   rut: string;
   direccion: string;
   ciudad: string;
-  region: string;
-  telefono: string;
-  email: string;
-  sitio_web: string;
-  logo_url: string;
+  region: string | null;
+  comuna: string | null;
+  codigo_postal: string | null;
+  telefono_principal: string;
+  telefono_secundario: string | null;
+  email_contacto: string;
+  email_secundario: string | null;
+  sitio_web: string | null;
+  logo_url: string | null;
+  descripcion: string | null;
+  horario_apertura: string;
+  horario_cierre: string;
+  dias_atencion: string | null;
+  plan: "basico" | "profesional" | "enterprise";
   estado: "activo" | "inactivo" | "suspendido";
+  fecha_inicio_operacion: string | null;
+  capacidad_pacientes_dia: number | null;
+  nivel_complejidad: "baja" | "media" | "alta" | null;
+  especializacion_principal: string | null;
+  tipo_establecimiento:
+    | "hospital"
+    | "clinica"
+    | "consultorio"
+    | "laboratorio"
+    | "centro_salud"
+    | "otro"
+    | null;
   fecha_creacion: string;
-  fecha_actualizacion: string;
-  usuarios_count: number;
-  usuarios_activos: number;
-  medicos_count: number;
-  medicos_activos: number;
-  pacientes_count: number;
-  pacientes_activos: number;
-  sucursales_count: number;
-  consultas_mes: number;
-  consultas_ano: number;
-  plan: string;
-  satisfaccion: number;
-  ultima_actividad: string;
-  capacidad_pacientes_dia: number;
-  nivel_complejidad: string;
-  especializacion_principal: string;
+  fecha_modificacion: string;
+  created_by: number;
+  id_pais: number | null;
+  id_region: number | null;
+  id_comuna: number | null;
 }
 
 interface Estadisticas {
@@ -78,39 +123,44 @@ interface Estadisticas {
   centros_activos: number;
   centros_inactivos: number;
   centros_suspendidos: number;
-  capacidad_promedio: number;
-  capacidad_total: number;
+  capacidad_promedio: number | null;
+  capacidad_total: number | null;
+  centros_alta_complejidad: number;
+  centros_media_complejidad: number;
+  centros_baja_complejidad: number;
 }
 
-// 🌟 BADGE DE ESTADO
+interface DistribucionRegion {
+  region: string;
+  cantidad: number;
+  activos: number;
+}
+
+// ============================================================
+// COMPONENTE: Badge Estado Premium
+// ============================================================
 const EstadoBadge = ({ estado }: { estado: Centro["estado"] }) => {
   const configs = {
     activo: {
-      bg: "bg-gradient-to-r from-emerald-400 via-teal-400 to-cyan-500",
+      bg: "bg-gradient-to-r from-emerald-400 to-teal-500",
       text: "text-white",
       icon: CheckCircle,
       label: "Activo",
-      glow: "shadow-2xl shadow-emerald-500/60",
-      ring: "ring-2 ring-emerald-300/50 ring-offset-2 ring-offset-white/10",
-      pulse: "animate-pulse",
+      shadow: "shadow-lg shadow-emerald-500/50",
     },
     inactivo: {
-      bg: "bg-gradient-to-r from-slate-400 via-gray-400 to-zinc-500",
+      bg: "bg-gradient-to-r from-slate-400 to-slate-500",
       text: "text-white",
       icon: Ban,
       label: "Inactivo",
-      glow: "shadow-2xl shadow-slate-500/60",
-      ring: "ring-2 ring-slate-300/50 ring-offset-2 ring-offset-white/10",
-      pulse: "",
+      shadow: "shadow-lg shadow-slate-500/50",
     },
     suspendido: {
-      bg: "bg-gradient-to-r from-red-500 via-rose-500 to-pink-600",
+      bg: "bg-gradient-to-r from-red-400 to-rose-500",
       text: "text-white",
       icon: AlertCircle,
       label: "Suspendido",
-      glow: "shadow-2xl shadow-red-500/60",
-      ring: "ring-2 ring-red-300/50 ring-offset-2 ring-offset-white/10",
-      pulse: "animate-pulse",
+      shadow: "shadow-lg shadow-red-500/50",
     },
   };
 
@@ -119,75 +169,599 @@ const EstadoBadge = ({ estado }: { estado: Centro["estado"] }) => {
 
   return (
     <div
-      className={`group relative inline-flex items-center gap-2.5 px-5 py-2 rounded-2xl ${config.bg} ${config.text} ${config.glow} ${config.ring} font-black text-xs tracking-wider uppercase transition-all duration-500 hover:scale-110 hover:rotate-1 ${config.pulse}`}
+      className={`inline-flex items-center gap-2 px-4 py-2 rounded-full ${config.bg} ${config.text} text-[11px] font-bold uppercase tracking-wider ${config.shadow} backdrop-blur-xl border border-white/20`}
     >
-      <div className="absolute inset-0 bg-white/20 rounded-2xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-      <Icon className="w-4 h-4 relative z-10 drop-shadow-lg animate-bounce" />
-      <span className="relative z-10 drop-shadow-lg">{config.label}</span>
-      <div className="absolute -top-1 -right-1 w-3 h-3 bg-white rounded-full opacity-80 group-hover:animate-ping"></div>
+      <Icon className="w-4 h-4 animate-pulse" />
+      <span>{config.label}</span>
     </div>
   );
 };
 
-// 👑 BADGE DE PLAN
+// ============================================================
+// COMPONENTE: Badge Plan Premium
+// ============================================================
 const PlanBadge = ({ plan }: { plan: string }) => {
   const configs = {
     basico: {
-      bg: "bg-gradient-to-r from-blue-500 via-cyan-500 to-sky-600",
+      bg: "bg-gradient-to-r from-blue-400 to-cyan-500",
       text: "text-white",
       icon: "💎",
       label: "Básico",
-      glow: "shadow-2xl shadow-blue-500/60",
-      particles:
-        "before:absolute before:inset-0 before:bg-[radial-gradient(circle_at_50%_120%,rgba(120,119,198,0.3),rgba(255,255,255,0))]",
+      shadow: "shadow-lg shadow-blue-500/50",
     },
     profesional: {
-      bg: "bg-gradient-to-r from-purple-600 via-fuchsia-500 to-pink-600",
+      bg: "bg-gradient-to-r from-purple-400 to-pink-500",
       text: "text-white",
       icon: "👑",
       label: "Profesional",
-      glow: "shadow-2xl shadow-purple-500/60",
-      particles:
-        "before:absolute before:inset-0 before:bg-[radial-gradient(circle_at_50%_120%,rgba(184,147,247,0.3),rgba(255,255,255,0))]",
+      shadow: "shadow-lg shadow-purple-500/50",
     },
-    empresarial: {
-      bg: "bg-gradient-to-r from-amber-500 via-orange-500 to-red-500",
+    enterprise: {
+      bg: "bg-gradient-to-r from-amber-400 to-orange-500",
       text: "text-white",
       icon: "🏆",
-      label: "Empresarial",
-      glow: "shadow-2xl shadow-orange-500/60",
-      particles:
-        "before:absolute before:inset-0 before:bg-[radial-gradient(circle_at_50%_120%,rgba(251,191,36,0.3),rgba(255,255,255,0))]",
-    },
-    premium: {
-      bg: "bg-gradient-to-r from-indigo-600 via-violet-600 to-purple-700",
-      text: "text-white",
-      icon: "⭐",
-      label: "Premium",
-      glow: "shadow-2xl shadow-indigo-500/60",
-      particles:
-        "before:absolute before:inset-0 before:bg-[radial-gradient(circle_at_50%_120%,rgba(129,140,248,0.3),rgba(255,255,255,0))]",
+      label: "Enterprise",
+      shadow: "shadow-lg shadow-amber-500/50",
     },
   };
 
-  const config = configs[plan?.toLowerCase() as keyof typeof configs] || configs.basico;
+  const config =
+    configs[plan?.toLowerCase() as keyof typeof configs] || configs.basico;
 
   return (
     <div
-      className={`group relative inline-flex items-center gap-2.5 px-5 py-2 rounded-2xl ${config.bg} ${config.text} ${config.glow} ring-2 ring-white/30 ring-offset-2 ring-offset-white/10 font-black text-xs tracking-wider uppercase transition-all duration-500 hover:scale-110 hover:-rotate-1 ${config.particles} overflow-hidden`}
+      className={`inline-flex items-center gap-2 px-4 py-2 rounded-full ${config.bg} ${config.text} text-[11px] font-bold uppercase tracking-wider ${config.shadow} backdrop-blur-xl border border-white/20`}
     >
-      <div className="absolute inset-0 bg-gradient-to-t from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-      <span className="text-lg relative z-10 drop-shadow-lg animate-pulse">{config.icon}</span>
-      <span className="relative z-10 drop-shadow-lg">{config.label}</span>
-      <Crown className="w-3.5 h-3.5 relative z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300 animate-bounce" />
+      <span className="text-lg">{config.icon}</span>
+      <span>{config.label}</span>
     </div>
   );
 };
 
+// ============================================================
+// COMPONENTE: Badge País Premium
+// ============================================================
+const PaisBadge = ({ pais }: { pais: string | null }) => {
+  return (
+    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 text-[11px] font-bold text-blue-700 shadow-md backdrop-blur-xl">
+      <Flag className="w-4 h-4 text-blue-600" />
+      <span>{pais || "Sin país"}</span>
+    </div>
+  );
+};
+
+// ============================================================
+// COMPONENTE: Modal Detalles Premium
+// ============================================================
+const ModalDetalles = ({
+  centro,
+  isOpen,
+  onClose,
+}: {
+  centro: Centro | null;
+  isOpen: boolean;
+  onClose: () => void;
+}) => {
+  if (!isOpen || !centro) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+      <div className="relative bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        {/* Header */}
+        <div className="sticky top-0 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 p-6 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            {centro.logo_url ? (
+              <img
+                src={centro.logo_url}
+                alt={centro.nombre}
+                className="w-12 h-12 rounded-xl shadow-lg"
+              />
+            ) : (
+              <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center">
+                <Building2 className="w-7 h-7 text-white" />
+              </div>
+            )}
+            <div>
+              <h2 className="text-2xl font-bold text-white">{centro.nombre}</h2>
+              <p className="text-white/90 text-sm">{centro.razon_social}</p>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-2 hover:bg-white/20 rounded-xl transition-all"
+          >
+            <X className="w-6 h-6 text-white" />
+          </button>
+        </div>
+
+        {/* Contenido */}
+        <div className="p-6 space-y-6">
+          {/* Badges */}
+          <div className="flex flex-wrap gap-3">
+            <EstadoBadge estado={centro.estado} />
+            <PlanBadge plan={centro.plan} />
+            <PaisBadge pais={centro.pais} />
+          </div>
+
+          {/* Grid de información */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* RUT */}
+            <div className="bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl p-4 border border-indigo-200">
+              <p className="text-[11px] text-indigo-600 font-bold uppercase tracking-wider mb-1">
+                RUT
+              </p>
+              <p className="text-lg font-bold text-gray-900 font-mono">
+                {centro.rut}
+              </p>
+            </div>
+
+            {/* Tipo de establecimiento */}
+            <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl p-4 border border-emerald-200">
+              <p className="text-[11px] text-emerald-600 font-bold uppercase tracking-wider mb-1">
+                Tipo
+              </p>
+              <p className="text-lg font-bold text-gray-900 capitalize">
+                {centro.tipo_establecimiento || "N/A"}
+              </p>
+            </div>
+
+            {/* Dirección */}
+            <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl p-4 border border-blue-200 md:col-span-2">
+              <p className="text-[11px] text-blue-600 font-bold uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                <MapPin className="w-4 h-4" />
+                Dirección
+              </p>
+              <p className="text-sm font-semibold text-gray-900">
+                {centro.direccion}
+              </p>
+              <p className="text-xs text-gray-600 mt-1">
+                {centro.ciudad}
+                {centro.region && `, ${centro.region}`}
+                {centro.codigo_postal && ` - ${centro.codigo_postal}`}
+              </p>
+            </div>
+
+            {/* Teléfono */}
+            <div className="bg-gradient-to-br from-emerald-50 to-green-50 rounded-xl p-4 border border-emerald-200">
+              <p className="text-[11px] text-emerald-600 font-bold uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                <Phone className="w-4 h-4" />
+                Teléfono
+              </p>
+              <a
+                href={`tel:${centro.telefono_principal}`}
+                className="text-lg font-bold text-emerald-600 hover:text-emerald-700"
+              >
+                {centro.telefono_principal}
+              </a>
+              {centro.telefono_secundario && (
+                <p className="text-xs text-gray-600 mt-1">
+                  Secundario: {centro.telefono_secundario}
+                </p>
+              )}
+            </div>
+
+            {/* Email */}
+            <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-200">
+              <p className="text-[11px] text-purple-600 font-bold uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                <Mail className="w-4 h-4" />
+                Email
+              </p>
+              <a
+                href={`mailto:${centro.email_contacto}`}
+                className="text-sm font-bold text-purple-600 hover:text-purple-700 break-all"
+              >
+                {centro.email_contacto}
+              </a>
+            </div>
+
+            {/* Horario */}
+            <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl p-4 border border-orange-200">
+              <p className="text-[11px] text-orange-600 font-bold uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                <Clock className="w-4 h-4" />
+                Horario
+              </p>
+              <p className="text-sm font-bold text-gray-900">
+                {centro.horario_apertura} - {centro.horario_cierre}
+              </p>
+              <p className="text-xs text-gray-600 mt-1">
+                {centro.dias_atencion || "Lunes a Viernes"}
+              </p>
+            </div>
+
+            {/* Capacidad */}
+            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-4 border border-blue-200">
+              <p className="text-[11px] text-blue-600 font-bold uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                <Users className="w-4 h-4" />
+                Capacidad
+              </p>
+              <p className="text-3xl font-bold text-blue-600">
+                {centro.capacidad_pacientes_dia || 0}
+              </p>
+              <p className="text-xs text-gray-600 mt-1">Pacientes por día</p>
+            </div>
+
+            {/* Complejidad */}
+            <div className="bg-gradient-to-br from-red-50 to-rose-50 rounded-xl p-4 border border-red-200">
+              <p className="text-[11px] text-red-600 font-bold uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                <Zap className="w-4 h-4" />
+                Complejidad
+              </p>
+              <p className="text-lg font-bold text-red-600 capitalize">
+                {centro.nivel_complejidad || "N/A"}
+              </p>
+            </div>
+
+            {/* Especialización */}
+            {centro.especializacion_principal && (
+              <div className="bg-gradient-to-br from-violet-50 to-purple-50 rounded-xl p-4 border border-violet-200 md:col-span-2">
+                <p className="text-[11px] text-violet-600 font-bold uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                  <Stethoscope className="w-4 h-4" />
+                  Especialización
+                </p>
+                <p className="text-sm font-bold text-gray-900">
+                  {centro.especializacion_principal}
+                </p>
+              </div>
+            )}
+
+            {/* Sitio web */}
+            {centro.sitio_web && (
+              <div className="bg-gradient-to-br from-cyan-50 to-blue-50 rounded-xl p-4 border border-cyan-200 md:col-span-2">
+                <p className="text-[11px] text-cyan-600 font-bold uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                  <Globe className="w-4 h-4" />
+                  Sitio Web
+                </p>
+                <a
+                  href={centro.sitio_web}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm font-bold text-cyan-600 hover:text-cyan-700 break-all"
+                >
+                  {centro.sitio_web}
+                </a>
+              </div>
+            )}
+
+            {/* Descripción */}
+            {centro.descripcion && (
+              <div className="bg-gradient-to-br from-gray-50 to-slate-50 rounded-xl p-4 border border-gray-200 md:col-span-2">
+                <p className="text-[11px] text-gray-600 font-bold uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                  <FileText className="w-4 h-4" />
+                  Descripción
+                </p>
+                <p className="text-sm text-gray-700 leading-relaxed">
+                  {centro.descripcion}
+                </p>
+              </div>
+            )}
+
+            {/* Fechas */}
+            <div className="bg-gradient-to-br from-indigo-50 to-blue-50 rounded-xl p-4 border border-indigo-200">
+              <p className="text-[11px] text-indigo-600 font-bold uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                <Calendar className="w-4 h-4" />
+                Creado
+              </p>
+              <p className="text-sm font-bold text-gray-900">
+                {new Date(centro.fecha_creacion).toLocaleDateString("es-ES", {
+                  day: "2-digit",
+                  month: "long",
+                  year: "numeric",
+                })}
+              </p>
+            </div>
+
+            <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-4 border border-purple-200">
+              <p className="text-[11px] text-purple-600 font-bold uppercase tracking-wider mb-1 flex items-center gap-1.5">
+                <RefreshCw className="w-4 h-4" />
+                Modificado
+              </p>
+              <p className="text-sm font-bold text-gray-900">
+                {new Date(centro.fecha_modificacion).toLocaleDateString(
+                  "es-ES",
+                  {
+                    day: "2-digit",
+                    month: "long",
+                    year: "numeric",
+                  }
+                )}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Footer */}
+        <div className="sticky bottom-0 bg-gray-50 border-t border-gray-200 p-4 flex gap-2 justify-end">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 bg-gray-300 text-gray-900 rounded-xl font-semibold hover:bg-gray-400 transition-all"
+          >
+            Cerrar
+          </button>
+          <Link
+            href={`/admin/centros/${centro.id_centro}/editar`}
+            className="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-semibold hover:shadow-lg transition-all flex items-center gap-2"
+          >
+            <Edit className="w-4 h-4" />
+            Editar
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// ============================================================
+// COMPONENTE: Card Centro Premium
+// ============================================================
+const CentroCard = ({
+  centro,
+  onViewDetails,
+  onChangeStatus,
+  onDelete,
+}: {
+  centro: Centro;
+  onViewDetails: (centro: Centro) => void;
+  onChangeStatus: (id: number, status: Centro["estado"]) => void;
+  onDelete: (id: number) => void;
+}) => {
+  const [isHovered, setIsHovered] = useState(false);
+
+  return (
+    <div
+      className="group relative bg-white rounded-3xl shadow-lg hover:shadow-2xl transition-all overflow-hidden border-2 border-gray-100 hover:border-indigo-300"
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+    >
+      {/* Background gradient */}
+      <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 via-purple-500/5 to-pink-500/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+
+      {/* Header card */}
+      <div className="relative h-32 bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 p-4 overflow-hidden">
+        <div className="absolute inset-0 bg-black/10"></div>
+        <div className="absolute -right-8 -top-8 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
+        <div className="absolute -left-8 -bottom-8 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
+
+        <div className="relative z-10 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-3">
+            {centro.logo_url ? (
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-br from-white to-gray-100 rounded-2xl blur-lg opacity-50"></div>
+                <div className="relative w-14 h-14 rounded-2xl bg-white shadow-xl p-2 overflow-hidden ring-2 ring-white/60">
+                  <img
+                    src={centro.logo_url}
+                    alt={centro.nombre}
+                    className="w-full h-full object-contain"
+                  />
+                </div>
+              </div>
+            ) : (
+              <div className="relative">
+                <div className="absolute inset-0 bg-gradient-to-br from-white to-gray-100 rounded-2xl blur-lg opacity-50"></div>
+                <div className="relative w-14 h-14 rounded-2xl bg-white/20 backdrop-blur-xl shadow-xl flex items-center justify-center ring-2 ring-white/60">
+                  <Building2 className="w-8 h-8 text-white" />
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="flex items-center gap-1.5">
+            <button
+              onClick={() => onViewDetails(centro)}
+              className="p-2.5 bg-white/20 backdrop-blur-xl rounded-xl hover:bg-white/30 transition-all ring-1 ring-white/40 hover:ring-white/60"
+              title="Ver detalles"
+            >
+              <Eye className="w-5 h-5 text-white" />
+            </button>
+            <Link
+              href={`/admin/centros/${centro.id_centro}/editar`}
+              className="p-2.5 bg-white/20 backdrop-blur-xl rounded-xl hover:bg-white/30 transition-all ring-1 ring-white/40 hover:ring-white/60"
+              title="Editar"
+            >
+              <Edit className="w-5 h-5 text-white" />
+            </Link>
+            <button
+              onClick={() =>
+                onChangeStatus(
+                  centro.id_centro,
+                  centro.estado === "activo" ? "inactivo" : "activo"
+                )
+              }
+              className="p-2.5 bg-white/20 backdrop-blur-xl rounded-xl hover:bg-emerald-500/80 transition-all ring-1 ring-white/40 hover:ring-white/60"
+              title={
+                centro.estado === "activo"
+                  ? "Marcar como inactivo"
+                  : "Activar centro"
+              }
+            >
+              <Power className="w-5 h-5 text-white" />
+            </button>
+            <button
+              onClick={() => onDelete(centro.id_centro)}
+              className="p-2.5 bg-white/20 backdrop-blur-xl rounded-xl hover:bg-red-500 transition-all ring-1 ring-white/40 hover:ring-white/60"
+              title="Eliminar"
+            >
+              <Trash2 className="w-5 h-5 text-white" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Contenido card */}
+      <div className="relative z-10 p-5">
+        {/* Nombre y badges */}
+        <div className="mb-4">
+          <h3 className="text-lg font-bold text-gray-900 leading-snug group-hover:text-indigo-600 transition-colors mb-2 line-clamp-2">
+            {centro.nombre}
+          </h3>
+          <div className="flex flex-wrap items-center gap-2 mb-2">
+            <EstadoBadge estado={centro.estado} />
+            <PlanBadge plan={centro.plan} />
+          </div>
+          <p className="text-xs text-gray-600 font-semibold mb-1">
+            {centro.razon_social}
+          </p>
+          <div className="flex items-center gap-2">
+            <p className="text-[10px] text-gray-500 font-mono bg-gray-50 px-2.5 py-1 rounded-lg border border-gray-200">
+              {centro.rut}
+            </p>
+            <button
+              onClick={() => {
+                navigator.clipboard.writeText(centro.rut);
+                alert("RUT copiado al portapapeles");
+              }}
+              className="p-1 hover:bg-gray-100 rounded-lg transition-all"
+              title="Copiar RUT"
+            >
+              <Copy className="w-3.5 h-3.5 text-gray-600" />
+            </button>
+          </div>
+        </div>
+
+        {/* Contacto */}
+        <div className="space-y-2.5 mb-4 pb-4 border-b-2 border-gray-100">
+          <div className="flex items-start gap-2">
+            <div className="mt-0.5 p-1.5 bg-indigo-100 rounded-lg">
+              <MapPin className="w-4 h-4 text-indigo-600" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-xs text-gray-900 font-bold leading-snug">
+                {centro.direccion}
+              </p>
+              <p className="text-[11px] text-gray-600 font-semibold mt-1">
+                {centro.ciudad}
+                {centro.region && `, ${centro.region}`}
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 bg-emerald-100 rounded-lg">
+              <Phone className="w-4 h-4 text-emerald-600" />
+            </div>
+            <a
+              href={`tel:${centro.telefono_principal}`}
+              className="text-xs text-gray-700 hover:text-emerald-600 font-bold transition-colors"
+            >
+              {centro.telefono_principal}
+            </a>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="p-1.5 bg-blue-100 rounded-lg">
+              <Mail className="w-4 h-4 text-blue-600" />
+            </div>
+            <a
+              href={`mailto:${centro.email_contacto}`}
+              className="text-xs text-gray-700 hover:text-blue-600 font-bold transition-colors truncate"
+            >
+              {centro.email_contacto}
+            </a>
+          </div>
+          {centro.sitio_web && (
+            <div className="flex items-center gap-2">
+              <div className="p-1.5 bg-purple-100 rounded-lg">
+                <Globe className="w-4 h-4 text-purple-600" />
+              </div>
+              <a
+                href={centro.sitio_web}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-xs text-purple-600 hover:text-purple-700 font-bold truncate flex items-center gap-1"
+              >
+                {centro.sitio_web}
+                <Sparkles className="w-3 h-3" />
+              </a>
+            </div>
+          )}
+        </div>
+
+        {/* Stats Grid */}
+        <div className="space-y-3">
+          {/* Fila 1 */}
+          <div className="grid grid-cols-2 gap-2">
+            <div className="bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl p-3 text-center border-2 border-blue-100 hover:border-blue-300 transition-all">
+              <div className="flex items-center justify-center mb-2">
+                <div className="p-2 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl">
+                  <Users className="w-4 h-4 text-white" />
+                </div>
+              </div>
+              <p className="text-2xl font-bold text-blue-600 mb-0.5">
+                {centro.capacidad_pacientes_dia || 0}
+              </p>
+              <p className="text-[10px] text-blue-700 font-bold uppercase tracking-wider">
+                Capacidad
+              </p>
+            </div>
+            <div className="bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl p-3 text-center border-2 border-emerald-100 hover:border-emerald-300 transition-all">
+              <div className="flex items-center justify-center mb-2">
+                <div className="p-2 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl">
+                  <Zap className="w-4 h-4 text-white" />
+                </div>
+              </div>
+              <p className="text-2xl font-bold text-emerald-600 mb-0.5 capitalize">
+                {centro.nivel_complejidad || "N/A"}
+              </p>
+              <p className="text-[10px] text-emerald-700 font-bold uppercase tracking-wider">
+                Complejidad
+              </p>
+            </div>
+          </div>
+
+          {/* Fila 2 */}
+          <div className="space-y-2 bg-gradient-to-br from-gray-50 to-slate-50 rounded-2xl p-3 border-2 border-gray-100">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] text-gray-600 font-bold flex items-center gap-1.5 uppercase tracking-wider">
+                <Clock className="w-4 h-4 text-indigo-600" />
+                Horario
+              </span>
+              <span className="text-xs font-bold text-gray-900 bg-white px-2.5 py-1 rounded-lg border border-gray-300">
+                {centro.horario_apertura}
+              </span>
+            </div>
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] text-gray-600 font-bold flex items-center gap-1.5 uppercase tracking-wider">
+                <Calendar className="w-4 h-4 text-emerald-600" />
+                Creado
+              </span>
+              <span className="text-xs font-bold text-gray-900 bg-white px-2.5 py-1 rounded-lg border border-gray-300">
+                {new Date(centro.fecha_creacion).toLocaleDateString("es-ES", {
+                  day: "2-digit",
+                  month: "short",
+                })}
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div className="relative px-5 py-3 bg-gradient-to-r from-gray-50 to-slate-50 border-t-2 border-gray-100 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <div
+            className={`w-3 h-3 rounded-full ${
+              centro.estado === "activo"
+                ? "bg-emerald-500 animate-pulse"
+                : centro.estado === "suspendido"
+                ? "bg-red-500 animate-pulse"
+                : "bg-slate-400"
+            }`}
+          ></div>
+          <span className="text-[11px] font-bold text-gray-700 uppercase tracking-wider">
+            {centro.estado}
+          </span>
+        </div>
+        <PaisBadge pais={centro.pais} />
+      </div>
+    </div>
+  );
+};
+
+// ============================================================
+// PÁGINA PRINCIPAL: CentrosPage PREMIUM
+// ============================================================
 export default function CentrosPage() {
   const router = useRouter();
   const [centros, setCentros] = useState<Centro[]>([]);
   const [estadisticas, setEstadisticas] = useState<Estadisticas | null>(null);
+  const [distribucion, setDistribucion] = useState<DistribucionRegion[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -196,12 +770,22 @@ export default function CentrosPage() {
   const [estadoFiltro, setEstadoFiltro] = useState("todos");
   const [vistaActual, setVistaActual] = useState<"grid" | "list">("grid");
 
+  // Modal
+  const [selectedCentro, setSelectedCentro] = useState<Centro | null>(null);
+  const [showModal, setShowModal] = useState(false);
+
   // Paginación
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [total, setTotal] = useState(0);
 
-  // Cargar centros
+  // Tema
+  const [theme, setTheme] = useState<ThemeMode>("light");
+  const isDark = theme === "dark";
+
+  // ============================================================
+  // Cargar centros con filtros
+  // ============================================================
   const cargarCentros = async () => {
     try {
       setLoading(true);
@@ -227,6 +811,7 @@ export default function CentrosPage() {
       if (data.success) {
         setCentros(data.data || []);
         setEstadisticas(data.estadisticas || null);
+        setDistribucion(data.distribucion_region || []);
         setTotalPages(data.pagination?.totalPages || 1);
         setTotal(data.pagination?.total || (data.data ? data.data.length : 0));
       } else {
@@ -234,19 +819,45 @@ export default function CentrosPage() {
       }
     } catch (err: any) {
       setError(err.message || "Error inesperado");
-      console.error("Error al cargar centros:", err);
+      console.error("❌ Error al cargar centros:", err);
     } finally {
       setLoading(false);
     }
   };
+
+  // ============================================================
+  // Efectos
+  // ============================================================
+  useEffect(() => {
+    // Cargar tema desde localStorage
+    if (typeof window !== "undefined") {
+      const stored = window.localStorage.getItem(
+        "centros-theme"
+      ) as ThemeMode | null;
+      if (stored === "dark" || stored === "light") {
+        setTheme(stored);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("centros-theme", theme);
+    }
+  }, [theme]);
 
   useEffect(() => {
     cargarCentros();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [page, estadoFiltro, busqueda]);
 
+  // ============================================================
   // Cambiar estado del centro
-  const cambiarEstado = async (idCentro: number, nuevoEstado: Centro["estado"]) => {
+  // ============================================================
+  const cambiarEstado = async (
+    idCentro: number,
+    nuevoEstado: Centro["estado"]
+  ) => {
     try {
       const response = await fetch(`/api/admin/centros/${idCentro}/estado`, {
         method: "PATCH",
@@ -257,17 +868,19 @@ export default function CentrosPage() {
       const data = await response.json();
 
       if (data.success) {
-        alert(`Estado actualizado a: ${nuevoEstado}`);
+        alert(`✅ Estado actualizado a: ${nuevoEstado}`);
         cargarCentros();
       } else {
-        alert(`Error: ${data.error}`);
+        alert(`❌ Error: ${data.error}`);
       }
     } catch (error: any) {
-      alert(`Error: ${error.message}`);
+      alert(`❌ Error: ${error.message}`);
     }
   };
 
+  // ============================================================
   // Eliminar centro
+  // ============================================================
   const eliminarCentro = async (idCentro: number) => {
     if (
       !confirm(
@@ -284,17 +897,19 @@ export default function CentrosPage() {
       const data = await response.json();
 
       if (data.success) {
-        alert("Centro eliminado exitosamente");
+        alert("✅ Centro eliminado exitosamente");
         cargarCentros();
       } else {
-        alert(`Error: ${data.error}`);
+        alert(`❌ Error: ${data.error}`);
       }
     } catch (error: any) {
-      alert(`Error: ${error.message}`);
+      alert(`❌ Error: ${error.message}`);
     }
   };
 
+  // ============================================================
   // Descargar reporte
+  // ============================================================
   const descargarReporte = async () => {
     try {
       const params = new URLSearchParams({
@@ -304,246 +919,285 @@ export default function CentrosPage() {
 
       window.open(`/api/admin/centros/reporte?${params}`, "_blank");
     } catch (error: any) {
-      alert(`Error: ${error.message}`);
+      alert(`❌ Error: ${error.message}`);
     }
   };
 
+  // ============================================================
+  // RENDER
+  // ============================================================
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/50 to-indigo-50 relative overflow-hidden">
+    <div
+      className={
+        isDark
+          ? "min-h-screen bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 relative overflow-hidden"
+          : "min-h-screen bg-gradient-to-br from-white via-blue-50 to-indigo-50 relative overflow-hidden"
+      }
+    >
       {/* Fondo animado */}
-      <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiM2MzY2ZjEiIGZpbGwtb3BhY2l0eT0iMC4wNSI+PHBhdGggZD0iTTM2IDM0djJoLTJ2LTJoMnptMC00aDJ2Mmgtdi0yem0tMiAydjJoLTJ2LTJoMnptMi0yaDJ2Mmgtdi0yem0tMiAyaDJ2Mmgtdi0yem0tMi0ydjJoLTJ2LTJoMnptMi0yaDJ2Mmgtdi0yem0tMiAyaDJ2Mmgtdi0yem0tMi0ydjJoLTJ2LTJoMnoiLz48L2c+PC9nPjwvc3ZnPg==')] opacity-30 animate-pulse"></div>
-      <div className="absolute top-0 left-1/4 w-96 h-96 bg-purple-300/20 rounded-full blur-3xl animate-pulse"></div>
-      <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-blue-300/20 rounded-full blur-3xl animate-pulse delay-700"></div>
+      <div className="absolute inset-0 pointer-events-none">
+        {isDark ? (
+          <>
+            <div className="absolute top-0 left-0 w-96 h-96 bg-indigo-700/40 rounded-full blur-3xl animate-pulse"></div>
+            <div className="absolute bottom-0 right-0 w-96 h-96 bg-purple-700/40 rounded-full blur-3xl animate-pulse"></div>
+            <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-pink-700/30 rounded-full blur-3xl animate-pulse"></div>
+          </>
+        ) : (
+          <>
+            <div className="absolute top-0 left-0 w-96 h-96 bg-blue-200 rounded-full blur-3xl animate-pulse"></div>
+            <div className="absolute bottom-0 right-0 w-96 h-96 bg-purple-200 rounded-full blur-3xl animate-pulse"></div>
+            <div className="absolute top-1/2 left-1/2 w-96 h-96 bg-pink-200 rounded-full blur-3xl animate-pulse"></div>
+          </>
+        )}
+      </div>
 
       <div className="relative z-10 p-4 md:p-8">
         {/* Botón regresar */}
         <div className="mb-6">
           <button
             onClick={() => router.back()}
-            className="group inline-flex items-center gap-3 px-6 py-3.5 bg-gradient-to-r from-slate-800 via-slate-700 to-slate-900 text-white rounded-2xl font-bold shadow-2xl shadow-slate-900/50 hover:shadow-slate-900/80 hover:scale-105 transition-all duration-300 ring-2 ring-slate-600/50 ring-offset-2 ring-offset-white/50 hover:ring-offset-4"
+            className={
+              isDark
+                ? "inline-flex items-center gap-2 px-6 py-3 bg-white/10 backdrop-blur-xl text-white rounded-2xl text-xs md:text-sm font-bold shadow-lg hover:shadow-xl hover:bg-white/20 transition-all border border-white/20"
+                : "inline-flex items-center gap-2 px-6 py-3 bg-white text-gray-700 rounded-2xl text-xs md:text-sm font-bold shadow shadow-sm hover:bg-gray-100 transition-all border border-gray-200"
+            }
           >
-            <div className="relative">
-              <ArrowLeft className="w-5 h-5 group-hover:-translate-x-2 transition-transform duration-300" />
-              <div className="absolute inset-0 bg-white/30 rounded-full blur-lg opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-            </div>
-            <span className="text-base tracking-wide">Regresar</span>
-            <ChevronLeft className="w-4 h-4 opacity-70 group-hover:opacity-100 group-hover:-translate-x-1 transition-all duration-300" />
+            <ArrowLeft className="w-4 h-4" />
+            <span>Regresar</span>
           </button>
         </div>
 
-        {/* Header */}
+        {/* Header Premium */}
         <div className="mb-8">
-          <div className="relative overflow-hidden bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 rounded-[2rem] shadow-2xl">
-            <div className="absolute inset-0 bg-gradient-to-br from-black/20 to-transparent"></div>
-            <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIj48cGF0aCBkPSJNMzYgMzBoLTJWMGgydjMwem0tOCAwTDE4IDBoMnYzMGgtOHptMTYgMGgtMlYwaDJ2MzB6bTggMGgtMlYwaDJ2MzB6bS0yNCAwTDEwIDBoMnYzMGgtOHptMzIgMGgtMlYwaDJ2MzB6Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-20"></div>
-            <div className="absolute top-0 left-0 w-40 h-40 bg-white/10 rounded-full blur-3xl animate-pulse"></div>
-            <div className="absolute bottom-0 right-0 w-60 h-60 bg-pink-300/20 rounded-full blur-3xl animate-pulse delay-300"></div>
+          <div
+            className={
+              isDark
+                ? "relative overflow-hidden bg-gradient-to-r from-indigo-700 via-purple-700 to-pink-700 rounded-3xl shadow-2xl border border-white/10"
+                : "relative overflow-hidden bg-gradient-to-r from-blue-100 via-purple-100 to-pink-100 rounded-3xl shadow-xl border border-gray-200"
+            }
+          >
+            <div
+              className={
+                isDark
+                  ? "absolute inset-0 bg-gradient-to-br from-black/20 to-transparent"
+                  : "absolute inset-0 bg-gradient-to-br from-white/40 to-transparent"
+              }
+            ></div>
+            <div className="absolute -right-20 -top-20 w-40 h-40 bg-white/30 rounded-full blur-3xl"></div>
+            <div className="absolute -left-20 -bottom-20 w-40 h-40 bg-white/30 rounded-full blur-3xl"></div>
 
-            <div className="relative z-10 p-8 md:p-12">
-              <div className="flex items-center justify-between flex-wrap gap-6">
-                <div className="flex items-center gap-5">
-                  <div className="relative group">
-                    <div className="absolute inset-0 bg-white/30 rounded-3xl blur-xl group-hover:blur-2xl transition-all duration-300"></div>
-                    <div className="relative p-5 bg-white/20 backdrop-blur-2xl rounded-3xl shadow-2xl ring-2 ring-white/30 group-hover:scale-110 transition-transform duration-300">
-                      <Building2 className="w-12 h-12 text-white drop-shadow-2xl" />
-                      <div className="absolute -top-2 -right-2 w-6 h-6 bg-yellow-400 rounded-full animate-ping"></div>
-                      <div className="absolute -top-2 -right-2 w-6 h-6 bg-yellow-400 rounded-full"></div>
-                    </div>
+            <div className="relative z-10 p-6 md:p-8">
+              <div className="flex items-center justify-between flex-wrap gap-4">
+                <div className="flex items-center gap-4">
+                  <div
+                    className={
+                      isDark
+                        ? "p-4 bg-white/20 backdrop-blur-xl rounded-2xl shadow-xl"
+                        : "p-4 bg-white rounded-2xl shadow border border-gray-200"
+                    }
+                  >
+                    <Building2
+                      className={
+                        isDark
+                          ? "w-8 h-8 text-white"
+                          : "w-8 h-8 text-indigo-600"
+                      }
+                    />
                   </div>
                   <div>
-                    <h1 className="text-4xl md:text-6xl font-black text-white mb-3 tracking-tight drop-shadow-2xl">
+                    <h1
+                      className={`text-3xl md:text-4xl font-black mb-1 tracking-tight ${
+                        isDark ? "text-white" : "text-gray-900"
+                      }`}
+                    >
                       Centros Médicos
-                      <span className="inline-block ml-3 animate-bounce">✨</span>
+                      <span className="inline-block ml-2 align-middle animate-bounce">
+                        ✨
+                      </span>
                     </h1>
-                    <p className="text-lg md:text-xl text-white/95 font-bold drop-shadow-lg flex items-center gap-2">
-                      <Shield className="w-5 h-5 animate-pulse" />
-                      Gestión completa de centros de salud
-                      <Heart className="w-5 h-5 animate-pulse delay-100" />
+                    <p
+                      className={`text-sm md:text-base font-bold flex items-center gap-2 ${
+                        isDark ? "text-white/95" : "text-gray-700"
+                      }`}
+                    >
+                      <Shield className="w-5 h-5" />
+                      Gestión Premium de Centros de Salud
+                      <Heart
+                        className={`w-5 h-5 ${
+                          isDark ? "text-red-300" : "text-red-400"
+                        }`}
+                      />
                     </p>
                   </div>
                 </div>
-                <div className="flex gap-4 items-center">
+
+                <div className="flex gap-3 items-center">
+                  <button
+                    onClick={() =>
+                      setTheme(isDark ? "light" : "dark")
+                    }
+                    className={
+                      isDark
+                        ? "inline-flex items-center gap-2 px-3 py-2 rounded-2xl bg-white/10 border border-white/30 text-white text-xs font-semibold hover:bg-white/20 transition-all"
+                        : "inline-flex items-center gap-2 px-3 py-2 rounded-2xl bg-white border border-gray-200 text-gray-700 text-xs font-semibold hover:bg-gray-100 transition-all"
+                    }
+                    title={
+                      isDark
+                        ? "Cambiar a modo claro"
+                        : "Cambiar a modo oscuro"
+                    }
+                  >
+                    {isDark ? (
+                      <>
+                        <Sun className="w-4 h-4" />
+                        <span>Claro</span>
+                      </>
+                    ) : (
+                      <>
+                        <Moon className="w-4 h-4" />
+                        <span>Oscuro</span>
+                      </>
+                    )}
+                  </button>
+
                   <Link
                     href="/admin/centros/nuevo"
-                    className="group relative flex items-center gap-4 px-10 py-5 bg-white text-indigo-600 rounded-[1.5rem] font-black text-lg shadow-2xl hover:shadow-white/70 hover:scale-110 transition-all duration-500 ring-4 ring-white/50 ring-offset-4 ring-offset-transparent overflow-hidden"
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-white text-indigo-600 rounded-2xl text-xs md:text-sm font-bold shadow-xl hover:shadow-2xl hover:scale-105 transition-all"
                   >
-                    <div className="absolute inset-0 bg-gradient-to-r from-yellow-200/50 to-pink-200/50 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                    <Plus className="relative z-10 w-6 h-6 group-hover:rotate-180 transition-transform duration-500" />
-                    <span className="relative z-10 tracking-wide">Nuevo Centro</span>
-                    <Sparkles className="relative z-10 w-6 h-6 group-hover:animate-spin" />
-                    <div className="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-yellow-300 to-pink-300 rounded-full blur-2xl opacity-0 group-hover:opacity-50 transition-opacity duration-500"></div>
+                    <Plus className="w-5 h-5" />
+                    <span>Nuevo Centro</span>
+                    <Sparkles className="w-5 h-5" />
                   </Link>
-                  {/* botón decorativo para usar MoreVertical y que no se queje TS */}
-                  <button
-                    type="button"
-                    className="p-3 rounded-2xl bg-white/10 text-white hover:bg-white/20 transition-all duration-300 ring-2 ring-white/20"
-                    title="Opciones"
-                  >
-                    <MoreVertical className="w-5 h-5" />
-                  </button>
                 </div>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Estadísticas */}
+        {/* Estadísticas Premium */}
         {estadisticas && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             {/* Total centros */}
-            <div className="group relative overflow-hidden bg-gradient-to-br from-blue-500 via-cyan-500 to-sky-600 rounded-3xl p-7 shadow-2xl hover:shadow-blue-500/60 transition-all duration-500 hover:scale-105 hover:-rotate-1 ring-2 ring-blue-300/50 ring-offset-2 ring-offset-white/50">
-              <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-              <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-3xl group-hover:blur-2xl transition-all duration-500"></div>
-
+            <div className="relative overflow-hidden bg-gradient-to-br from-blue-500 via-cyan-500 to-sky-600 rounded-2xl p-6 shadow-xl text-white border border-white/20 hover:border-white/40 transition-all">
+              <div className="absolute -right-10 -top-10 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
               <div className="relative z-10">
-                <div className="flex items-center justify-between mb-5">
-                  <div className="relative">
-                    <div className="p-4 bg-white/20 backdrop-blur-xl rounded-2xl shadow-lg ring-2 ring-white/30 group-hover:scale-110 transition-transform duration-300">
-                      <Building2 className="w-10 h-10 text-white drop-shadow-lg" />
-                    </div>
-                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-400 rounded-full animate-pulse"></div>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="p-3 bg-white/20 backdrop-blur-xl rounded-xl">
+                    <Building2 className="w-6 h-6" />
                   </div>
-                  <div className="flex items-center gap-2 text-white/80">
-                    <TrendingUp className="w-7 h-7 animate-bounce" />
-                  </div>
+                  <TrendingUp className="w-6 h-6 opacity-90" />
                 </div>
-                <div>
-                  <p className="text-white/90 text-sm font-black uppercase tracking-wider mb-3 flex items-center gap-2">
-                    <Zap className="w-4 h-4 animate-pulse" />
-                    Total Centros
-                  </p>
-                  <p className="text-6xl font-black text-white mb-2 drop-shadow-2xl">
-                    {estadisticas.total_centros}
-                  </p>
-                  <p className="text-white/80 text-sm font-bold flex items-center gap-2">
-                    <Activity className="w-4 h-4" />
-                    Registrados en el sistema
-                  </p>
-                </div>
+                <p className="text-[12px] font-bold uppercase tracking-widest mb-2 opacity-90">
+                  Total Centros
+                </p>
+                <p className="text-4xl font-black mb-2">
+                  {estadisticas.total_centros}
+                </p>
+                <p className="text-xs font-bold flex items-center gap-1.5 opacity-90">
+                  <Activity className="w-4 h-4" />
+                  Registrados en el sistema
+                </p>
               </div>
-              <div className="absolute bottom-0 right-0 w-32 h-32 bg-gradient-to-tl from-white/10 to-transparent rounded-tl-full"></div>
             </div>
 
             {/* Activos */}
-            <div className="group relative overflow-hidden bg-gradient-to-br from-emerald-500 via-teal-500 to-green-600 rounded-3xl p-7 shadow-2xl hover:shadow-emerald-500/60 transition-all duration-500 hover:scale-105 hover:rotate-1 ring-2 ring-emerald-300/50 ring-offset-2 ring-offset-white/50">
-              <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-              <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-3xl group-hover:blur-2xl transition-all duration-500"></div>
-
+            <div className="relative overflow-hidden bg-gradient-to-br from-emerald-500 via-teal-500 to-green-600 rounded-2xl p-6 shadow-xl text-white border border-white/20 hover:border-white/40 transition-all">
+              <div className="absolute -right-10 -top-10 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
               <div className="relative z-10">
-                <div className="flex items-center justify-between mb-5">
-                  <div className="relative">
-                    <div className="p-4 bg-white/20 backdrop-blur-xl rounded-2xl shadow-lg ring-2 ring-white/30 group-hover:scale-110 transition-transform duration-300">
-                      <CheckCircle className="w-10 h-10 text-white drop-shadow-lg animate-pulse" />
-                    </div>
-                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-400 rounded-full animate-ping"></div>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="p-3 bg-white/20 backdrop-blur-xl rounded-xl">
+                    <CheckCircle className="w-6 h-6" />
                   </div>
-                  <div className="px-4 py-2 bg-white/20 backdrop-blur-xl rounded-2xl ring-2 ring-white/30">
-                    <span className="text-white font-black text-lg drop-shadow-lg">
-                      {estadisticas.total_centros > 0
-                        ? Math.round(
-                            (estadisticas.centros_activos /
-                              estadisticas.total_centros) *
-                              100
-                          )
-                        : 0}
-                      %
-                    </span>
+                  <div className="px-3 py-1.5 bg-white/20 backdrop-blur-xl rounded-xl text-xs font-bold">
+                    {estadisticas.total_centros > 0
+                      ? Math.round(
+                          (estadisticas.centros_activos /
+                            estadisticas.total_centros) *
+                            100
+                        )
+                      : 0}
+                    %
                   </div>
                 </div>
-                <div>
-                  <p className="text-white/90 text-sm font-black uppercase tracking-wider mb-3 flex items-center gap-2">
-                    <Star className="w-4 h-4 animate-spin" />
-                    Centros Activos
-                  </p>
-                  <p className="text-6xl font-black text-white mb-2 drop-shadow-2xl">
-                    {estadisticas.centros_activos}
-                  </p>
-                  <p className="text-white/80 text-sm font-bold flex items-center gap-2">
-                    <Award className="w-4 h-4 animate-bounce" />
-                    Operando actualmente
-                  </p>
-                </div>
+                <p className="text-[12px] font-bold uppercase tracking-widest mb-2 opacity-90">
+                  Centros Activos
+                </p>
+                <p className="text-4xl font-black mb-2">
+                  {estadisticas.centros_activos}
+                </p>
+                <p className="text-xs font-bold flex items-center gap-1.5 opacity-90">
+                  <Award className="w-4 h-4" />
+                  Operando actualmente
+                </p>
               </div>
-              <div className="absolute bottom-0 right-0 w-32 h-32 bg-gradient-to-tl from-white/10 to-transparent rounded-tl-full"></div>
             </div>
 
             {/* Capacidad total */}
-            <div className="group relative overflow-hidden bg-gradient-to-br from-purple-500 via-fuchsia-500 to-pink-600 rounded-3xl p-7 shadow-2xl hover:shadow-purple-500/60 transition-all duration-500 hover:scale-105 hover:-rotate-1 ring-2 ring-purple-300/50 ring-offset-2 ring-offset-white/50">
-              <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-              <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-3xl group-hover:blur-2xl transition-all duration-500"></div>
-
+            <div className="relative overflow-hidden bg-gradient-to-br from-purple-500 via-fuchsia-500 to-pink-600 rounded-2xl p-6 shadow-xl text-white border border-white/20 hover:border-white/40 transition-all">
+              <div className="absolute -right-10 -top-10 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
               <div className="relative z-10">
-                <div className="flex items-center justify-between mb-5">
-                  <div className="relative">
-                    <div className="p-4 bg-white/20 backdrop-blur-xl rounded-2xl shadow-lg ring-2 ring-white/30 group-hover:scale-110 transition-transform duration-300">
-                      <Users className="w-10 h-10 text-white drop-shadow-lg" />
-                    </div>
-                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-400 rounded-full animate-pulse"></div>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="p-3 bg-white/20 backdrop-blur-xl rounded-xl">
+                    <Users className="w-6 h-6" />
                   </div>
-                  <Sparkles className="w-8 h-8 text-white/80 animate-pulse" />
+                  <Sparkles className="w-6 h-6 opacity-90" />
                 </div>
-                <div>
-                  <p className="text-white/90 text-sm font-black uppercase tracking-wider mb-3 flex items-center gap-2">
-                    <Heart className="w-4 h-4 animate-pulse" />
-                    Capacidad Total
-                  </p>
-                  <p className="text-6xl font-black text-white mb-2 drop-shadow-2xl">
-                    {estadisticas.capacidad_total?.toLocaleString() || 0}
-                  </p>
-                  <p className="text-white/80 text-sm font-bold flex items-center gap-2">
-                    <Activity className="w-4 h-4" />
-                    Pacientes por día
-                  </p>
-                </div>
+                <p className="text-[12px] font-bold uppercase tracking-widest mb-2 opacity-90">
+                  Capacidad Total
+                </p>
+                <p className="text-4xl font-black mb-2">
+                  {estadisticas.capacidad_total?.toLocaleString() || 0}
+                </p>
+                <p className="text-xs font-bold flex items-center gap-1.5 opacity-90">
+                  <Activity className="w-4 h-4" />
+                  Pacientes por día
+                </p>
               </div>
-              <div className="absolute bottom-0 right-0 w-32 h-32 bg-gradient-to-tl from-white/10 to-transparent rounded-tl-full"></div>
             </div>
 
             {/* Capacidad promedio */}
-            <div className="group relative overflow-hidden bg-gradient-to-br from-amber-500 via-orange-500 to-red-600 rounded-3xl p-7 shadow-2xl hover:shadow-amber-500/60 transition-all duration-500 hover:scale-105 hover:rotate-1 ring-2 ring-amber-300/50 ring-offset-2 ring-offset-white/50">
-              <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-              <div className="absolute -top-10 -right-10 w-40 h-40 bg-white/10 rounded-full blur-3xl group-hover:blur-2xl transition-all duration-500"></div>
-
+            <div className="relative overflow-hidden bg-gradient-to-br from-amber-500 via-orange-500 to-red-600 rounded-2xl p-6 shadow-xl text-white border border-white/20 hover:border-white/40 transition-all">
+              <div className="absolute -right-10 -top-10 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
               <div className="relative z-10">
-                <div className="flex items-center justify-between mb-5">
-                  <div className="relative">
-                    <div className="p-4 bg-white/20 backdrop-blur-xl rounded-2xl shadow-lg ring-2 ring-white/30 group-hover:scale-110 transition-transform duration-300">
-                      <TrendingUp className="w-10 h-10 text-white drop-shadow-lg animate-bounce" />
-                    </div>
-                    <div className="absolute -top-1 -right-1 w-4 h-4 bg-yellow-400 rounded-full animate-ping"></div>
+                <div className="flex items-center justify-between mb-4">
+                  <div className="p-3 bg-white/20 backdrop-blur-xl rounded-xl">
+                    <TrendingUp className="w-6 h-6" />
                   </div>
-                  <div className="px-4 py-2 bg-white/20 backdrop-blur-xl rounded-2xl ring-2 ring-white/30">
-                    <span className="text-white font-black text-sm drop-shadow-lg">AVG</span>
+                  <div className="px-3 py-1.5 bg-white/20 backdrop-blur-xl rounded-xl text-xs font-bold">
+                    AVG
                   </div>
                 </div>
-                <div>
-                  <p className="text-white/90 text-sm font-black uppercase tracking-wider mb-3 flex items-center gap-2">
-                    <Crown className="w-4 h-4 animate-bounce" />
-                    Capacidad Promedio
-                  </p>
-                  <p className="text-6xl font-black text-white mb-2 drop-shadow-2xl">
-                    {Math.round(estadisticas.capacidad_promedio || 0)}
-                  </p>
-                  <p className="text-white/80 text-sm font-bold flex items-center gap-2">
-                    <Shield className="w-4 h-4 animate-pulse" />
-                    Por centro
-                  </p>
-                </div>
+                <p className="text-[12px] font-bold uppercase tracking-widest mb-2 opacity-90">
+                  Capacidad Promedio
+                </p>
+                <p className="text-4xl font-black mb-2">
+                  {Math.round(estadisticas.capacidad_promedio || 0)}
+                </p>
+                <p className="text-xs font-bold flex items-center gap-1.5 opacity-90">
+                  <Shield className="w-4 h-4" />
+                  Por centro
+                </p>
               </div>
-              <div className="absolute bottom-0 right-0 w-32 h-32 bg-gradient-to-tl from-white/10 to-transparent rounded-tl-full"></div>
             </div>
           </div>
         )}
 
-        {/* Barra de búsqueda / filtros */}
-        <div className="relative bg-white/90 backdrop-blur-2xl rounded-3xl shadow-2xl p-7 mb-8 border-2 border-white/80 ring-4 ring-indigo-500/10 ring-offset-2 ring-offset-transparent">
-          <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/5 to-purple-500/5 rounded-3xl"></div>
-
-          <div className="relative z-10 flex flex-col lg:flex-row gap-5">
+        {/* Barra de búsqueda / filtros Premium */}
+        <div
+          className={
+            isDark
+              ? "relative bg-white/10 backdrop-blur-2xl rounded-2xl shadow-xl p-5 mb-8 border border-white/20"
+              : "relative bg-white rounded-2xl shadow p-5 mb-8 border border-gray-200"
+          }
+        >
+          <div className="relative z-10 flex flex-col lg:flex-row gap-4">
             {/* Búsqueda */}
-            <div className="flex-1 relative group">
-              <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/20 to-purple-500/20 rounded-2xl blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-500"></div>
-              <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-6 h-6 text-gray-400 group-focus-within:text-indigo-600 group-focus-within:scale-110 transition-all duration-300 z-10" />
+            <div className="flex-1 relative">
+              <SearchIcon
+                className={`absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 ${
+                  isDark ? "text-white/60" : "text-gray-400"
+                }`}
+              />
               <input
                 type="text"
                 placeholder="Buscar centros médicos..."
@@ -552,64 +1206,110 @@ export default function CentrosPage() {
                   setPage(1);
                   setBusqueda(e.target.value);
                 }}
-                className="relative w-full pl-14 pr-6 py-5 bg-white/80 backdrop-blur-xl border-[3px] border-gray-200 rounded-2xl focus:border-indigo-600 focus:ring-4 focus:ring-indigo-100 outline-none transition-all duration-300 text-gray-900 font-bold placeholder:text-gray-400 placeholder:font-medium shadow-lg hover:shadow-xl"
+                className={
+                  isDark
+                    ? "w-full pl-12 pr-4 py-3 bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl focus:border-white/40 focus:ring-2 focus:ring-white/20 outline-none transition-all text-white placeholder-white/60 font-semibold"
+                    : "w-full pl-12 pr-4 py-3 bg-gray-100 border border-gray-300 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all text-gray-800 placeholder-gray-400"
+                }
               />
             </div>
 
             {/* Filtro estado */}
-            <div className="relative group">
-              <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-cyan-500/20 rounded-2xl blur-xl opacity-0 group-focus-within:opacity-100 transition-opacity duration-500"></div>
-              <Filter className="absolute left-5 top-1/2 -translate-y-1/2 w-6 h-6 text-gray-400 group-focus-within:text-blue-600 group-focus-within:scale-110 transition-all duration-300 pointer-events-none z-10" />
+            <div className="relative">
+              <Filter
+                className={`absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 pointer-events-none ${
+                  isDark ? "text-white/60" : "text-gray-400"
+                }`}
+              />
               <select
                 value={estadoFiltro}
                 onChange={(e) => {
                   setPage(1);
                   setEstadoFiltro(e.target.value);
                 }}
-                className="relative appearance-none pl-14 pr-12 py-5 bg-white/80 backdrop-blur-xl border-[3px] border-gray-200 rounded-2xl focus:border-blue-600 focus:ring-4 focus:ring-blue-100 outline-none transition-all duration-300 text-gray-900 font-bold cursor-pointer min-w-[220px] shadow-lg hover:shadow-xl"
+                className={
+                  isDark
+                    ? "appearance-none pl-12 pr-10 py-3 bg-white/10 backdrop-blur-xl border border-white/20 rounded-xl focus:border-white/40 focus:ring-2 focus:ring-white/20 outline-none text-white font-semibold min-w-[200px]"
+                    : "appearance-none pl-12 pr-10 py-3 bg-gray-100 border border-gray-300 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none text-gray-800 font-semibold min-w-[200px]"
+                }
               >
-                <option value="todos">Todos los estados</option>
-                <option value="activo">✅ Activos</option>
-                <option value="inactivo">⚪ Inactivos</option>
-                <option value="suspendido">🔴 Suspendidos</option>
+                <option value="todos" className={isDark ? "bg-slate-900" : ""}>
+                  Todos los estados
+                </option>
+                <option value="activo" className={isDark ? "bg-slate-900" : ""}>
+                  Activos
+                </option>
+                <option
+                  value="inactivo"
+                  className={isDark ? "bg-slate-900" : ""}
+                >
+                  Inactivos
+                </option>
+                <option
+                  value="suspendido"
+                  className={isDark ? "bg-slate-900" : ""}
+                >
+                  Suspendidos
+                </option>
               </select>
-              <div className="absolute right-5 top-1/2 -translate-y-1/2 pointer-events-none">
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
                 <svg
-                  className="w-6 h-6 text-gray-400"
+                  className={`w-5 h-5 ${
+                    isDark ? "text-white/60" : "text-gray-400"
+                  }`}
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M19 9l-7 7-7-7" />
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M19 9l-7 7-7-7"
+                  />
                 </svg>
               </div>
             </div>
 
             {/* Acciones */}
-            <div className="flex gap-4">
+            <div className="flex gap-2">
               {/* Toggle vista */}
-              <div className="flex bg-gradient-to-r from-gray-100 to-gray-200 rounded-2xl p-1.5 shadow-lg ring-2 ring-gray-300/50">
+              <div
+                className={
+                  isDark
+                    ? "flex bg-white/10 rounded-xl p-1.5 shadow-lg border border-white/20"
+                    : "flex bg-gray-100 rounded-xl p-1.5 shadow border border-gray-200"
+                }
+              >
                 <button
                   onClick={() => setVistaActual("grid")}
-                  className={`p-4 rounded-xl transition-all duration-300 ${
+                  className={`p-2.5 rounded-lg transition-all ${
                     vistaActual === "grid"
-                      ? "bg-gradient-to-r from-indigo-600 to-purple-600 shadow-2xl shadow-indigo-500/50 text-white scale-110 ring-2 ring-white"
-                      : "text-gray-400 hover:text-gray-600 hover:bg-white/50"
+                      ? isDark
+                        ? "bg-white/20 shadow text-white"
+                        : "bg-white shadow text-indigo-600"
+                      : isDark
+                      ? "text-white/60 hover:text-white"
+                      : "text-gray-400 hover:text-gray-700"
                   }`}
                   title="Vista Grid"
                 >
-                  <LayoutGrid className="w-6 h-6" />
+                  <LayoutGrid className="w-5 h-5" />
                 </button>
                 <button
                   onClick={() => setVistaActual("list")}
-                  className={`p-4 rounded-xl transition-all duration-300 ${
+                  className={`p-2.5 rounded-lg transition-all ${
                     vistaActual === "list"
-                      ? "bg-gradient-to-r from-indigo-600 to-purple-600 shadow-2xl shadow-indigo-500/50 text-white scale-110 ring-2 ring-white"
-                      : "text-gray-400 hover:text-gray-600 hover:bg-white/50"
+                      ? isDark
+                        ? "bg-white/20 shadow text-white"
+                        : "bg-white shadow text-indigo-600"
+                      : isDark
+                      ? "text-white/60 hover:text-white"
+                      : "text-gray-400 hover:text-gray-700"
                   }`}
                   title="Vista Lista"
                 >
-                  <List className="w-6 h-6" />
+                  <List className="w-5 h-5" />
                 </button>
               </div>
 
@@ -617,25 +1317,23 @@ export default function CentrosPage() {
               <button
                 onClick={() => cargarCentros()}
                 disabled={loading}
-                className="group relative px-6 py-4 bg-gradient-to-r from-blue-600 via-cyan-600 to-sky-600 text-white rounded-2xl font-black shadow-2xl shadow-blue-500/50 hover:shadow-blue-500/80 hover:scale-110 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed ring-2 ring-blue-400/50 ring-offset-2 overflow-hidden"
+                className="px-4 py-3 bg-blue-600 text-white rounded-xl text-xs font-bold shadow-lg hover:bg-blue-700 hover:shadow-xl transition-all disabled:opacity-50 disabled:cursor-not-allowed border border-blue-400/50"
                 title="Actualizar"
               >
-                <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
                 <RefreshCw
-                  className={`relative z-10 w-6 h-6 ${
-                    loading ? "animate-spin" : "group-hover:rotate-180 transition-transform duration-500"
-                  }`}
+                  className={`w-5 h-5 ${
+                    loading ? "animate-spin" : ""
+                  } mx-auto`}
                 />
               </button>
 
               {/* Descargar */}
               <button
                 onClick={descargarReporte}
-                className="group relative px-6 py-4 bg-gradient-to-r from-emerald-600 via-teal-600 to-green-600 text-white rounded-2xl font-black shadow-2xl shadow-emerald-500/50 hover:shadow-emerald-500/80 hover:scale-110 transition-all duration-300 ring-2 ring-emerald-400/50 ring-offset-2 overflow-hidden"
+                className="px-4 py-3 bg-emerald-600 text-white rounded-xl text-xs font-bold shadow-lg hover:bg-emerald-700 hover:shadow-xl transition-all border border-emerald-400/50"
                 title="Descargar Reporte"
               >
-                <div className="absolute inset-0 bg-gradient-to-r from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                <Download className="relative z-10 w-6 h-6 group-hover:animate-bounce" />
+                <Download className="w-5 h-5 mx-auto" />
               </button>
             </div>
           </div>
@@ -645,502 +1343,313 @@ export default function CentrosPage() {
         {loading && (
           <div className="flex flex-col items-center justify-center py-32">
             <div className="relative">
-              <div className="w-32 h-32 border-8 border-indigo-200 rounded-full absolute"></div>
-              <div className="w-32 h-32 border-8 border-indigo-600 rounded-full absolute animate-spin border-t-transparent"></div>
-              <div className="w-24 h-24 border-[6px] border-purple-400 rounded-full absolute top-4 left-4 animate-spin animate-reverse border-b-transparent"></div>
-              <div className="w-16 h-16 border-4 border-pink-500 rounded-full absolute top-8 left-8 animate-ping"></div>
-              <div className="w-32 h-32 flex items-center justify-center">
-                <Sparkles className="w-12 h-12 text-indigo-600 animate-pulse" />
+              <div
+                className={`w-20 h-20 border-4 rounded-full absolute ${
+                  isDark ? "border-white/20" : "border-indigo-100"
+                }`}
+              ></div>
+              <div className="w-20 h-20 border-4 border-indigo-500 rounded-full absolute animate-spin border-t-transparent"></div>
+              <div className="w-12 h-12 flex items-center justify-center">
+                <Sparkles className="w-8 h-8 text-indigo-400 animate-pulse" />
               </div>
             </div>
-            <p className="mt-10 text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 animate-pulse">
-              ✨ Cargando centros médicos...
+            <p
+              className={`mt-6 text-lg font-bold ${
+                isDark ? "text-white" : "text-gray-700"
+              }`}
+            >
+              Cargando centros médicos...
             </p>
-            <div className="mt-4 flex gap-2">
-              <div className="w-3 h-3 bg-indigo-600 rounded-full animate-bounce"></div>
-              <div className="w-3 h-3 bg-purple-600 rounded-full animate-bounce delay-100"></div>
-              <div className="w-3 h-3 bg-pink-600 rounded-full animate-bounce delay-200"></div>
-            </div>
           </div>
         )}
 
         {/* Error */}
         {error && (
-          <div className="relative overflow-hidden bg-gradient-to-r from-red-500 via-rose-500 to-pink-600 text-white rounded-3xl p-8 shadow-2xl mb-8 ring-4 ring-red-300/50 ring-offset-2">
-            <div className="absolute inset-0 bg-black/10"></div>
-            <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
-
-            <div className="relative z-10 flex items-center gap-5">
-              <div className="p-5 bg-white/20 backdrop-blur-xl rounded-2xl shadow-2xl ring-2 ring-white/30 animate-pulse">
-                <AlertCircle className="w-12 h-12 drop-shadow-lg" />
+          <div className="relative overflow-hidden bg-gradient-to-r from-red-500 via-rose-500 to-pink-600 text-white rounded-2xl p-6 shadow-xl mb-8 border border-red-400/50">
+            <div className="absolute -right-10 -top-10 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
+            <div className="relative z-10 flex items-center gap-4">
+              <div className="p-4 bg-white/20 backdrop-blur-xl rounded-xl">
+                <AlertCircle className="w-8 h-8" />
               </div>
               <div>
-                <h3 className="text-2xl font-black mb-2 drop-shadow-lg flex items-center gap-3">
-                  ⚠️ Error al cargar datos
-                  <Zap className="w-6 h-6 animate-bounce" />
-                </h3>
-                <p className="text-white/95 text-lg font-bold drop-shadow-lg">{error}</p>
+                <h3 className="text-lg font-bold mb-1">Error al cargar datos</h3>
+                <p className="text-sm">{error}</p>
               </div>
             </div>
           </div>
         )}
 
-        {/* GRID */}
+        {/* GRID VIEW */}
         {!loading && vistaActual === "grid" && centros.length > 0 && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-7">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
             {centros.map((centro, index) => (
               <div
                 key={centro.id_centro}
-                className="group relative bg-white rounded-3xl shadow-xl hover:shadow-2xl transition-all duration-500 overflow-hidden border-2 border-gray-100 hover:border-indigo-300 hover:-translate-y-3 hover:rotate-1 ring-2 ring-transparent hover:ring-indigo-400/50 ring-offset-2"
                 style={{
                   animationDelay: `${index * 50}ms`,
                   animation: "fadeInUp 0.5s ease-out forwards",
                 }}
               >
-                {/* header card */}
-                <div className="relative h-36 bg-gradient-to-br from-indigo-600 via-purple-600 to-pink-600 p-7">
-                  <div className="absolute inset-0 bg-black/10"></div>
-                  <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiNmZmZmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIj48cGF0aCBkPSJNMzYgMzBoLTJWMGgydjMwem0tOCAwTDE4IDBoMnYzMGgtOHptMTYgMGgtMlYwaDJ2MzB6bTggMGgtMlYwaDJ2MzB6bS0yNCAwTDEwIDBoMnYzMGgtOHptMzIgMGgtMlYwaDJ2MzB6Ii8+PC9nPjwvZz48L3N2Zz4=')] opacity-20"></div>
-                  <div className="absolute top-0 left-0 w-32 h-32 bg-white/10 rounded-full blur-2xl animate-pulse"></div>
-
-                  <div className="relative z-10 flex items-center justify-between gap-3">
-                    <div className="flex items-center gap-4">
-                      {centro.logo_url ? (
-                        <div className="relative group/logo">
-                          <div className="absolute inset-0 bg-white/30 rounded-2xl blur-xl group-hover/logo:blur-2xl transition-all duration-300"></div>
-                          <div className="relative w-16 h-16 rounded-2xl bg-white shadow-2xl p-2.5 overflow-hidden ring-2 ring-white/50 group-hover/logo:scale-110 transition-transform duration-300">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img
-                              src={centro.logo_url}
-                              alt={centro.nombre}
-                              className="w-full h-full object-contain"
-                            />
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="relative group/logo">
-                          <div className="absolute inset-0 bg-white/30 rounded-2xl blur-xl group-hover/logo:blur-2xl transition-all duration-300"></div>
-                          <div className="relative w-16 h-16 rounded-2xl bg-white/20 backdrop-blur-xl shadow-2xl flex items-center justify-center ring-2 ring-white/50 group-hover/logo:scale-110 transition-transform duration-300">
-                            <Building2 className="w-9 h-9 text-white drop-shadow-lg" />
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                      <Link
-                        href={`/admin/centros/${centro.id_centro}`}
-                        className="relative group/btn p-3 bg-white/20 backdrop-blur-xl rounded-xl hover:bg-white/30 transition-all duration-300 ring-2 ring-white/30 hover:scale-110"
-                        title="Ver detalles"
-                      >
-                        <Eye className="w-5 h-5 text-white group-hover/btn:scale-125 transition-transform duration-300 drop-shadow-lg" />
-                        <div className="absolute inset-0 bg-white/20 rounded-xl opacity-0 group-hover/btn:opacity-100 blur-lg transition-opacity duration-300"></div>
-                      </Link>
-                      <Link
-                        href={`/admin/centros/${centro.id_centro}/editar`}
-                        className="relative group/btn p-3 bg-white/20 backdrop-blur-xl rounded-xl hover:bg-white/30 transition-all duration-300 ring-2 ring-white/30 hover:scale-110"
-                        title="Editar"
-                      >
-                        <Edit className="w-5 h-5 text-white group-hover/btn:scale-125 transition-transform duration-300 drop-shadow-lg" />
-                        <div className="absolute inset-0 bg-white/20 rounded-xl opacity-0 group-hover/btn:opacity-100 blur-lg transition-opacity duration-300"></div>
-                      </Link>
-                      <button
-                        onClick={() =>
-                          cambiarEstado(
-                            centro.id_centro,
-                            centro.estado === "activo" ? "inactivo" : "activo"
-                          )
-                        }
-                        className="relative group/btn p-3 bg-white/20 backdrop-blur-xl rounded-xl hover:bg-emerald-500/80 transition-all duration-300 ring-2 ring-white/30 hover:scale-110"
-                        title={
-                          centro.estado === "activo"
-                            ? "Marcar como inactivo"
-                            : "Activar centro"
-                        }
-                      >
-                        <Power className="w-5 h-5 text-white group-hover/btn:scale-125 transition-transform duration-300 drop-shadow-lg" />
-                        <div className="absolute inset-0 bg-emerald-500/40 rounded-xl opacity-0 group-hover/btn:opacity-100 blur-lg transition-opacity duration-300"></div>
-                      </button>
-                      <button
-                        onClick={() => eliminarCentro(centro.id_centro)}
-                        className="relative group/btn p-3 bg-white/20 backdrop-blur-xl rounded-xl hover:bg-red-500 transition-all duration-300 ring-2 ring-white/30 hover:scale-110"
-                        title="Eliminar"
-                      >
-                        <Trash2 className="w-5 h-5 text-white group-hover/btn:scale-125 transition-transform duration-300 drop-shadow-lg" />
-                        <div className="absolute inset-0 bg-red-500/50 rounded-xl opacity-0 group-hover/btn:opacity-100 blur-lg transition-opacity duration-300"></div>
-                      </button>
-                    </div>
-                  </div>
-                </div>
-
-                {/* contenido card */}
-                <div className="relative z-10 p-7">
-                  {/* Nombre y badges */}
-                  <div className="mb-5">
-                    <div className="flex items-start justify-between gap-3 mb-4">
-                      <h3 className="text-xl font-black text-gray-900 leading-tight group-hover:text-indigo-600 transition-colors duration-300 drop-shadow-sm">
-                        {centro.nombre}
-                      </h3>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-3 mb-4">
-                      <EstadoBadge estado={centro.estado} />
-                      <PlanBadge plan={centro.plan} />
-                    </div>
-                    <p className="text-sm text-gray-600 font-bold mb-3">{centro.razon_social}</p>
-                    <p className="text-xs text-gray-500 font-mono bg-gradient-to-r from-gray-50 to-gray-100 px-4 py-2 rounded-xl inline-block shadow-sm ring-2 ring-gray-200/50">
-                      {centro.rut}
-                    </p>
-                  </div>
-
-                  {/* contacto */}
-                  <div className="space-y-3 mb-5 pb-5 border-b-2 border-gray-100">
-                    <div className="flex items-start gap-3">
-                      <div className="mt-0.5 p-2 bg-gradient-to-br from-indigo-50 to-purple-50 rounded-xl ring-2 ring-indigo-100/50">
-                        <MapPin className="w-5 h-5 text-indigo-600" />
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="text-sm text-gray-900 font-bold leading-snug">
-                          {centro.direccion}
-                        </p>
-                        <p className="text-xs text-gray-600 font-semibold mt-1 flex items-center gap-1.5">
-                          <span className="w-1.5 h-1.5 bg-indigo-600 rounded-full"></span>
-                          {centro.ciudad}, {centro.region}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-gradient-to-br from-emerald-50 to-teal-50 rounded-xl ring-2 ring-emerald-100/50">
-                        <Phone className="w-5 h-5 text-emerald-600" />
-                      </div>
-                      <a
-                        href={`tel:${centro.telefono}`}
-                        className="text-sm text-gray-700 hover:text-emerald-600 font-bold transition-colors duration-300 hover:underline"
-                      >
-                        {centro.telefono}
-                      </a>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-gradient-to-br from-blue-50 to-cyan-50 rounded-xl ring-2 ring-blue-100/50">
-                        <Mail className="w-5 h-5 text-blue-600" />
-                      </div>
-                      <a
-                        href={`mailto:${centro.email}`}
-                        className="text-sm text-gray-700 hover:text-blue-600 font-bold transition-colors duration-300 truncate hover:underline"
-                      >
-                        {centro.email}
-                      </a>
-                    </div>
-                    {centro.sitio_web && (
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl ring-2 ring-purple-100/50">
-                          <Globe className="w-5 h-5 text-purple-600" />
-                        </div>
-                        <a
-                          href={centro.sitio_web}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="text-sm text-purple-600 hover:text-purple-700 font-bold hover:underline truncate transition-colors duration-300 flex items-center gap-1.5"
-                        >
-                          {centro.sitio_web}
-                          <Sparkles className="w-3.5 h-3.5 animate-pulse" />
-                        </a>
-                      </div>
-                    )}
-                  </div>
-
-                  {/* stats */}
-                  <div className="space-y-4">
-                    {/* fila 1 */}
-                    <div className="grid grid-cols-3 gap-3">
-                      <div className="relative group/stat overflow-hidden bg-gradient-to-br from-blue-50 to-cyan-50 rounded-2xl p-4 text-center border-2 border-blue-100 hover:border-blue-300 transition-all duration-300 hover:scale-105">
-                        <div className="absolute inset-0 bg-gradient-to-t from-blue-100/50 to-transparent opacity-0 group-hover/stat:opacity-100 transition-opacity duration-300"></div>
-                        <div className="relative z-10">
-                          <div className="flex items-center justify-center mb-2">
-                            <div className="p-2 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl shadow-lg ring-2 ring-blue-400/50 group-hover/stat:scale-110 transition-transform duration-300">
-                              <Users className="w-4 h-4 text-white drop-shadow-lg" />
-                            </div>
-                          </div>
-                          <p className="text-3xl font-black text-blue-600 mb-1 drop-shadow-sm">
-                            {centro.usuarios_count}
-                          </p>
-                          <p className="text-xs text-blue-700 font-black uppercase tracking-wide">
-                            Usuarios
-                          </p>
-                        </div>
-                      </div>
-                      <div className="relative group/stat overflow-hidden bg-gradient-to-br from-emerald-50 to-teal-50 rounded-2xl p-4 text-center border-2 border-emerald-100 hover:border-emerald-300 transition-all duration-300 hover:scale-105">
-                        <div className="absolute inset-0 bg-gradient-to-t from-emerald-100/50 to-transparent opacity-0 group-hover/stat:opacity-100 transition-opacity duration-300"></div>
-                        <div className="relative z-10">
-                          <div className="flex items-center justify-center mb-2">
-                            <div className="p-2 bg-gradient-to-br from-emerald-500 to-teal-500 rounded-xl shadow-lg ring-2 ring-emerald-400/50 group-hover/stat:scale-110 transition-transform duration-300">
-                              <Stethoscope className="w-4 h-4 text-white drop-shadow-lg" />
-                            </div>
-                          </div>
-                          <p className="text-3xl font-black text-emerald-600 mb-1 drop-shadow-sm">
-                            {centro.medicos_count}
-                          </p>
-                          <p className="text-xs text-emerald-700 font-black uppercase tracking-wide">
-                            Médicos
-                          </p>
-                        </div>
-                      </div>
-                      <div className="relative group/stat overflow-hidden bg-gradient-to-br from-purple-50 to-pink-50 rounded-2xl p-4 text-center border-2 border-purple-100 hover:border-purple-300 transition-all duration-300 hover:scale-105">
-                        <div className="absolute inset-0 bg-gradient-to-t from-purple-100/50 to-transparent opacity-0 group-hover/stat:opacity-100 transition-opacity duration-300"></div>
-                        <div className="relative z-10">
-                          <div className="flex items-center justify-center mb-2">
-                            <div className="p-2 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl shadow-lg ring-2 ring-purple-400/50 group-hover/stat:scale-110 transition-transform duration-300">
-                              <UserCheck className="w-4 h-4 text-white drop-shadow-lg" />
-                            </div>
-                          </div>
-                          <p className="text-3xl font-black text-purple-600 mb-1 drop-shadow-sm">
-                            {centro.pacientes_count}
-                          </p>
-                          <p className="text-xs text-purple-700 font-black uppercase tracking-wide">
-                            Pacientes
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* fila 2 */}
-                    <div className="space-y-2.5 bg-gradient-to-br from-gray-50 to-slate-50 rounded-2xl p-4 border-2 border-gray-100 shadow-inner">
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-gray-600 font-black flex items-center gap-2">
-                          <Activity className="w-4 h-4 text-indigo-600 animate-pulse" />
-                          Consultas mes:
-                        </span>
-                        <span className="text-sm font-black text-gray-900 bg-gradient-to-r from-white to-gray-50 px-4 py-2 rounded-xl shadow-sm ring-2 ring-gray-200/50">
-                          {centro.consultas_mes}
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-gray-600 font-black flex items-center gap-2">
-                          <TrendingUp className="w-4 h-4 text-emerald-600 animate-bounce" />
-                          Capacidad diaria:
-                        </span>
-                        <span className="text-sm font-black text-gray-900 bg-gradient-to-r from-white to-gray-50 px-4 py-2 rounded-xl shadow-sm ring-2 ring-gray-200/50">
-                          {centro.capacidad_pacientes_dia}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {/* footer */}
-                <div className="relative px-7 py-5 bg-gradient-to-r from-gray-50 via-slate-50 to-gray-100 border-t-2 border-gray-100">
-                  <div className="flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-2 text-gray-600 font-bold">
-                      <div className="p-1.5 bg-white rounded-lg shadow-sm ring-2 ring-gray-200/50">
-                        <Calendar className="w-4 h-4 text-indigo-600" />
-                      </div>
-                      <span>
-                        {new Date(centro.fecha_creacion).toLocaleDateString("es-ES", {
-                          day: "2-digit",
-                          month: "short",
-                          year: "numeric",
-                        })}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 text-emerald-600 font-black">
-                      <div className="w-2.5 h-2.5 bg-emerald-500 rounded-full animate-pulse shadow-lg shadow-emerald-500/50"></div>
-                      {centro.ultima_actividad}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="absolute inset-0 rounded-3xl ring-4 ring-transparent group-hover:ring-indigo-400 transition-all duration-500 pointer-events-none"></div>
-                <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-white to-transparent opacity-0 group-hover:opacity-100 group-hover:animate-shimmer transition-opacity duration-500"></div>
+                <CentroCard
+                  centro={centro}
+                  onViewDetails={(c) => {
+                    setSelectedCentro(c);
+                    setShowModal(true);
+                  }}
+                  onChangeStatus={cambiarEstado}
+                  onDelete={eliminarCentro}
+                />
               </div>
             ))}
           </div>
         )}
 
-        {/* LISTA */}
+        {/* LIST VIEW */}
         {!loading && vistaActual === "list" && centros.length > 0 && (
-          <div className="relative bg-white/90 backdrop-blur-2xl rounded-3xl border-2 border-white/80 overflow-hidden shadow-2xl ring-4 ring-indigo-500/10 ring-offset-2 mb-8">
-            <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/5 to-purple-500/5"></div>
-
+          <div
+            className={
+              isDark
+                ? "relative bg-white/10 backdrop-blur-2xl rounded-2xl border border-white/20 overflow-hidden shadow-xl mb-8"
+                : "relative bg-white rounded-2xl border border-gray-200 overflow-hidden shadow mb-8"
+            }
+          >
             <div className="relative z-10 overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 sticky top-0 z-20">
+              <table className="w-full text-xs">
+                <thead
+                  className={
+                    isDark
+                      ? "bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white text-[12px]"
+                      : "bg-gradient-to-r from-indigo-50 via-purple-50 to-pink-50 text-gray-800 text-[12px] border-b border-gray-200"
+                  }
+                >
                   <tr>
-                    <th className="px-7 py-5 text-left text-xs font-black text-white uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left font-bold uppercase tracking-wider">
                       <div className="flex items-center gap-2">
-                        <Building2 className="w-5 h-5 animate-pulse" />
+                        <Building2 className="w-5 h-5" />
                         Centro
                       </div>
                     </th>
-                    <th className="px-7 py-5 text-left text-xs font-black text-white uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left font-bold uppercase tracking-wider">
                       <div className="flex items-center gap-2">
-                        <MapPin className="w-5 h-5 animate-pulse delay-100" />
+                        <MapPin className="w-5 h-5" />
                         Ubicación
                       </div>
                     </th>
-                    <th className="px-7 py-5 text-left text-xs font-black text-white uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left font-bold uppercase tracking-wider">
                       <div className="flex items-center gap-2">
-                        <Activity className="w-5 h-5 animate-pulse delay-200" />
+                        <Phone className="w-5 h-5" />
+                        Contacto
+                      </div>
+                    </th>
+                    <th className="px-6 py-4 text-left font-bold uppercase tracking-wider">
+                      <div className="flex items-center gap-2">
+                        <Activity className="w-5 h-5" />
                         Estado
                       </div>
                     </th>
-                    <th className="px-7 py-5 text-left text-xs font-black text-white uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left font-bold uppercase tracking-wider">
                       <div className="flex items-center gap-2">
-                        <Crown className="w-5 h-5 animate-pulse delay-300" />
+                        <Crown className="w-5 h-5" />
                         Plan
                       </div>
                     </th>
-                    <th className="px-7 py-5 text-left text-xs font-black text-white uppercase tracking-wider">
+                    <th className="px-6 py-4 text-left font-bold uppercase tracking-wider">
                       <div className="flex items-center gap-2">
-                        <Users className="w-5 h-5 animate-pulse delay-75" />
-                        Usuarios
+                        <Zap className="w-5 h-5" />
+                        Capacidad
                       </div>
                     </th>
-                    <th className="px-7 py-5 text-left text-xs font-black text-white uppercase tracking-wider">
-                      <div className="flex items-center gap-2">
-                        <Stethoscope className="w-5 h-5 animate-pulse delay-150" />
-                        Médicos
-                      </div>
-                    </th>
-                    <th className="px-7 py-5 text-left text-xs font-black text-white uppercase tracking-wider">
-                      <div className="flex items-center gap-2">
-                        <UserCheck className="w-5 h-5 animate-pulse delay-225" />
-                        Pacientes
-                      </div>
-                    </th>
-                    <th className="px-7 py-5 text-right text-xs font-black text-white uppercase tracking-wider">
+                    <th className="px-6 py-4 text-right font-bold uppercase tracking-wider">
                       <div className="flex items-center justify-end gap-2">
-                        <Zap className="w-5 h-5 animate-pulse delay-300" />
+                        <Zap className="w-5 h-5" />
                         Acciones
                       </div>
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
+                <tbody
+                  className={
+                    isDark
+                      ? "divide-y divide-white/10"
+                      : "divide-y divide-gray-100"
+                  }
+                >
                   {centros.map((centro, index) => (
                     <tr
                       key={centro.id_centro}
-                      className={`group transition-all duration-300 hover:bg-gradient-to-r hover:from-indigo-50 hover:via-purple-50 hover:to-pink-50 ${
-                        index % 2 === 0 ? "bg-white" : "bg-gray-50/50"
-                      }`}
+                      className={
+                        isDark
+                          ? `group transition-all hover:bg-white/10 ${
+                              index % 2 === 0
+                                ? "bg-white/5"
+                                : "bg-white/[0.02]"
+                            }`
+                          : `group transition-all hover:bg-indigo-50/40 ${
+                              index % 2 === 0 ? "bg-white" : "bg-gray-50"
+                            }`
+                      }
                     >
-                      <td className="px-7 py-6 whitespace-nowrap">
-                        <div className="flex items-center gap-4">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center gap-3">
                           {centro.logo_url ? (
-                            <div className="relative group/logo">
-                              <div className="absolute inset-0 bg-indigo-500/20 rounded-2xl blur-xl opacity-0 group-hover/logo:opacity-100 transition-opacity duration-300"></div>
-                              <div className="relative w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-100 to-purple-100 p-2.5 shadow-lg ring-2 ring-indigo-200/50 group-hover/logo:scale-110 transition-transform duration-300">
-                                {/* eslint-disable-next-line @next/next/no-img-element */}
-                                <img
-                                  src={centro.logo_url}
-                                  alt={centro.nombre}
-                                  className="w-full h-full object-contain"
-                                />
-                              </div>
+                            <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-100 to-purple-100 p-2 shadow-md ring-1 ring-indigo-200/50">
+                              <img
+                                src={centro.logo_url}
+                                alt={centro.nombre}
+                                className="w-full h-full object-contain"
+                              />
                             </div>
                           ) : (
-                            <div className="relative group/logo">
-                              <div className="absolute inset-0 bg-indigo-500/20 rounded-2xl blur-xl opacity-0 group-hover/logo:opacity-100 transition-opacity duration-300"></div>
-                              <div className="relative w-14 h-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center shadow-lg ring-2 ring-indigo-400/50 group-hover/logo:scale-110 transition-transform duration-300">
-                                <Building2 className="w-7 h-7 text-white drop-shadow-lg" />
-                              </div>
+                            <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center shadow-md ring-1 ring-indigo-400/50">
+                              <Building2 className="w-6 h-6 text-white" />
                             </div>
                           )}
                           <div>
-                            <div className="text-sm font-black text-gray-900 group-hover:text-indigo-600 transition-colors duration-300">
+                            <div
+                              className={`text-xs font-bold transition-colors ${
+                                isDark
+                                  ? "text-white group-hover:text-indigo-300"
+                                  : "text-gray-900 group-hover:text-indigo-600"
+                              }`}
+                            >
                               {centro.nombre}
                             </div>
-                            <div className="text-xs text-gray-500 font-mono mt-1 bg-gradient-to-r from-gray-100 to-gray-50 px-3 py-1 rounded-lg inline-block shadow-sm ring-1 ring-gray-200/50">
+                            <div
+                              className={`text-[11px] font-mono mt-0.5 px-2 py-0.5 rounded-md inline-block border ${
+                                isDark
+                                  ? "text-white/60 bg-white/10 border-white/20"
+                                  : "text-gray-600 bg-gray-50 border-gray-200"
+                              }`}
+                            >
                               {centro.rut}
                             </div>
                           </div>
                         </div>
                       </td>
-                      <td className="px-7 py-6 whitespace-nowrap">
+                      <td className="px-6 py-4 whitespace-nowrap">
                         <div>
-                          <div className="text-sm font-black text-gray-900 flex items-center gap-2">
-                            <MapPin className="w-4 h-4 text-indigo-600" />
+                          <div
+                            className={`text-xs font-bold flex items-center gap-1.5 ${
+                              isDark ? "text-white" : "text-gray-900"
+                            }`}
+                          >
+                            <MapPin
+                              className={`w-4 h-4 ${
+                                isDark ? "text-indigo-400" : "text-indigo-500"
+                              }`}
+                            />
                             {centro.ciudad}
                           </div>
-                          <div className="text-xs text-gray-600 font-semibold mt-1">{centro.region}</div>
+                          <div
+                            className={`text-[11px] mt-0.5 ${
+                              isDark ? "text-white/60" : "text-gray-600"
+                            }`}
+                          >
+                            {centro.direccion}
+                          </div>
                         </div>
                       </td>
-                      <td className="px-7 py-6 whitespace-nowrap">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="space-y-1">
+                          <a
+                            href={`tel:${centro.telefono_principal}`}
+                            className={`text-xs font-bold flex items-center gap-1.5 ${
+                              isDark
+                                ? "text-blue-400 hover:text-blue-300"
+                                : "text-blue-600 hover:text-blue-500"
+                            }`}
+                          >
+                            <Phone className="w-4 h-4" />
+                            {centro.telefono_principal}
+                          </a>
+                          <a
+                            href={`mailto:${centro.email_contacto}`}
+                            className={`text-xs font-bold flex items-center gap-1.5 truncate ${
+                              isDark
+                                ? "text-purple-400 hover:text-purple-300"
+                                : "text-purple-600 hover:text-purple-500"
+                            }`}
+                          >
+                            <Mail className="w-4 h-4" />
+                            {centro.email_contacto}
+                          </a>
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
                         <EstadoBadge estado={centro.estado} />
                       </td>
-                      <td className="px-7 py-6 whitespace-nowrap">
+                      <td className="px-6 py-4 whitespace-nowrap">
                         <PlanBadge plan={centro.plan} />
                       </td>
-                      <td className="px-7 py-6 whitespace-nowrap">
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 bg-gradient-to-br from-blue-100 to-cyan-100 rounded-xl ring-2 ring-blue-200/50">
-                            <Users className="w-5 h-5 text-blue-600" />
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="flex items-center gap-2">
+                          <div
+                            className={`p-2 rounded-lg border ${
+                              isDark
+                                ? "bg-blue-500/20 border-blue-400/50"
+                                : "bg-blue-50 border-blue-200"
+                            }`}
+                          >
+                            <Users
+                              className={`w-4 h-4 ${
+                                isDark
+                                  ? "text-blue-400"
+                                  : "text-blue-600"
+                              }`}
+                            />
                           </div>
-                          <span className="text-sm font-black text-gray-900">
-                            {centro.usuarios_count}
+                          <span
+                            className={`text-xs font-bold ${
+                              isDark ? "text-white" : "text-gray-900"
+                            }`}
+                          >
+                            {centro.capacidad_pacientes_dia || 0}
                           </span>
                         </div>
                       </td>
-                      <td className="px-7 py-6 whitespace-nowrap">
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 bg-gradient-to-br from-emerald-100 to-teal-100 rounded-xl ring-2 ring-emerald-200/50">
-                            <Stethoscope className="w-5 h-5 text-emerald-600" />
-                          </div>
-                          <span className="text-sm font-black text-gray-900">
-                            {centro.medicos_count}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-7 py-6 whitespace-nowrap">
-                        <div className="flex items-center gap-3">
-                          <div className="p-2 bg-gradient-to-br from-purple-100 to-pink-100 rounded-xl ring-2 ring-purple-200/50">
-                            <UserCheck className="w-5 h-5 text-purple-600" />
-                          </div>
-                          <span className="text-sm font-black text-gray-900">
-                            {centro.pacientes_count}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-7 py-6 whitespace-nowrap text-right">
-                        <div className="flex items-center justify-end gap-3">
-                          <Link
-                            href={`/admin/centros/${centro.id_centro}`}
-                            className="group/btn relative p-3 bg-gradient-to-r from-blue-500 to-cyan-500 text-white rounded-xl hover:shadow-2xl hover:shadow-blue-500/50 hover:scale-125 transition-all duration-300 ring-2 ring-blue-400/50"
+                      <td className="px-6 py-4 whitespace-nowrap text-right">
+                        <div className="flex items-center justify-end gap-2">
+                          <button
+                            onClick={() => {
+                              setSelectedCentro(centro);
+                              setShowModal(true);
+                            }}
+                            className="p-2.5 bg-blue-600 text-white rounded-lg shadow-md hover:bg-blue-700 transition-all border border-blue-400/50"
                             title="Ver detalles"
                           >
-                            <Eye className="w-5 h-5 group-hover/btn:scale-110 transition-transform duration-300 drop-shadow-lg" />
-                            <div className="absolute inset-0 bg-white/20 rounded-xl opacity-0 group-hover/btn:opacity-100 blur-xl transition-opacity duration-300"></div>
-                          </Link>
+                            <Eye className="w-4 h-4" />
+                          </button>
                           <Link
                             href={`/admin/centros/${centro.id_centro}/editar`}
-                            className="group/btn relative p-3 bg-gradient-to-r from-emerald-500 to-teal-500 text-white rounded-xl hover:shadow-2xl hover:shadow-emerald-500/50 hover:scale-125 transition-all duration-300 ring-2 ring-emerald-400/50"
+                            className="p-2.5 bg-emerald-600 text-white rounded-lg shadow-md hover:bg-emerald-700 transition-all border border-emerald-400/50"
                             title="Editar"
                           >
-                            <Edit className="w-5 h-5 group-hover/btn:scale-110 transition-transform duration-300 drop-shadow-lg" />
-                            <div className="absolute inset-0 bg-white/20 rounded-xl opacity-0 group-hover/btn:opacity-100 blur-xl transition-opacity duration-300"></div>
+                            <Edit className="w-4 h-4" />
                           </Link>
                           <button
                             onClick={() =>
                               cambiarEstado(
                                 centro.id_centro,
-                                centro.estado === "activo" ? "inactivo" : "activo"
+                                centro.estado === "activo"
+                                  ? "inactivo"
+                                  : "activo"
                               )
                             }
-                            className="group/btn relative p-3 bg-gradient-to-r from-slate-500 to-slate-700 text-white rounded-xl hover:shadow-2xl hover:shadow-slate-500/50 hover:scale-125 transition-all duration-300 ring-2 ring-slate-400/50"
+                            className="p-2.5 bg-slate-600 text-white rounded-lg shadow-md hover:bg-slate-700 transition-all border border-slate-400/50"
                             title={
                               centro.estado === "activo"
                                 ? "Marcar como inactivo"
                                 : "Activar centro"
                             }
                           >
-                            <Power className="w-5 h-5 group-hover/btn:scale-110 transition-transform duration-300 drop-shadow-lg" />
-                            <div className="absolute inset-0 bg-white/20 rounded-xl opacity-0 group-hover/btn:opacity-100 blur-xl transition-opacity duration-300"></div>
+                            <Power className="w-4 h-4" />
                           </button>
                           <button
                             onClick={() => eliminarCentro(centro.id_centro)}
-                            className="group/btn relative p-3 bg-gradient-to-r from-red-500 to-pink-500 text-white rounded-xl hover:shadow-2xl hover:shadow-red-500/50 hover:scale-125 transition-all duration-300 ring-2 ring-red-400/50"
+                            className="p-2.5 bg-red-600 text-white rounded-lg shadow-md hover:bg-red-700 transition-all border border-red-400/50"
                             title="Eliminar"
                           >
-                            <Trash2 className="w-5 h-5 group-hover/btn:scale-110 transition-transform duration-300 drop-shadow-lg" />
-                            <div className="absolute inset-0 bg-white/20 rounded-xl opacity-0 group-hover/btn:opacity-100 blur-xl transition-opacity duration-300"></div>
+                            <Trash2 className="w-4 h-4" />
                           </button>
                         </div>
                       </td>
@@ -1152,68 +1661,119 @@ export default function CentrosPage() {
           </div>
         )}
 
-        {/* sin resultados */}
+        {/* Sin resultados */}
         {!loading && centros.length === 0 && !error && (
           <div className="relative text-center py-32">
-            <div className="absolute inset-0 flex items-center justify-center">
-              <div className="w-96 h-96 bg-gradient-to-r from-indigo-300/20 via-purple-300/20 to-pink-300/20 rounded-full blur-3xl animate-pulse"></div>
-            </div>
-
             <div className="relative z-10">
-              <div className="inline-flex p-12 bg-gradient-to-br from-indigo-100 via-purple-100 to-pink-100 rounded-[3rem] shadow-2xl mb-8 ring-4 ring-indigo-200/50 ring-offset-4 animate-bounce">
-                <Building2 className="w-32 h-32 text-indigo-600 drop-shadow-2xl" />
+              <div
+                className={`inline-flex p-8 rounded-3xl shadow-xl mb-6 border ${
+                  isDark
+                    ? "bg-gradient-to-br from-indigo-500/20 via-purple-500/20 to-pink-500/20 border-white/20"
+                    : "bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50 border-gray-200"
+                }`}
+              >
+                <Building2
+                  className={`w-16 h-16 ${
+                    isDark ? "text-indigo-400" : "text-indigo-500"
+                  }`}
+                />
               </div>
-              <h3 className="text-4xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 mb-5">
-                No se encontraron centros ✨
+              <h3
+                className={`text-3xl font-black mb-3 ${
+                  isDark ? "text-white" : "text-gray-800"
+                }`}
+              >
+                No se encontraron centros
               </h3>
-              <p className="text-xl text-gray-600 font-bold mb-10 max-w-md mx-auto">
-                Intenta ajustar los filtros o crea un nuevo centro para comenzar
+              <p
+                className={`text-base mb-8 max-w-sm mx-auto font-semibold ${
+                  isDark ? "text-white/80" : "text-gray-600"
+                }`}
+              >
+                Intenta ajustar los filtros o crea un nuevo centro para
+                comenzar.
               </p>
               <Link
                 href="/admin/centros/nuevo"
-                className="group inline-flex items-center gap-4 px-12 py-6 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white rounded-[2rem] font-black text-lg shadow-2xl hover:shadow-indigo-500/70 hover:scale-110 transition-all duration-500 ring-4 ring-indigo-400/50 ring-offset-4"
+                className={`inline-flex items-center gap-2 px-8 py-4 rounded-2xl text-sm font-bold shadow-xl hover:shadow-2xl hover:scale-105 transition-all border ${
+                  isDark
+                    ? "bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white border-white/20"
+                    : "bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white border-transparent"
+                }`}
               >
-                <Plus className="w-7 h-7 group-hover:rotate-90 transition-transform duration-500" />
-                Crear Primer Centro
-                <Sparkles className="w-7 h-7 group-hover:animate-spin" />
+                <Plus className="w-5 h-5" />
+                Crear primer centro
               </Link>
             </div>
           </div>
         )}
 
-        {/* paginación */}
+        {/* Paginación Premium */}
         {totalPages > 1 && centros.length > 0 && (
-          <div className="mt-8 relative bg-white/90 backdrop-blur-2xl rounded-3xl shadow-2xl p-8 border-2 border-white/80 ring-4 ring-indigo-500/10 ring-offset-2">
-            <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/5 to-purple-500/5 rounded-3xl"></div>
-
-            <div className="relative z-10 flex flex-col sm:flex-row items-center justify-between gap-6">
-              <div className="text-base font-black text-gray-700 flex items-center gap-3">
-                <div className="p-3 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-2xl ring-2 ring-indigo-200/50">
-                  <Activity className="w-5 h-5 text-indigo-600 animate-pulse" />
+          <div
+            className={
+              isDark
+                ? "mt-8 relative bg-white/10 backdrop-blur-2xl rounded-2xl shadow-xl p-6 border border-white/20"
+                : "mt-8 relative bg-white rounded-2xl shadow p-6 border border-gray-200"
+            }
+          >
+            <div className="relative z-10 flex flex-col sm:flex-row items-center justify-between gap-6 text-xs">
+              <div
+                className={`flex items-center gap-3 ${
+                  isDark ? "text-white/90" : "text-gray-700"
+                }`}
+              >
+                <div
+                  className={`p-3 rounded-xl ${
+                    isDark
+                      ? "bg-indigo-500/30 border border-indigo-400/50"
+                      : "bg-indigo-50 border border-indigo-200"
+                  }`}
+                >
+                  <Activity
+                    className={
+                      isDark ? "w-5 h-5 text-indigo-400" : "w-5 h-5 text-indigo-600"
+                    }
+                  />
                 </div>
-                Mostrando{" "}
-                <span className="text-xl text-indigo-600 mx-2 px-3 py-1 bg-indigo-50 rounded-xl ring-2 ring-indigo-200/50">
-                  {centros.length}
-                </span>{" "}
-                de{" "}
-                <span className="text-xl text-purple-600 mx-2 px-3 py-1 bg-purple-50 rounded-xl ring-2 ring-purple-200/50">
-                  {total}
-                </span>{" "}
-                centros
+                <span className="font-bold">
+                  Mostrando{" "}
+                  <span
+                    className={
+                      isDark
+                        ? "text-indigo-400 font-black"
+                        : "text-indigo-600 font-black"
+                    }
+                  >
+                    {centros.length}
+                  </span>{" "}
+                  de{" "}
+                  <span
+                    className={
+                      isDark
+                        ? "text-purple-400 font-black"
+                        : "text-purple-600 font-black"
+                    }
+                  >
+                    {total}
+                  </span>{" "}
+                  centros
+                </span>
               </div>
-              <div className="flex gap-3">
+              <div className="flex gap-2 items-center">
                 <button
                   onClick={() => setPage((p) => p - 1)}
                   disabled={page === 1}
-                  className="group relative px-7 py-3.5 bg-white border-[3px] border-gray-300 rounded-2xl font-black text-gray-700 hover:border-indigo-600 hover:text-indigo-600 hover:shadow-2xl hover:shadow-indigo-500/30 hover:scale-110 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-gray-300 disabled:hover:text-gray-700 disabled:hover:scale-100 ring-2 ring-gray-200/50 overflow-hidden"
+                  className={
+                    isDark
+                      ? "inline-flex items-center gap-2 px-4 py-2.5 bg-white/10 border border-white/20 rounded-xl text-xs font-bold text-white hover:border-indigo-400 hover:bg-indigo-500/20 hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      : "inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-xs font-bold text-gray-700 hover:border-indigo-400 hover:bg-indigo-50 hover:shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  }
                 >
-                  <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                  <span className="relative z-10 flex items-center gap-2">
-                    <ChevronLeft className="w-5 h-5 group-hover:-translate-x-1 transition-transform duration-300" />
-                    Anterior
-                  </span>
+                  <ChevronLeft className="w-4 h-4" />
+                  <span>Anterior</span>
                 </button>
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-1.5">
                   {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
                     let pageNum: number;
                     if (totalPages <= 5) {
@@ -1229,16 +1789,17 @@ export default function CentrosPage() {
                       <button
                         key={pageNum}
                         onClick={() => setPage(pageNum)}
-                        className={`relative w-14 h-14 rounded-2xl font-black text-base transition-all duration-300 overflow-hidden ${
+                        className={`w-10 h-10 rounded-xl text-xs font-bold transition-all ${
                           page === pageNum
-                            ? "bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white shadow-2xl shadow-indigo-500/50 scale-125 ring-4 ring-indigo-400/50 ring-offset-2"
-                            : "bg-white border-[3px] border-gray-300 text-gray-700 hover:border-indigo-600 hover:text-indigo-600 hover:shadow-xl hover:scale-110 ring-2 ring-gray-200/50"
+                            ? isDark
+                              ? "bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-white shadow-lg border border-white/20"
+                              : "bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 text-white shadow border border-transparent"
+                            : isDark
+                            ? "bg-white/10 border border-white/20 text-white hover:border-indigo-400 hover:bg-indigo-500/20"
+                            : "bg-white border border-gray-300 text-gray-700 hover:border-indigo-400 hover:bg-indigo-50"
                         }`}
                       >
-                        <span className="relative z-10">{pageNum}</span>
-                        {page === pageNum && (
-                          <div className="absolute inset-0 bg-white/20 animate-pulse"></div>
-                        )}
+                        {pageNum}
                       </button>
                     );
                   })}
@@ -1246,21 +1807,121 @@ export default function CentrosPage() {
                 <button
                   onClick={() => setPage((p) => p + 1)}
                   disabled={page === totalPages}
-                  className="group relative px-7 py-3.5 bg-white border-[3px] border-gray-300 rounded-2xl font-black text-gray-700 hover:border-indigo-600 hover:text-indigo-600 hover:shadow-2xl hover:shadow-indigo-500/30 hover:scale-110 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:border-gray-300 disabled:hover:text-gray-700 disabled:hover:scale-100 ring-2 ring-gray-200/50 overflow-hidden"
+                  className={
+                    isDark
+                      ? "inline-flex items-center gap-2 px-4 py-2.5 bg-white/10 border border-white/20 rounded-xl text-xs font-bold text-white hover:border-indigo-400 hover:bg-indigo-500/20 hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      : "inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-300 rounded-xl text-xs font-bold text-gray-700 hover:border-indigo-400 hover:bg-indigo-50 hover:shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  }
                 >
-                  <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
-                  <span className="relative z-10 flex items-center gap-2">
-                    Siguiente
-                    <ChevronLeft className="w-5 h-5 rotate-180 group-hover:translate-x-1 transition-transform duration-300" />
-                  </span>
+                  <span>Siguiente</span>
+                  <ChevronLeft className="w-4 h-4 rotate-180" />
                 </button>
               </div>
             </div>
           </div>
         )}
+
+        {/* Distribución por región */}
+        {distribucion && distribucion.length > 0 && (
+          <div
+            className={
+              isDark
+                ? "mt-8 relative bg-white/10 backdrop-blur-2xl rounded-2xl shadow-xl p-6 border border-white/20"
+                : "mt-8 relative bg-white rounded-2xl shadow p-6 border border-gray-200"
+            }
+          >
+            <h3
+              className={`text-xl font-black mb-6 flex items-center gap-2 ${
+                isDark ? "text-white" : "text-gray-800"
+              }`}
+            >
+              <PieChart
+                className={`w-6 h-6 ${
+                  isDark ? "text-indigo-400" : "text-indigo-600"
+                }`}
+              />
+              Distribución por Región
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {distribucion.map((region, index) => (
+                <div
+                  key={index}
+                  className={
+                    isDark
+                      ? "bg-gradient-to-br from-white/10 to-white/5 rounded-xl p-4 border border-white/20 hover:border-white/40 transition-all"
+                      : "bg-gradient-to-br from-gray-50 to-white rounded-xl p-4 border border-gray-200 hover:border-indigo-200 transition-all"
+                  }
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <h4
+                      className={`text-sm font-bold ${
+                        isDark ? "text-white" : "text-gray-800"
+                      }`}
+                    >
+                      {region.region}
+                    </h4>
+                    <span
+                      className={`text-xs font-bold px-3 py-1 rounded-lg border ${
+                        isDark
+                          ? "text-indigo-400 bg-indigo-500/20 border-indigo-400/50"
+                          : "text-indigo-600 bg-indigo-50 border-indigo-200"
+                      }`}
+                    >
+                      {region.cantidad}
+                    </span>
+                  </div>
+                  <div
+                    className={`w-full rounded-full h-2 overflow-hidden border ${
+                      isDark
+                        ? "bg-white/10 border-white/20"
+                        : "bg-gray-100 border-gray-200"
+                    }`}
+                  >
+                    <div
+                      className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 transition-all"
+                      style={{
+                        width: `${
+                          (region.activos / region.cantidad) * 100
+                        }%`,
+                      }}
+                    ></div>
+                  </div>
+                  <div className="flex items-center justify-between mt-2">
+                    <span
+                      className={`text-[11px] font-semibold ${
+                        isDark ? "text-white/70" : "text-gray-600"
+                      }`}
+                    >
+                      Activos
+                    </span>
+                    <span
+                      className={
+                        isDark
+                          ? "text-xs font-bold text-emerald-400"
+                          : "text-xs font-bold text-emerald-600"
+                      }
+                    >
+                      {region.activos}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* estilos extra para las clases "raras" que pusiste */}
+      {/* Modal */}
+      <ModalDetalles
+        centro={selectedCentro}
+        isOpen={showModal}
+        onClose={() => {
+          setShowModal(false);
+          setSelectedCentro(null);
+        }}
+      />
+
+      {/* Estilos */}
       <style jsx>{`
         @keyframes fadeInUp {
           from {
@@ -1286,33 +1947,24 @@ export default function CentrosPage() {
           animation: shimmer 2s infinite;
         }
 
-        .delay-100 {
-          animation-delay: 100ms;
+        /* Scrollbar personalizado */
+        ::-webkit-scrollbar {
+          width: 8px;
+          height: 8px;
         }
 
-        .delay-200 {
-          animation-delay: 200ms;
+        ::-webkit-scrollbar-track {
+          background: rgba(255, 255, 255, 0.1);
+          border-radius: 10px;
         }
 
-        .delay-300 {
-          animation-delay: 300ms;
+        ::-webkit-scrollbar-thumb {
+          background: rgba(99, 102, 241, 0.5);
+          border-radius: 10px;
         }
 
-        .delay-700 {
-          animation-delay: 700ms;
-        }
-
-        /* para que no reviente con tailwind */
-        .border-3,
-        .border-[3px] {
-          border-width: 3px;
-        }
-        .border-6,
-        .border-[6px] {
-          border-width: 6px;
-        }
-        .animate-reverse {
-          animation-direction: reverse;
+        ::-webkit-scrollbar-thumb:hover {
+          background: rgba(99, 102, 241, 0.8);
         }
       `}</style>
     </div>
