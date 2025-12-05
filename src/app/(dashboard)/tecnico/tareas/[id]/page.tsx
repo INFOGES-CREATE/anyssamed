@@ -1,4 +1,3 @@
-// src/app/(dashboard)/secretaria/tareas/[id]/page.tsx
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
@@ -96,6 +95,12 @@ import {
   PhoneIncoming,
   ArrowLeft,
   History,
+  Maximize2,
+  Copy,
+  ExternalLink,
+  BookmarkPlus,
+  Flag,
+  Timer,
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -277,120 +282,120 @@ interface TareaDetalle extends Tarea {
 }
 
 // ========================================
-// CONFIGURACIÓN DE TEMAS
+// CONFIGURACIÓN DE TEMAS PREMIUM
 // ========================================
 
 const TEMAS: Record<TemaColor, ConfiguracionTema> = {
   light: {
-    nombre: "Claro",
+    nombre: "Claro Profesional",
     icono: Sun,
     colores: {
-      fondo: "from-slate-50 via-blue-50 to-indigo-50",
+      fondo: "from-slate-50 via-blue-50/30 to-indigo-50/50",
       fondoSecundario: "bg-white",
       texto: "text-gray-900",
       textoSecundario: "text-gray-600",
-      primario: "bg-indigo-600 hover:bg-indigo-700",
-      secundario: "bg-gray-200 hover:bg-gray-300",
+      primario: "bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700",
+      secundario: "bg-gray-100 hover:bg-gray-200",
       acento: "text-indigo-600",
-      borde: "border-gray-200",
-      sombra: "shadow-xl shadow-indigo-100/50",
+      borde: "border-gray-200/80",
+      sombra: "shadow-2xl shadow-indigo-500/10",
       gradiente: "from-indigo-500 via-purple-500 to-pink-500",
-      sidebar: "bg-white/95 backdrop-blur-xl border-gray-200",
-      header: "bg-white/80 backdrop-blur-xl border-gray-200",
-      card: "bg-white border-gray-200 hover:border-indigo-300",
-      hover: "hover:bg-gray-50",
+      sidebar: "bg-white/98 backdrop-blur-2xl border-gray-200/80",
+      header: "bg-white/95 backdrop-blur-2xl border-gray-200/80",
+      card: "bg-white/95 backdrop-blur-sm border-gray-200/80 hover:border-indigo-300/60",
+      hover: "hover:bg-gray-50/80",
     },
   },
   dark: {
-    nombre: "Oscuro",
+    nombre: "Oscuro Elite",
     icono: Moon,
     colores: {
-      fondo: "from-slate-950 via-indigo-950 to-purple-950",
-      fondoSecundario: "bg-gray-900",
+      fondo: "from-slate-950 via-indigo-950/50 to-purple-950/30",
+      fondoSecundario: "bg-gray-900/95",
       texto: "text-white",
       textoSecundario: "text-gray-400",
-      primario: "bg-indigo-600 hover:bg-indigo-700",
-      secundario: "bg-gray-800 hover:bg-gray-700",
+      primario: "bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500",
+      secundario: "bg-gray-800/80 hover:bg-gray-700/80",
       acento: "text-indigo-400",
-      borde: "border-gray-800",
+      borde: "border-gray-800/60",
       sombra: "shadow-2xl shadow-indigo-500/20",
       gradiente: "from-indigo-500 via-purple-500 to-pink-500",
-      sidebar: "bg-gray-900/95 backdrop-blur-xl border-gray-800",
-      header: "bg-gray-900/80 backdrop-blur-xl border-gray-800",
-      card: "bg-gray-800/50 border-gray-700 hover:border-indigo-500/50",
-      hover: "hover:bg-gray-800",
+      sidebar: "bg-gray-900/98 backdrop-blur-2xl border-gray-800/60",
+      header: "bg-gray-900/95 backdrop-blur-2xl border-gray-800/60",
+      card: "bg-gray-800/60 backdrop-blur-sm border-gray-700/60 hover:border-indigo-500/50",
+      hover: "hover:bg-gray-800/80",
     },
   },
   blue: {
-    nombre: "Azul Océano",
+    nombre: "Azul Océano Premium",
     icono: Wifi,
     colores: {
-      fondo: "from-blue-950 via-cyan-950 to-teal-950",
-      fondoSecundario: "bg-blue-900",
+      fondo: "from-blue-950 via-cyan-950/50 to-teal-950/30",
+      fondoSecundario: "bg-blue-900/95",
       texto: "text-white",
       textoSecundario: "text-cyan-300",
-      primario: "bg-cyan-600 hover:bg-cyan-700",
-      secundario: "bg-blue-800 hover:bg-blue-700",
+      primario: "bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500",
+      secundario: "bg-blue-800/80 hover:bg-blue-700/80",
       acento: "text-cyan-400",
-      borde: "border-cyan-800",
+      borde: "border-cyan-800/60",
       sombra: "shadow-2xl shadow-cyan-500/20",
       gradiente: "from-cyan-500 via-blue-500 to-indigo-500",
-      sidebar: "bg-blue-900/95 backdrop-blur-xl border-cyan-800",
-      header: "bg-blue-900/80 backdrop-blur-xl border-cyan-800",
-      card: "bg-blue-800/50 border-cyan-700 hover:border-cyan-500/50",
-      hover: "hover:bg-blue-800",
+      sidebar: "bg-blue-900/98 backdrop-blur-2xl border-cyan-800/60",
+      header: "bg-blue-900/95 backdrop-blur-2xl border-cyan-800/60",
+      card: "bg-blue-800/60 backdrop-blur-sm border-cyan-700/60 hover:border-cyan-500/50",
+      hover: "hover:bg-blue-800/80",
     },
   },
   purple: {
-    nombre: "Púrpura Real",
+    nombre: "Púrpura Real Luxury",
     icono: Sparkles,
     colores: {
-      fondo: "from-purple-950 via-fuchsia-950 to-pink-950",
-      fondoSecundario: "bg-purple-900",
+      fondo: "from-purple-950 via-fuchsia-950/50 to-pink-950/30",
+      fondoSecundario: "bg-purple-900/95",
       texto: "text-white",
       textoSecundario: "text-purple-300",
-      primario: "bg-fuchsia-600 hover:bg-fuchsia-700",
-      secundario: "bg-purple-800 hover:bg-purple-700",
+      primario: "bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-500 hover:to-purple-500",
+      secundario: "bg-purple-800/80 hover:bg-purple-700/80",
       acento: "text-fuchsia-400",
-      borde: "border-purple-800",
+      borde: "border-purple-800/60",
       sombra: "shadow-2xl shadow-fuchsia-500/20",
       gradiente: "from-fuchsia-500 via-purple-500 to-pink-500",
-      sidebar: "bg-purple-900/95 backdrop-blur-xl border-purple-800",
-      header: "bg-purple-900/80 backdrop-blur-xl border-purple-800",
-      card: "bg-purple-800/50 border-purple-700 hover:border-fuchsia-500/50",
-      hover: "hover:bg-purple-800",
+      sidebar: "bg-purple-900/98 backdrop-blur-2xl border-purple-800/60",
+      header: "bg-purple-900/95 backdrop-blur-2xl border-purple-800/60",
+      card: "bg-purple-800/60 backdrop-blur-sm border-purple-700/60 hover:border-fuchsia-500/50",
+      hover: "hover:bg-purple-800/80",
     },
   },
   green: {
-    nombre: "Verde Médico",
+    nombre: "Verde Médico Pro",
     icono: HeartPulse,
     colores: {
-      fondo: "from-emerald-950 via-teal-950 to-cyan-950",
-      fondoSecundario: "bg-emerald-900",
+      fondo: "from-emerald-950 via-teal-950/50 to-cyan-950/30",
+      fondoSecundario: "bg-emerald-900/95",
       texto: "text-white",
       textoSecundario: "text-emerald-300",
-      primario: "bg-emerald-600 hover:bg-emerald-700",
-      secundario: "bg-teal-800 hover:bg-teal-700",
+      primario: "bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500",
+      secundario: "bg-teal-800/80 hover:bg-teal-700/80",
       acento: "text-emerald-400",
-      borde: "border-emerald-800",
+      borde: "border-emerald-800/60",
       sombra: "shadow-2xl shadow-emerald-500/20",
       gradiente: "from-emerald-500 via-teal-500 to-cyan-500",
-      sidebar: "bg-emerald-900/95 backdrop-blur-xl border-emerald-800",
-      header: "bg-emerald-900/80 backdrop-blur-xl border-emerald-800",
-      card: "bg-emerald-800/50 border-emerald-700 hover:border-emerald-500/50",
-      hover: "hover:bg-emerald-800",
+      sidebar: "bg-emerald-900/98 backdrop-blur-2xl border-emerald-800/60",
+      header: "bg-emerald-900/95 backdrop-blur-2xl border-emerald-800/60",
+      card: "bg-emerald-800/60 backdrop-blur-sm border-emerald-700/60 hover:border-emerald-500/50",
+      hover: "hover:bg-emerald-800/80",
     },
   },
 };
 
 // ========================================
-// COMPONENTE PRINCIPAL (DETALLE TAREA)
+// COMPONENTE PRINCIPAL (DETALLE TAREA PREMIUM)
 // ========================================
 
-const roleParam = "secretaria";
-const roleLabel = "Secretaria";
+const roleParam = "tecnico";
+const roleLabel = "Técnico";
 
-export default function DetalleTareaSecretariaPage() {
+export default function DetalleTareaTecnicoPage() {
   const pathname = usePathname();
   const router = useRouter();
   const params = useParams<{ id: string }>();
@@ -403,7 +408,7 @@ export default function DetalleTareaSecretariaPage() {
 
   // Usuario y tema
   const [usuario, setUsuario] = useState<UsuarioSesion | null>(null);
-  const [temaActual, setTemaActual] = useState<TemaColor>("light");
+  const [temaActual, setTemaActual] = useState<TemaColor>("dark");
 
   // Loading
   const [loadingUsuario, setLoadingUsuario] = useState(true);
@@ -426,9 +431,9 @@ export default function DetalleTareaSecretariaPage() {
 
   // UI
   const [sidebarAbierto, setSidebarAbierto] = useState(true);
-
   const [notificacionesAbiertas, setNotificacionesAbiertas] = useState(false);
   const [perfilAbierto, setPerfilAbierto] = useState(false);
+  const [vistaExpandida, setVistaExpandida] = useState(false);
 
   // Acciones UI
   const [nuevoComentario, setNuevoComentario] = useState("");
@@ -437,6 +442,7 @@ export default function DetalleTareaSecretariaPage() {
   const [cambiandoPrioridad, setCambiandoPrioridad] = useState(false);
   const [eliminando, setEliminando] = useState(false);
   const [modalEliminarAbierto, setModalEliminarAbierto] = useState(false);
+  const [copiado, setCopiado] = useState(false);
 
   const tema = useMemo(() => TEMAS[temaActual], [temaActual]);
 
@@ -451,31 +457,25 @@ export default function DetalleTareaSecretariaPage() {
 
   // Sección activa
   const seccionActiva = useMemo(() => {
-    if (pathname === "/secretaria") return "dashboard";
-    if (pathname.startsWith("/secretaria/tareas")) return "tareas";
-    if (pathname.startsWith("/secretaria/agenda")) return "agenda";
-    if (pathname.startsWith("/secretaria/confirmaciones"))
+    if (pathname === "/tecnico") return "dashboard";
+    if (pathname.startsWith("/tecnico/tareas")) return "tareas";
+    if (pathname.startsWith("/tecnico/agenda")) return "agenda";
+    if (pathname.startsWith("/tecnico/confirmaciones"))
       return "confirmaciones";
-    if (pathname.startsWith("/secretaria/llamadas")) return "llamadas";
-    if (pathname.startsWith("/secretaria/pacientes")) return "pacientes";
-    if (pathname.startsWith("/secretaria/medicos")) return "medicos";
-    if (pathname.startsWith("/secretaria/recordatorios"))
+    if (pathname.startsWith("/tecnico/llamadas")) return "llamadas";
+    if (pathname.startsWith("/tecnico/pacientes")) return "pacientes";
+    if (pathname.startsWith("/tecnico/medicos")) return "medicos";
+    if (pathname.startsWith("/tecnico/recordatorios"))
       return "recordatorios";
-    if (pathname.startsWith("/secretaria/documentos")) return "documentos";
-    if (pathname.startsWith("/secretaria/mensajes")) return "mensajes";
-    if (pathname.startsWith("/secretaria/telemedicina")) return "telemedicina";
-    if (pathname.startsWith("/secretaria/reportes")) return "reportes";
-    if (pathname.startsWith("/secretaria/perfil")) return "perfil";
-    if (pathname.startsWith("/secretaria/configuracion"))
+    if (pathname.startsWith("/tecnico/documentos")) return "documentos";
+    if (pathname.startsWith("/tecnico/mensajes")) return "mensajes";
+    if (pathname.startsWith("/tecnico/telemedicina")) return "telemedicina";
+    if (pathname.startsWith("/tecnico/reportes")) return "reportes";
+    if (pathname.startsWith("/tecnico/perfil")) return "perfil";
+    if (pathname.startsWith("/tecnico/configuracion"))
       return "configuracion";
     return "";
   }, [pathname]);
-
-  // ========================================
-  // MENU DE NAVEGACIÓN ESPECÍFICO SECRETARIA
-  // ========================================
-
- 
 
   // ========================================
   // EFECTOS
@@ -483,7 +483,7 @@ export default function DetalleTareaSecretariaPage() {
 
   // Aplicar fondo al body
   useEffect(() => {
-    document.body.className = `bg-gradient-to-br ${tema.colores.fondo} min-h-screen transition-all duration-500`;
+    document.body.className = `bg-gradient-to-br ${tema.colores.fondo} min-h-screen transition-all duration-700`;
   }, [tema]);
 
   // Cargar tema guardado
@@ -531,83 +531,79 @@ export default function DetalleTareaSecretariaPage() {
     cargarUsuario();
   }, []);
 
-  // Cargar tarea + estadísticas
   // Cargar tarea + estadísticas + comentarios
-const recargarTodo = async () => {
-  if (!usuario || !idTarea) return;
+  const recargarTodo = async () => {
+    if (!usuario || !idTarea) return;
 
-  try {
-    setLoadingTarea(true);
-    setLoadingEstadisticas(true);
+    try {
+      setLoadingTarea(true);
+      setLoadingEstadisticas(true);
 
-    const [resT, resE, resC] = await Promise.all([
-      fetch(`/api/tareas/${idTarea}?rol=${roleParam}`, {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-      }),
-      fetch(
-        `/api/tareas/estadisticas?usuario=${usuario.id_usuario}&rol=${roleParam}`,
-        {
+      const [resT, resE, resC] = await Promise.all([
+        fetch(`/api/tareas/${idTarea}?rol=${roleParam}`, {
           method: "GET",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
+        }),
+        fetch(
+          `/api/tareas/estadisticas?usuario=${usuario.id_usuario}&rol=${roleParam}`,
+          {
+            method: "GET",
+            headers: { "Content-Type": "application/json" },
+            credentials: "include",
+          }
+        ),
+        fetch(`/api/tareas/${idTarea}/comentarios`, {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+        }),
+      ]);
+
+      const dataT = await resT.json().catch(() => ({}));
+      const dataE = await resE.json().catch(() => ({}));
+      const dataC = await resC.json().catch(() => ({}));
+
+      if (resT.ok && dataT.success && dataT.tarea) {
+        const t = dataT.tarea as TareaDetalle;
+        setTarea(t);
+
+        setHistorial(
+          (dataT.historial || t.historial || []) as HistorialTarea[]
+        );
+        setAdjuntos((dataT.adjuntos || t.adjuntos || []) as AdjuntoTarea[]);
+
+        if (Array.isArray(dataT.notificaciones)) {
+          setNotificaciones(dataT.notificaciones as NotificacionSistema[]);
         }
-      ),
-      fetch(`/api/tareas/${idTarea}/comentarios`, {
-        method: "GET",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-      }),
-    ]);
-
-    const dataT = await resT.json().catch(() => ({}));
-    const dataE = await resE.json().catch(() => ({}));
-    const dataC = await resC.json().catch(() => ({}));
-
-    // TAREA + HISTORIAL + ADJUNTOS desde /api/tareas/[id]
-    if (resT.ok && dataT.success && dataT.tarea) {
-      const t = dataT.tarea as TareaDetalle;
-      setTarea(t);
-
-      // Historial y adjuntos siguen viniendo del detalle de tarea
-      setHistorial(
-        (dataT.historial || t.historial || []) as HistorialTarea[]
-      );
-      setAdjuntos((dataT.adjuntos || t.adjuntos || []) as AdjuntoTarea[]);
-
-      if (Array.isArray(dataT.notificaciones)) {
-        setNotificaciones(dataT.notificaciones as NotificacionSistema[]);
+      } else {
+        setTarea(null);
       }
-    } else {
-      setTarea(null);
-    }
 
-    // ESTADÍSTICAS
-    if (resE.ok && dataE.success) {
-      setEstadisticas(dataE.estadisticas as EstadisticasTareas);
-    }
+      if (resE.ok && dataE.success) {
+        setEstadisticas(dataE.estadisticas as EstadisticasTareas);
+      }
 
-    // COMENTARIOS SIEMPRE DESDE /api/tareas/[id]/comentarios
-    if (resC.ok && dataC.success && Array.isArray(dataC.comentarios)) {
-      setComentarios(dataC.comentarios as ComentarioTarea[]);
-    } else if (resT.ok && dataT.success) {
-      // Fallback por si algún día devuelves comentarios también en /api/tareas/[id]
-      const t = dataT.tarea as TareaDetalle;
-      setComentarios(
-        (dataT.comentarios || t.comentarios || []) as ComentarioTarea[]
+      if (resC.ok && dataC.success && Array.isArray(dataC.comentarios)) {
+        setComentarios(dataC.comentarios as ComentarioTarea[]);
+      } else if (resT.ok && dataT.success) {
+        const t = dataT.tarea as TareaDetalle;
+        setComentarios(
+          (dataT.comentarios || t.comentarios || []) as ComentarioTarea[]
+        );
+      } else {
+        setComentarios([]);
+      }
+    } catch (error) {
+      console.error(
+        "Error al cargar detalle de tarea/estadísticas/comentarios:",
+        error
       );
-    } else {
-      setComentarios([]);
+    } finally {
+      setLoadingTarea(false);
+      setLoadingEstadisticas(false);
     }
-  } catch (error) {
-    console.error("Error al cargar detalle de tarea/estadísticas/comentarios:", error);
-  } finally {
-    setLoadingTarea(false);
-    setLoadingEstadisticas(false);
-  }
-};
-
+  };
 
   useEffect(() => {
     if (!usuario || !idTarea) return;
@@ -666,23 +662,21 @@ const recargarTodo = async () => {
     }).format(d);
   };
 
-const formatearFechaHora = (fecha: any) => {
-  if (!fecha) return "Sin fecha";
+  const formatearFechaHora = (fecha: any) => {
+    if (!fecha) return "Sin fecha";
 
-  const d = new Date(fecha);
+    const d = new Date(fecha);
 
-  if (isNaN(d.getTime())) return "Fecha inválida";
+    if (isNaN(d.getTime())) return "Fecha inválida";
 
-  return new Intl.DateTimeFormat("es-CL", {
-    year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(d);
-};
-
-
+    return new Intl.DateTimeFormat("es-CL", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(d);
+  };
 
   const obtenerColorEstado = (estado: string) => {
     const isDark = ["dark", "blue", "purple", "green"].includes(temaActual);
@@ -761,6 +755,14 @@ const formatearFechaHora = (fecha: any) => {
     );
   };
 
+  const copiarEnlace = () => {
+    if (typeof window !== "undefined") {
+      navigator.clipboard.writeText(window.location.href);
+      setCopiado(true);
+      setTimeout(() => setCopiado(false), 2000);
+    }
+  };
+
   // ========================================
   // ACCIONES SOBRE TAREA (DETALLE)
   // ========================================
@@ -782,9 +784,7 @@ const formatearFechaHora = (fecha: any) => {
         return;
       }
 
-      setTarea((prev) =>
-        prev ? { ...prev, estado: nuevoEstado } : prev
-      );
+      setTarea((prev) => (prev ? { ...prev, estado: nuevoEstado } : prev));
       await recargarTodo();
     } catch (error) {
       console.error("Error al cambiar estado de tarea:", error);
@@ -930,7 +930,7 @@ const formatearFechaHora = (fecha: any) => {
       }
 
       setModalEliminarAbierto(false);
-      router.push("/secretaria/tareas");
+      router.push("/tecnico/tareas");
     } catch (error) {
       console.error("Error al eliminar tarea:", error);
     } finally {
@@ -940,12 +940,12 @@ const formatearFechaHora = (fecha: any) => {
 
   const irAEditar = () => {
     if (!tarea) return;
-    router.push(`/secretaria/tareas/${tarea.id_tarea}/editar`);
+    router.push(`/tecnico/tareas/${tarea.id_tarea}/editar`);
   };
 
   const irAHistorial = () => {
     if (!tarea) return;
-    router.push(`/secretaria/tareas/${tarea.id_tarea}/historial`);
+    router.push(`/tecnico/tareas/${tarea.id_tarea}/historial`);
   };
 
   // ========================================
@@ -957,23 +957,37 @@ const formatearFechaHora = (fecha: any) => {
       <div
         className={`min-h-screen flex items-center justify-center bg-gradient-to-br ${tema.colores.fondo}`}
       >
-        <div className="text-center">
+        <div className="text-center relative">
           <div className="relative mb-8">
-            <div className="w-32 h-32 border-4 border-indigo-400 border-t-transparent rounded-full animate-spin" />
+            <div className="w-40 h-40 border-4 border-indigo-400/30 border-t-indigo-600 rounded-full animate-spin" />
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-32 h-32 border-4 border-purple-400/30 border-t-purple-600 rounded-full animate-spin-reverse" />
             <div
-              className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 bg-gradient-to-br ${tema.colores.gradiente} rounded-full flex items-center justify-center animate-pulse`}
+              className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 bg-gradient-to-br ${tema.colores.gradiente} rounded-full flex items-center justify-center animate-pulse shadow-2xl`}
             >
-              <CheckSquare2 className="w-10 h-10 text-white" />
+              <CheckSquare2 className="w-12 h-12 text-white animate-bounce" />
             </div>
           </div>
-          <h2 className={`text-4xl font-black mb-4 ${tema.colores.texto}`}>
-            Cargando detalle de la tarea...
+          <h2
+            className={`text-5xl font-black mb-4 ${tema.colores.texto} bg-clip-text text-transparent bg-gradient-to-r ${tema.colores.gradiente}`}
+          >
+            Cargando Detalle Premium
           </h2>
           <p
-            className={`text-lg font-semibold ${tema.colores.textoSecundario} animate-pulse`}
+            className={`text-xl font-bold ${tema.colores.textoSecundario} animate-pulse flex items-center justify-center gap-2`}
           >
-            Preparando la vista premium de gestión avanzada
+            <Sparkles className="w-5 h-5 animate-spin" />
+            Preparando vista avanzada de gestión
+            <Sparkles className="w-5 h-5 animate-spin" />
           </p>
+          <div className="mt-8 flex items-center justify-center gap-2">
+            {[...Array(3)].map((_, i) => (
+              <div
+                key={i}
+                className={`w-3 h-3 rounded-full bg-gradient-to-r ${tema.colores.gradiente} animate-bounce`}
+                style={{ animationDelay: `${i * 0.2}s` }}
+              />
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -982,29 +996,31 @@ const formatearFechaHora = (fecha: any) => {
   if (!usuario) {
     return (
       <div
-        className={`min-h-screen flex items-center justify-center bg-gradient-to-br ${tema.colores.fondo}`}
+        className={`min-h-screen flex items-center justify-center bg-gradient-to-br ${tema.colores.fondo} p-4`}
       >
         <div
-          className={`text-center max-w-md mx-auto p-8 rounded-3xl ${tema.colores.card} ${tema.colores.sombra} ${tema.colores.borde} border`}
+          className={`text-center max-w-md mx-auto p-10 rounded-3xl ${tema.colores.card} ${tema.colores.sombra} ${tema.colores.borde} border-2 backdrop-blur-xl`}
         >
           <div
-            className={`w-24 h-24 bg-gradient-to-br ${tema.colores.gradiente} rounded-3xl flex items-center justify-center mx-auto mb-6 animate-pulse`}
+            className={`w-28 h-28 bg-gradient-to-br ${tema.colores.gradiente} rounded-3xl flex items-center justify-center mx-auto mb-6 animate-pulse shadow-2xl`}
           >
-            <AlertCircle className="w-12 h-12 text-white" />
+            <AlertCircle className="w-14 h-14 text-white" />
           </div>
-          <h2 className={`text-3xl font-black mb-4 ${tema.colores.texto}`}>
-            Sesión no válida
+          <h2
+            className={`text-4xl font-black mb-4 ${tema.colores.texto} bg-clip-text text-transparent bg-gradient-to-r ${tema.colores.gradiente}`}
+          >
+            Acceso Restringido
           </h2>
           <p className={`text-lg mb-8 ${tema.colores.textoSecundario}`}>
-            Debes iniciar sesión para acceder al detalle de tareas de
-            secretaría.
+            Necesitas autenticación para acceder al módulo premium de gestión
+            de tareas.
           </p>
           <Link
             href="/login"
-            className={`inline-flex items-center gap-3 px-8 py-4 ${tema.colores.primario} text-white rounded-2xl font-bold text-lg transition-all duration-300 hover:scale-105 ${tema.colores.sombra}`}
+            className={`inline-flex items-center gap-3 px-10 py-5 ${tema.colores.primario} text-white rounded-2xl font-black text-lg transition-all duration-300 hover:scale-110 ${tema.colores.sombra}`}
           >
-            <LogOut className="w-5 h-5" />
-            Ir al Login
+            <LogOut className="w-6 h-6" />
+            Iniciar Sesión
           </Link>
         </div>
       </div>
@@ -1012,15 +1028,25 @@ const formatearFechaHora = (fecha: any) => {
   }
 
   // ========================================
-  // RENDER PRINCIPAL
+  // RENDER PRINCIPAL PREMIUM
   // ========================================
 
   return (
     <div
-      className={`min-h-screen transition-all duration-500 bg-gradient-to-br ${tema.colores.fondo}`}
+      className={`min-h-screen transition-all duration-700 bg-gradient-to-br ${tema.colores.fondo} relative overflow-hidden`}
     >
+      {/* Efectos de fondo animados */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div
+          className={`absolute top-0 right-0 w-[600px] h-[600px] bg-gradient-to-br ${tema.colores.gradiente} opacity-10 rounded-full blur-3xl animate-float`}
+        />
+        <div
+          className={`absolute bottom-0 left-0 w-[500px] h-[500px] bg-gradient-to-tr ${tema.colores.gradiente} opacity-10 rounded-full blur-3xl animate-float-delayed`}
+        />
+      </div>
+
       {/* SIDEBAR */}
-            <SidebarTecnico
+      <SidebarTecnico
         usuario={usuario}
         tema={tema}
         sidebarAbierto={sidebarAbierto}
@@ -1028,73 +1054,90 @@ const formatearFechaHora = (fecha: any) => {
         estadisticas={estadisticas}
       />
 
-      {/* HEADER */}
+      {/* HEADER PREMIUM */}
       <header
         className={`fixed top-0 right-0 z-40 transition-all duration-300 ${
           sidebarAbierto ? "left-72" : "left-20"
-        } ${tema.colores.header} ${tema.colores.borde} border-b ${
+        } ${tema.colores.header} ${tema.colores.borde} border-b-2 ${
           tema.colores.sombra
         }`}
       >
-        <div className="flex items-center justify-between px-8 py-4">
+        <div className="flex items-center justify-between px-8 py-5">
           <div className="flex-1 max-w-2xl">
-            <div className="relative">
+            <div className="relative group">
               <Search
-                className={`absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 ${tema.colores.textoSecundario}`}
+                className={`absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 ${tema.colores.textoSecundario} group-hover:scale-110 transition-transform`}
               />
               <input
                 type="text"
-                placeholder="Buscar en tus tareas (usa CTRL+K en la vista general para ir rápido)"
-                className={`w-full pl-12 pr-4 py-3 rounded-xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto} placeholder:${tema.colores.textoSecundario} focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all duration-300`}
+                placeholder="Buscar tareas con IA (CTRL+K para búsqueda rápida)"
+                className={`w-full pl-14 pr-5 py-4 rounded-2xl ${tema.colores.card} ${tema.colores.borde} border-2 ${tema.colores.texto} placeholder:${tema.colores.textoSecundario} focus:outline-none focus:ring-4 focus:ring-indigo-500/30 transition-all duration-300 hover:border-indigo-400/50`}
                 readOnly
-                onClick={() => router.push("/secretaria/tareas")}
+                onClick={() => router.push("/tecnico/tareas")}
               />
+              <kbd
+                className={`absolute right-5 top-1/2 -translate-y-1/2 px-3 py-1 rounded-lg text-xs font-bold ${tema.colores.secundario} ${tema.colores.texto} border ${tema.colores.borde}`}
+              >
+                CTRL+K
+              </kbd>
             </div>
           </div>
 
-          <div className="flex items-center gap-3 ml-6">
-            {/* Temas */}
+          <div className="flex items-center gap-4 ml-6">
+            {/* Selector de temas premium */}
             <div className="relative group">
               <button
-                className={`p-3 rounded-xl font-semibold transition-all duration-300 ${tema.colores.secundario} ${tema.colores.texto}`}
+                className={`p-4 rounded-2xl font-bold transition-all duration-300 ${tema.colores.secundario} ${tema.colores.texto} hover:scale-110 ${tema.colores.sombra}`}
               >
-                <Sparkles className="w-5 h-5" />
+                <Sparkles className="w-6 h-6" />
               </button>
               <div
-                className={`absolute right-0 mt-2 w-64 rounded-2xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 p-4 space-y-2`}
+                className={`absolute right-0 mt-3 w-72 rounded-2xl ${tema.colores.card} ${tema.colores.borde} border-2 ${tema.colores.sombra} opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 p-5 space-y-3 backdrop-blur-xl`}
               >
-                <p className={`text-sm font-bold mb-3 ${tema.colores.texto}`}>
-                  Seleccionar tema
-                </p>
+                <div className="flex items-center justify-between mb-4">
+                  <p
+                    className={`text-sm font-black ${tema.colores.texto} flex items-center gap-2`}
+                  >
+                    <Sparkles className="w-4 h-4" />
+                    Temas Premium
+                  </p>
+                  <span
+                    className={`text-xs px-2 py-1 rounded-full bg-gradient-to-r ${tema.colores.gradiente} text-white font-bold`}
+                  >
+                    PRO
+                  </span>
+                </div>
                 {Object.entries(TEMAS).map(([key, t]) => (
                   <button
                     key={key}
                     onClick={() => cambiarTema(key as TemaColor)}
-                    className={`w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl font-semibold transition-all duration-300 ${
+                    className={`w-full flex items-center justify-between gap-3 px-5 py-4 rounded-xl font-bold transition-all duration-300 ${
                       temaActual === key
-                        ? `bg-gradient-to-r ${t.colores.gradiente} text-white`
-                        : `${tema.colores.hover} ${tema.colores.texto}`
+                        ? `bg-gradient-to-r ${t.colores.gradiente} text-white shadow-xl scale-105`
+                        : `${tema.colores.hover} ${tema.colores.texto} hover:scale-105`
                     }`}
                   >
                     <div className="flex items-center gap-3">
                       <t.icono className="w-5 h-5" />
                       <span>{t.nombre}</span>
                     </div>
-                    {temaActual === key && <Check className="w-5 h-5" />}
+                    {temaActual === key && (
+                      <CheckCircle2 className="w-5 h-5 animate-pulse" />
+                    )}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Notificaciones */}
+            {/* Notificaciones premium */}
             <div className="relative">
               <button
                 onClick={() => setNotificacionesAbiertas((v) => !v)}
-                className={`relative p-3 rounded-xl font-semibold transition-all duration-300 ${tema.colores.secundario} ${tema.colores.texto}`}
+                className={`relative p-4 rounded-2xl font-bold transition-all duration-300 ${tema.colores.secundario} ${tema.colores.texto} hover:scale-110 ${tema.colores.sombra}`}
               >
-                <Bell className="w-5 h-5" />
+                <Bell className="w-6 h-6" />
                 {notificaciones.filter((n) => !n.leida).length > 0 && (
-                  <span className="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center animate-pulse">
+                  <span className="absolute -top-1 -right-1 w-6 h-6 bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs font-black rounded-full flex items-center justify-center animate-bounce shadow-lg">
                     {notificaciones.filter((n) => !n.leida).length > 9
                       ? "9+"
                       : notificaciones.filter((n) => !n.leida).length}
@@ -1103,71 +1146,83 @@ const formatearFechaHora = (fecha: any) => {
               </button>
               {notificacionesAbiertas && (
                 <div
-                  className={`absolute right-0 mt-2 w-96 rounded-2xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} max-h-96 overflow-y-auto custom-scrollbar`}
+                  className={`absolute right-0 mt-3 w-[420px] rounded-2xl ${tema.colores.card} ${tema.colores.borde} border-2 ${tema.colores.sombra} max-h-[500px] overflow-y-auto custom-scrollbar backdrop-blur-xl animate-slideDown`}
                 >
                   <div
-                    className={`p-4 border-b ${tema.colores.borde} sticky top-0 ${tema.colores.card} backdrop-blur-xl`}
+                    className={`p-5 border-b-2 ${tema.colores.borde} sticky top-0 ${tema.colores.card} backdrop-blur-xl z-10`}
                   >
                     <div className="flex items-center justify-between">
                       <h3
-                        className={`text-lg font-black ${tema.colores.texto}`}
+                        className={`text-xl font-black ${tema.colores.texto} flex items-center gap-2`}
                       >
+                        <Bell className="w-5 h-5" />
                         Notificaciones
                       </h3>
                       <button
-                        className={`text-sm font-semibold ${tema.colores.acento} hover:underline`}
+                        className={`text-sm font-bold ${tema.colores.acento} hover:underline flex items-center gap-1`}
                         onClick={() =>
                           setNotificaciones((prev) =>
                             prev.map((n) => ({ ...n, leida: true }))
                           )
                         }
                       >
-                        Marcar todas leídas
+                        <CheckCircle2 className="w-4 h-4" />
+                        Marcar todas
                       </button>
                     </div>
                   </div>
 
                   {notificaciones.length === 0 ? (
-                    <div className="p-8 text-center">
+                    <div className="p-10 text-center">
                       <BellOff
-                        className={`w-12 h-12 mx-auto mb-3 ${tema.colores.textoSecundario}`}
+                        className={`w-16 h-16 mx-auto mb-4 ${tema.colores.textoSecundario} opacity-50`}
                       />
+                      <p
+                        className={`text-base font-bold ${tema.colores.textoSecundario}`}
+                      >
+                        No hay notificaciones
+                      </p>
                       <p className={`text-sm ${tema.colores.textoSecundario}`}>
-                        No tienes notificaciones nuevas
+                        Estás al día con todo
                       </p>
                     </div>
                   ) : (
-                    <div className={`divide-y ${tema.colores.borde}`}>
+                    <div className={`divide-y-2 ${tema.colores.borde}`}>
                       {notificaciones.map((notif) => (
                         <div
                           key={notif.id_notificacion}
-                          className={`p-4 ${tema.colores.hover} cursor-pointer transition-all ${
-                            !notif.leida ? "bg-indigo-500/5" : ""
+                          className={`p-5 ${tema.colores.hover} cursor-pointer transition-all hover:scale-[1.02] ${
+                            !notif.leida
+                              ? "bg-indigo-500/10 border-l-4 border-indigo-500"
+                              : ""
                           }`}
                           onClick={() =>
                             marcarNotificacionLeida(notif.id_notificacion)
                           }
                         >
-                          <div className="flex items-start gap-3">
+                          <div className="flex items-start gap-4">
                             <div
-                              className={`w-2 h-2 rounded-full mt-2 ${
-                                !notif.leida ? "bg-indigo-500" : "bg-gray-500"
+                              className={`w-3 h-3 rounded-full mt-2 ${
+                                !notif.leida
+                                  ? "bg-indigo-500 animate-pulse"
+                                  : "bg-gray-500"
                               }`}
                             />
                             <div className="flex-1">
                               <p
-                                className={`text-sm font-bold mb-1 ${tema.colores.texto}`}
+                                className={`text-base font-black mb-2 ${tema.colores.texto}`}
                               >
                                 {notif.titulo}
                               </p>
                               <p
-                                className={`text-xs mb-2 ${tema.colores.textoSecundario}`}
+                                className={`text-sm mb-3 ${tema.colores.textoSecundario}`}
                               >
                                 {notif.descripcion}
                               </p>
                               <p
-                                className={`text-xs font-medium ${tema.colores.textoSecundario}`}
+                                className={`text-xs font-bold ${tema.colores.textoSecundario} flex items-center gap-2`}
                               >
+                                <Clock className="w-3 h-3" />
                                 {formatearFechaHora(notif.fecha_hora)}
                               </p>
                             </div>
@@ -1180,56 +1235,58 @@ const formatearFechaHora = (fecha: any) => {
               )}
             </div>
 
-            {/* Perfil */}
+            {/* Perfil premium */}
             <div className="relative">
               <button
                 onClick={() => setPerfilAbierto((v) => !v)}
-                className={`flex items-center gap-3 px-4 py-2 rounded-xl transition-all duration-300 ${tema.colores.hover}`}
+                className={`flex items-center gap-4 px-5 py-3 rounded-2xl transition-all duration-300 ${tema.colores.hover} hover:scale-105 ${tema.colores.sombra}`}
               >
                 <div className="text-right hidden md:block">
-                  <p className={`text-sm font-bold ${tema.colores.texto}`}>
+                  <p className={`text-base font-black ${tema.colores.texto}`}>
                     {usuario.nombre} {usuario.apellido_paterno}
                   </p>
-                  <p className={`text-xs ${tema.colores.textoSecundario}`}>
-                    {roleLabel}
+                  <p
+                    className={`text-xs font-bold ${tema.colores.textoSecundario}`}
+                  >
+                    {roleLabel} · Premium
                   </p>
                 </div>
                 <div
-                  className={`w-10 h-10 rounded-xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center text-white font-bold shadow-lg`}
+                  className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center text-white font-black shadow-xl ring-4 ring-white/10`}
                 >
                   {usuario.foto_perfil_url ? (
                     <Image
                       src={usuario.foto_perfil_url}
                       alt={usuario.nombre}
-                      width={40}
-                      height={40}
-                      className="rounded-xl object-cover"
+                      width={48}
+                      height={48}
+                      className="rounded-2xl object-cover"
                     />
                   ) : (
                     `${usuario.nombre[0]}${usuario.apellido_paterno[0]}`
                   )}
                 </div>
                 <ChevronDown
-                  className={`w-4 h-4 ${tema.colores.texto} transition-transform ${
+                  className={`w-5 h-5 ${tema.colores.texto} transition-transform duration-300 ${
                     perfilAbierto ? "rotate-180" : ""
                   }`}
                 />
               </button>
               {perfilAbierto && (
                 <div
-                  className={`absolute right-0 mt-2 w-80 rounded-2xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} p-4`}
+                  className={`absolute right-0 mt-3 w-96 rounded-2xl ${tema.colores.card} ${tema.colores.borde} border-2 ${tema.colores.sombra} p-6 backdrop-blur-xl animate-slideDown`}
                 >
-                  <div className="flex items-center gap-4 mb-4 pb-4 border-b border-gray-700/40">
+                  <div className="flex items-center gap-5 mb-6 pb-6 border-b-2 border-gray-700/40">
                     <div
-                      className={`w-16 h-16 rounded-xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center text-white font-bold text-xl shadow-lg`}
+                      className={`w-20 h-20 rounded-2xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center text-white font-black text-2xl shadow-2xl ring-4 ring-white/10`}
                     >
                       {usuario.foto_perfil_url ? (
                         <Image
                           src={usuario.foto_perfil_url}
                           alt={usuario.nombre}
-                          width={64}
-                          height={64}
-                          className="rounded-xl object-cover"
+                          width={80}
+                          height={80}
+                          className="rounded-2xl object-cover"
                         />
                       ) : (
                         `${usuario.nombre[0]}${usuario.apellido_paterno[0]}`
@@ -1237,41 +1294,44 @@ const formatearFechaHora = (fecha: any) => {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p
-                        className={`text-lg font-black ${tema.colores.texto}`}
+                        className={`text-xl font-black ${tema.colores.texto} mb-1`}
                       >
                         {usuario.nombre} {usuario.apellido_paterno}
                       </p>
                       <p
-                        className={`text-sm font-medium ${tema.colores.textoSecundario} mb-1`}
+                        className={`text-sm font-bold ${tema.colores.textoSecundario} mb-2 flex items-center gap-2`}
                       >
+                        <Shield className="w-4 h-4" />
                         {roleLabel}
                       </p>
                       <p
-                        className={`text-xs ${tema.colores.textoSecundario}`}
+                        className={`text-xs ${tema.colores.textoSecundario} truncate`}
                       >
                         {usuario.email}
                       </p>
                     </div>
                   </div>
 
-                  <div className="space-y-1">
+                  <div className="space-y-2">
                     <Link
-                      href={`/secretaria/perfil`}
-                      className={`flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all duration-300 ${tema.colores.hover} ${tema.colores.texto}`}
+                      href={`/tecnico/perfil`}
+                      className={`flex items-center gap-4 px-5 py-4 rounded-xl font-bold transition-all duration-300 ${tema.colores.hover} ${tema.colores.texto} hover:scale-105`}
                     >
                       <User className="w-5 h-5" />
                       <span>Mi Perfil</span>
+                      <ChevronRight className="w-4 h-4 ml-auto" />
                     </Link>
                     <Link
-                      href={`/secretaria/configuracion`}
-                      className={`flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all duration-300 ${tema.colores.hover} ${tema.colores.texto}`}
+                      href={`/tecnico/configuracion`}
+                      className={`flex items-center gap-4 px-5 py-4 rounded-xl font-bold transition-all duration-300 ${tema.colores.hover} ${tema.colores.texto} hover:scale-105`}
                     >
                       <Settings className="w-5 h-5" />
                       <span>Configuración</span>
+                      <ChevronRight className="w-4 h-4 ml-auto" />
                     </Link>
                     <button
                       onClick={cerrarSesion}
-                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all duration-300 ${tema.colores.hover} text-red-400 hover:text-red-300`}
+                      className={`w-full flex items-center gap-4 px-5 py-4 rounded-xl font-bold transition-all duration-300 bg-red-500/10 text-red-400 hover:bg-red-500/20 hover:scale-105`}
                     >
                       <LogOut className="w-5 h-5" />
                       <span>Cerrar Sesión</span>
@@ -1284,35 +1344,36 @@ const formatearFechaHora = (fecha: any) => {
         </div>
       </header>
 
-      {/* CONTENIDO PRINCIPAL */}
+      {/* CONTENIDO PRINCIPAL PREMIUM */}
       <main
         className={`transition-all duration-300 ${
           sidebarAbierto ? "ml-72" : "ml-20"
-        } pt-24 p-8`}
+        } pt-28 p-8 relative z-10`}
       >
-        {/* Encabezado detalle */}
-        <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        {/* Encabezado detalle premium */}
+        <div className="mb-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
           <div>
             <button
-              onClick={() => router.push("/secretaria/tareas")}
-              className={`inline-flex items-center gap-2 px-3 py-1.5 mb-3 rounded-full text-xs font-semibold ${tema.colores.secundario} ${tema.colores.texto} ${tema.colores.sombra} hover:scale-105 transition-all`}
+              onClick={() => router.push("/tecnico/tareas")}
+              className={`inline-flex items-center gap-2 px-4 py-2 mb-4 rounded-full text-sm font-bold ${tema.colores.secundario} ${tema.colores.texto} ${tema.colores.sombra} hover:scale-110 transition-all`}
             >
-              <ArrowLeft className="w-3 h-3" />
-              Volver a mis tareas
+              <ArrowLeft className="w-4 h-4" />
+              Volver a tareas
             </button>
             <h2
-              className={`text-3xl md:text-4xl font-black mb-1 ${tema.colores.texto} flex items-center gap-3`}
+              className={`text-4xl md:text-5xl font-black mb-2 ${tema.colores.texto} flex items-center gap-4 bg-clip-text text-transparent bg-gradient-to-r ${tema.colores.gradiente}`}
             >
               {obtenerSaludo()}, {usuario.nombre}
-              <span className="animate-wave inline-block">👋</span>
+              <span className="animate-wave inline-block text-5xl">👋</span>
             </h2>
             <p
-              className={`text-lg font-semibold ${tema.colores.textoSecundario}`}
+              className={`text-xl font-bold ${tema.colores.textoSecundario} flex items-center gap-2`}
             >
-              Vista premium de detalle de tarea · Rol:{" "}
+              <Sparkles className="w-5 h-5" />
+              Vista Premium de Detalle de Tarea · Rol:{" "}
               <span className={tema.colores.acento}>{roleLabel}</span>
             </p>
-            <p className={`text-sm mt-1 ${tema.colores.textoSecundario}`}>
+            <p className={`text-base mt-2 ${tema.colores.textoSecundario}`}>
               {new Date().toLocaleDateString("es-CL", {
                 weekday: "long",
                 year: "numeric",
@@ -1322,14 +1383,30 @@ const formatearFechaHora = (fecha: any) => {
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
+            <button
+              onClick={copiarEnlace}
+              className={`flex items-center gap-2 px-5 py-4 rounded-xl font-bold text-sm ${tema.colores.secundario} ${tema.colores.texto} ${tema.colores.sombra} hover:scale-110 transition-all`}
+            >
+              {copiado ? (
+                <>
+                  <CheckCircle2 className="w-5 h-5 text-green-500" />
+                  ¡Copiado!
+                </>
+              ) : (
+                <>
+                  <Copy className="w-5 h-5" />
+                  Copiar enlace
+                </>
+              )}
+            </button>
             <button
               onClick={recargarTodo}
               disabled={loadingTarea || loadingEstadisticas}
-              className={`flex items-center gap-2 px-4 py-3 rounded-xl font-bold text-sm ${tema.colores.secundario} ${tema.colores.texto} ${tema.colores.sombra} hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed`}
+              className={`flex items-center gap-2 px-5 py-4 rounded-xl font-bold text-sm ${tema.colores.secundario} ${tema.colores.texto} ${tema.colores.sombra} hover:scale-110 transition-all disabled:opacity-50 disabled:cursor-not-allowed`}
             >
               <RefreshCw
-                className={`w-4 h-4 ${
+                className={`w-5 h-5 ${
                   loadingTarea || loadingEstadisticas ? "animate-spin" : ""
                 }`}
               />
@@ -1338,17 +1415,17 @@ const formatearFechaHora = (fecha: any) => {
             <button
               onClick={irAHistorial}
               disabled={!tarea}
-              className={`flex items-center gap-2 px-4 py-3 rounded-xl font-bold text-sm ${tema.colores.secundario} ${tema.colores.texto} ${tema.colores.sombra} hover:scale-105 transition-all disabled:opacity-50`}
+              className={`flex items-center gap-2 px-5 py-4 rounded-xl font-bold text-sm ${tema.colores.secundario} ${tema.colores.texto} ${tema.colores.sombra} hover:scale-110 transition-all disabled:opacity-50`}
             >
-              <History className="w-4 h-4" />
-              Ver historial
+              <History className="w-5 h-5" />
+              Historial
             </button>
             <button
               onClick={irAEditar}
               disabled={!tarea || !tarea.puede_editar}
-              className={`flex items-center gap-2 px-5 py-3 rounded-xl font-bold text-sm ${tema.colores.primario} text-white ${tema.colores.sombra} hover:scale-105 transition-all disabled:opacity-40`}
+              className={`flex items-center gap-2 px-6 py-4 rounded-xl font-bold text-sm ${tema.colores.primario} text-white ${tema.colores.sombra} hover:scale-110 transition-all disabled:opacity-40`}
             >
-              <Edit className="w-4 h-4" />
+              <Edit className="w-5 h-5" />
               Editar tarea
             </button>
           </div>
@@ -1357,27 +1434,29 @@ const formatearFechaHora = (fecha: any) => {
         {/* Si no hay tarea */}
         {!loadingTarea && !tarea && (
           <div
-            className={`rounded-2xl p-8 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} mb-10`}
+            className={`rounded-3xl p-12 ${tema.colores.card} ${tema.colores.borde} border-2 ${tema.colores.sombra} mb-10 backdrop-blur-xl animate-slideUp`}
           >
-            <div className="flex items-center gap-4 mb-4">
-              <div className="w-12 h-12 rounded-xl bg-red-500/10 flex items-center justify-center">
-                <AlertTriangle className="w-6 h-6 text-red-400" />
+            <div className="flex items-center gap-6 mb-6">
+              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-red-500 to-pink-500 flex items-center justify-center shadow-2xl animate-pulse">
+                <AlertTriangle className="w-10 h-10 text-white" />
               </div>
               <div>
-                <h3 className={`text-2xl font-black ${tema.colores.texto}`}>
+                <h3
+                  className={`text-3xl font-black ${tema.colores.texto} mb-2`}
+                >
                   Tarea no encontrada
                 </h3>
-                <p className={tema.colores.textoSecundario}>
+                <p className={`text-lg ${tema.colores.textoSecundario}`}>
                   No pudimos encontrar la tarea solicitada. Es posible que haya
                   sido eliminada o que el enlace no sea válido.
                 </p>
               </div>
             </div>
             <button
-              onClick={() => router.push("/secretaria/tareas")}
-              className={`inline-flex items-center gap-2 px-5 py-3 rounded-xl font-bold text-sm ${tema.colores.primario} text-white ${tema.colores.sombra} hover:scale-105 transition-all`}
+              onClick={() => router.push("/tecnico/tareas")}
+              className={`inline-flex items-center gap-3 px-8 py-4 rounded-2xl font-black text-base ${tema.colores.primario} text-white ${tema.colores.sombra} hover:scale-110 transition-all`}
             >
-              <ArrowLeft className="w-4 h-4" />
+              <ArrowLeft className="w-5 h-5" />
               Volver al listado de tareas
             </button>
           </div>
@@ -1386,74 +1465,85 @@ const formatearFechaHora = (fecha: any) => {
         {/* Contenido cuando hay tarea */}
         {tarea && (
           <>
-            {/* Hero + resumen */}
-            <section className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-8">
-              {/* Hero */}
+            {/* Hero + resumen premium */}
+            <section className="grid grid-cols-1 xl:grid-cols-3 gap-8 mb-10">
+              {/* Hero premium */}
               <div
-                className={`xl:col-span-2 rounded-2xl p-6 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra}`}
+                className={`xl:col-span-2 rounded-3xl p-8 ${tema.colores.card} ${tema.colores.borde} border-2 ${tema.colores.sombra} backdrop-blur-xl hover:scale-[1.01] transition-all duration-300 animate-slideUp`}
               >
-                <div className="flex items-start justify-between gap-4">
-                  <div className="flex-1 min-w-0 space-y-2">
-                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-black/5 text-[11px] font-semibold uppercase tracking-wide">
-                      <CheckSquare2 className="w-3 h-3" />
-                      <span>Tarea #{tarea.id_tarea}</span>
+                <div className="flex items-start justify-between gap-6">
+                  <div className="flex-1 min-w-0 space-y-4">
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-indigo-500/20 to-purple-500/20 border-2 border-indigo-500/40 text-sm font-black uppercase tracking-wider backdrop-blur-sm">
+                        <CheckSquare2 className="w-4 h-4" />
+                        <span>Tarea #{tarea.id_tarea}</span>
+                      </div>
                       {tarea.es_favorita && (
-                        <span className="inline-flex items-center gap-1 text-amber-400">
-                          ·
-                          <Star className="w-3 h-3 fill-amber-400" />
+                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-amber-500/20 to-yellow-500/20 border-2 border-amber-500/40 text-sm font-black text-amber-400 backdrop-blur-sm animate-pulse">
+                          <Star className="w-4 h-4 fill-amber-400" />
                           Favorita
-                        </span>
+                        </div>
                       )}
+                      <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gradient-to-r from-emerald-500/20 to-teal-500/20 border-2 border-emerald-500/40 text-sm font-black text-emerald-400 backdrop-blur-sm">
+                        <Zap className="w-4 h-4" />
+                        Premium
+                      </div>
                     </div>
                     <h3
-                      className={`text-2xl md:text-3xl font-black ${tema.colores.texto} break-words`}
+                      className={`text-3xl md:text-4xl font-black ${tema.colores.texto} break-words leading-tight`}
                     >
                       {tarea.titulo}
                     </h3>
                     <p
-                      className={`text-sm md:text-base ${tema.colores.textoSecundario} whitespace-pre-line`}
+                      className={`text-base md:text-lg ${tema.colores.textoSecundario} whitespace-pre-line leading-relaxed`}
                     >
                       {tarea.descripcion_larga || tarea.descripcion}
                     </p>
                   </div>
 
-                  <div className="flex flex-col items-end gap-3">
+                  <div className="flex flex-col items-end gap-4">
                     <button
                       onClick={toggleFavorita}
-                      className={`p-2 rounded-full border ${tema.colores.borde} ${tema.colores.hover} ${tema.colores.sombra} transition-all hover:scale-110`}
+                      className={`p-3 rounded-2xl border-2 ${tema.colores.borde} ${tema.colores.hover} ${tema.colores.sombra} transition-all hover:scale-125 hover:rotate-12`}
                     >
                       <Star
-                        className={`w-5 h-5 ${
+                        className={`w-6 h-6 ${
                           tarea.es_favorita
-                            ? "text-amber-400"
+                            ? "text-amber-400 animate-pulse"
                             : tema.colores.textoSecundario
                         }`}
                         fill={tarea.es_favorita ? "currentColor" : "none"}
                       />
                     </button>
 
-                    <div className="space-y-2">
+                    <div className="space-y-3">
                       <span
-                        className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-bold border ${obtenerColorPrioridad(
+                        className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-black border-2 ${obtenerColorPrioridad(
                           tarea.prioridad
-                        )}`}
+                        )} shadow-lg`}
                       >
-                        <Flame className="w-3 h-3" />
+                        <Flame className="w-4 h-4" />
                         {tarea.prioridad.toUpperCase()}
                       </span>
-                      <div className="flex flex-wrap gap-1">
+                      <div className="flex flex-wrap gap-2">
                         {(
-                          ["critica", "urgente", "alta", "media", "baja"] as TareaPrioridad[]
+                          [
+                            "critica",
+                            "urgente",
+                            "alta",
+                            "media",
+                            "baja",
+                          ] as TareaPrioridad[]
                         ).map((p) => (
                           <button
                             key={p}
                             onClick={() => cambiarPrioridad(p)}
                             disabled={cambiandoPrioridad}
-                            className={`px-2 py-0.5 rounded-full text-[10px] border ${
+                            className={`px-3 py-1 rounded-lg text-xs font-bold border-2 ${
                               tarea.prioridad === p
                                 ? obtenerColorPrioridad(p)
-                                : "bg-black/5 text-xs text-gray-400 border-transparent hover:border-white/20"
-                            } disabled:opacity-40 disabled:cursor-not-allowed transition-all`}
+                                : "bg-black/10 text-gray-400 border-transparent hover:border-white/30"
+                            } disabled:opacity-40 disabled:cursor-not-allowed transition-all hover:scale-110`}
                           >
                             {p}
                           </button>
@@ -1463,70 +1553,72 @@ const formatearFechaHora = (fecha: any) => {
                   </div>
                 </div>
 
-                <div className="mt-4 flex flex-wrap gap-3">
-                  <span
-                    className={`inline-flex items-center gap-2 text-[11px] px-3 py-1 rounded-full bg-black/5 border border-white/5 ${tema.colores.textoSecundario}`}
+                <div className="mt-6 flex flex-wrap gap-4">
+                  <div
+                    className={`inline-flex items-center gap-3 text-sm px-5 py-3 rounded-xl bg-gradient-to-r from-black/10 to-black/5 border-2 ${tema.colores.borde} ${tema.colores.textoSecundario} backdrop-blur-sm`}
                   >
-                    <Activity className="w-3 h-3" />
-                    Estado:
+                    <Activity className="w-5 h-5" />
+                    <span className="font-bold">Estado:</span>
                     <span
-                      className={`font-bold px-2 py-0.5 rounded-full border ${obtenerColorEstado(
+                      className={`font-black px-3 py-1 rounded-lg border-2 ${obtenerColorEstado(
                         tarea.estado
-                      )}`}
+                      )} shadow-lg`}
                     >
                       {tarea.estado.replace("_", " ").toUpperCase()}
                     </span>
-                  </span>
+                  </div>
 
-                  <span className="inline-flex items-center gap-2 text-[11px] px-3 py-1 rounded-full bg-black/5 border border-white/5">
-                    <UserCheck className="w-3 h-3" />
-                    Responsable:
-                    <span className="font-semibold">
+                  <div className="inline-flex items-center gap-3 text-sm px-5 py-3 rounded-xl bg-gradient-to-r from-black/10 to-black/5 border-2 border-white/10 backdrop-blur-sm">
+                    <UserCheck className="w-5 h-5 text-emerald-400" />
+                    <span className="font-bold">Responsable:</span>
+                    <span className="font-black">
                       {tarea.responsable.nombre_completo}
                     </span>
-                    <span className="text-[10px] opacity-70">
-                      ({tarea.responsable.rol})
+                    <span className="text-xs opacity-70 px-2 py-1 rounded-full bg-black/20">
+                      {tarea.responsable.rol}
                     </span>
-                  </span>
+                  </div>
 
-                  <span className="inline-flex items-center gap-2 text-[11px] px-3 py-1 rounded-full bg-black/5 border border-white/5">
-                    <User className="w-3 h-3" />
-                    Creador:
-                    <span className="font-semibold">
+                  <div className="inline-flex items-center gap-3 text-sm px-5 py-3 rounded-xl bg-gradient-to-r from-black/10 to-black/5 border-2 border-white/10 backdrop-blur-sm">
+                    <User className="w-5 h-5 text-indigo-400" />
+                    <span className="font-bold">Creador:</span>
+                    <span className="font-black">
                       {tarea.creador.nombre_completo}
                     </span>
-                  </span>
+                  </div>
 
-                  <span className="inline-flex items-center gap-2 text-[11px] px-3 py-1 rounded-full bg-black/5 border border-white/5">
-                    <MapPin className="w-3 h-3" />
-                    {tarea.centro?.nombre || "Sin centro"}
+                  <div className="inline-flex items-center gap-3 text-sm px-5 py-3 rounded-xl bg-gradient-to-r from-black/10 to-black/5 border-2 border-white/10 backdrop-blur-sm">
+                    <MapPin className="w-5 h-5 text-cyan-400" />
+                    <span className="font-black">
+                      {tarea.centro?.nombre || "Sin centro"}
+                    </span>
                     {tarea.sucursal && (
-                      <span className="text-[10px] opacity-70">
+                      <span className="text-xs opacity-70">
                         · {tarea.sucursal.nombre}
                       </span>
                     )}
-                  </span>
+                  </div>
 
-                  <span className="inline-flex items-center gap-2 text-[11px] px-3 py-1 rounded-full bg-black/5 border border-white/5">
-                    <Calendar className="w-3 h-3" />
-                    Creada:{" "}
-                    <span className="font-semibold">
+                  <div className="inline-flex items-center gap-3 text-sm px-5 py-3 rounded-xl bg-gradient-to-r from-black/10 to-black/5 border-2 border-white/10 backdrop-blur-sm">
+                    <Calendar className="w-5 h-5 text-purple-400" />
+                    <span className="font-bold">Creada:</span>
+                    <span className="font-black">
                       {formatearFecha(tarea.fecha_creacion)}
                     </span>
                     <span className="opacity-60">·</span>
-                    Límite:{" "}
-                    <span className="font-semibold">
+                    <span className="font-bold">Límite:</span>
+                    <span className="font-black">
                       {formatearFecha(tarea.fecha_limite)}
                     </span>
-                  </span>
+                  </div>
                 </div>
 
                 {tarea.tags && tarea.tags.length > 0 && (
-                  <div className="mt-4 flex flex-wrap gap-1">
+                  <div className="mt-6 flex flex-wrap gap-2">
                     {tarea.tags.map((tag) => (
                       <span
                         key={tag}
-                        className="px-2 py-0.5 rounded-full text-[10px] bg-white/5 border border-white/10"
+                        className="px-4 py-2 rounded-xl text-sm font-bold bg-gradient-to-r from-indigo-500/20 to-purple-500/20 border-2 border-indigo-500/30 backdrop-blur-sm hover:scale-110 transition-all cursor-pointer"
                       >
                         #{tag}
                       </span>
@@ -1535,103 +1627,108 @@ const formatearFechaHora = (fecha: any) => {
                 )}
               </div>
 
-              {/* Resumen rápido */}
+              {/* Resumen rápido premium */}
               <div
-                className={`rounded-2xl p-6 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra}`}
+                className={`rounded-3xl p-8 ${tema.colores.card} ${tema.colores.borde} border-2 ${tema.colores.sombra} backdrop-blur-xl hover:scale-[1.02] transition-all duration-300 animate-slideUp`}
+                style={{ animationDelay: "0.1s" }}
               >
-                <div className="flex items-center justify-between mb-4">
-                  <div className="flex items-center gap-2">
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
                     <div
-                      className={`w-10 h-10 rounded-xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center`}
+                      className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center shadow-2xl`}
                     >
-                      <PieChart className="w-5 h-5 text-white" />
+                      <PieChart className="w-7 h-7 text-white" />
                     </div>
                     <div>
                       <h3
-                        className={`text-lg font-black ${tema.colores.texto}`}
+                        className={`text-xl font-black ${tema.colores.texto}`}
                       >
                         Resumen de impacto
                       </h3>
                       <p
-                        className={`text-xs font-semibold ${tema.colores.textoSecundario}`}
+                        className={`text-xs font-bold ${tema.colores.textoSecundario}`}
                       >
-                        Estado, riesgo y avance de esta tarea
+                        Análisis en tiempo real
                       </p>
                     </div>
                   </div>
                 </div>
 
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-4 rounded-2xl bg-gradient-to-r from-black/10 to-black/5 border-2 border-white/10 backdrop-blur-sm">
                     <span
-                      className={`text-xs font-semibold ${tema.colores.textoSecundario}`}
+                      className={`text-sm font-bold ${tema.colores.textoSecundario} flex items-center gap-2`}
                     >
+                      <Activity className="w-4 h-4" />
                       Estado actual
                     </span>
                     <span
-                      className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-bold border ${obtenerColorEstado(
+                      className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black border-2 ${obtenerColorEstado(
                         tarea.estado
-                      )}`}
+                      )} shadow-lg`}
                     >
                       {tarea.estado === "completada" ? (
-                        <CheckCircle2 className="w-3 h-3" />
+                        <CheckCircle2 className="w-4 h-4" />
                       ) : tarea.estado === "pendiente" ? (
-                        <Clock className="w-3 h-3" />
+                        <Clock className="w-4 h-4" />
                       ) : (
-                        <Activity className="w-3 h-3" />
+                        <Activity className="w-4 h-4" />
                       )}
                       {tarea.estado.replace("_", " ").toUpperCase()}
                     </span>
                   </div>
 
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between p-4 rounded-2xl bg-gradient-to-r from-black/10 to-black/5 border-2 border-white/10 backdrop-blur-sm">
                     <span
-                      className={`text-xs font-semibold ${tema.colores.textoSecundario}`}
+                      className={`text-sm font-bold ${tema.colores.textoSecundario} flex items-center gap-2`}
                     >
+                      <Flame className="w-4 h-4" />
                       Prioridad
                     </span>
                     <span
-                      className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-bold border ${obtenerColorPrioridad(
+                      className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black border-2 ${obtenerColorPrioridad(
                         tarea.prioridad
-                      )}`}
+                      )} shadow-lg`}
                     >
-                      <Flame className="w-3 h-3" />
+                      <Flame className="w-4 h-4" />
                       {tarea.prioridad.toUpperCase()}
                     </span>
                   </div>
 
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between p-4 rounded-2xl bg-gradient-to-r from-black/10 to-black/5 border-2 border-white/10 backdrop-blur-sm">
                     <span
-                      className={`text-xs font-semibold ${tema.colores.textoSecundario}`}
+                      className={`text-sm font-bold ${tema.colores.textoSecundario} flex items-center gap-2`}
                     >
+                      <CalendarClock className="w-4 h-4" />
                       Vencimiento
                     </span>
                     <span
-                      className={`inline-flex items-center gap-1 text-[11px] px-3 py-1 rounded-full bg-black/10`}
+                      className={`inline-flex items-center gap-2 text-xs font-black px-4 py-2 rounded-xl bg-gradient-to-r from-purple-500/20 to-pink-500/20 border-2 border-purple-500/40`}
                     >
-                      <CalendarClock className="w-3 h-3" />
+                      <CalendarClock className="w-4 h-4" />
                       {formatearFecha(tarea.fecha_limite)}
                     </span>
                   </div>
 
                   {progresoTarea && (
-                    <div className="mt-4">
-                      <div className="flex items-center justify-between mb-1">
+                    <div className="mt-6 p-5 rounded-2xl bg-gradient-to-br from-indigo-500/10 to-purple-500/10 border-2 border-indigo-500/30 backdrop-blur-sm">
+                      <div className="flex items-center justify-between mb-3">
                         <span
-                          className={`text-xs font-semibold ${tema.colores.textoSecundario}`}
+                          className={`text-sm font-bold ${tema.colores.textoSecundario} flex items-center gap-2`}
                         >
+                          <Target className="w-4 h-4" />
                           Avance checklist
                         </span>
                         <span
-                          className={`text-xs font-bold ${tema.colores.texto}`}
+                          className={`text-lg font-black ${tema.colores.texto}`}
                         >
                           {progresoTarea.completadas}/{progresoTarea.total} ·{" "}
                           {progresoTarea.porcentaje}%
                         </span>
                       </div>
-                      <div className="w-full h-2 rounded-full bg-black/10 overflow-hidden">
+                      <div className="w-full h-4 rounded-full bg-black/20 overflow-hidden border-2 border-white/10">
                         <div
-                          className={`h-2 rounded-full bg-gradient-to-r ${tema.colores.gradiente}`}
+                          className={`h-4 rounded-full bg-gradient-to-r ${tema.colores.gradiente} transition-all duration-1000 ease-out shadow-lg`}
                           style={{
                             width: `${progresoTarea.porcentaje}%`,
                           }}
@@ -1640,40 +1737,42 @@ const formatearFechaHora = (fecha: any) => {
                     </div>
                   )}
 
-                  <div className="mt-4 grid grid-cols-2 gap-3 text-xs">
-                    <div className="rounded-xl bg-black/5 p-3 flex flex-col gap-1">
+                  <div className="mt-6 grid grid-cols-2 gap-4 text-sm">
+                    <div className="rounded-2xl bg-gradient-to-br from-red-500/10 to-pink-500/10 border-2 border-red-500/30 p-5 flex flex-col gap-2 backdrop-blur-sm hover:scale-105 transition-all">
                       <div className="flex items-center justify-between">
-                        <span className={tema.colores.textoSecundario}>
-                          Criticidad global
+                        <span
+                          className={`font-bold ${tema.colores.textoSecundario}`}
+                        >
+                          Criticidad
                         </span>
-                        {obtenerIconoTendencia(
-                          estadisticas?.criticas ?? 0
-                        )}
+                        {obtenerIconoTendencia(estadisticas?.criticas ?? 0)}
                       </div>
                       <div
-                        className={`text-lg font-black ${tema.colores.texto}`}
+                        className={`text-3xl font-black ${tema.colores.texto}`}
                       >
                         {estadisticas?.criticas ?? 0}
                       </div>
-                      <span className="text-[10px] opacity-70">
-                        Tareas críticas en tu bandeja
+                      <span className="text-xs opacity-70">
+                        Tareas críticas activas
                       </span>
                     </div>
 
-                    <div className="rounded-xl bg-black/5 p-3 flex flex-col gap-1">
+                    <div className="rounded-2xl bg-gradient-to-br from-orange-500/10 to-amber-500/10 border-2 border-orange-500/30 p-5 flex flex-col gap-2 backdrop-blur-sm hover:scale-105 transition-all">
                       <div className="flex items-center justify-between">
-                        <span className={tema.colores.textoSecundario}>
-                          Vencidas hoy
+                        <span
+                          className={`font-bold ${tema.colores.textoSecundario}`}
+                        >
+                          Vencidas
                         </span>
-                        <AlertTriangle className="w-4 h-4 text-red-400" />
+                        <AlertTriangle className="w-5 h-5 text-orange-400" />
                       </div>
                       <div
-                        className={`text-lg font-black ${tema.colores.texto}`}
+                        className={`text-3xl font-black ${tema.colores.texto}`}
                       >
                         {estadisticas?.vencidas ?? 0}
                       </div>
-                      <span className="text-[10px] opacity-70">
-                        Revisa fechas límite con prioridad
+                      <span className="text-xs opacity-70">
+                        Requieren atención urgente
                       </span>
                     </div>
                   </div>
@@ -1681,179 +1780,222 @@ const formatearFechaHora = (fecha: any) => {
               </div>
             </section>
 
-            {/* Zona principal: descripción, checklist, historial y comentarios */}
-            <section className="grid grid-cols-1 xl:grid-cols-3 gap-6">
+            {/* Zona principal: descripción, checklist, historial y comentarios PREMIUM */}
+            <section className="grid grid-cols-1 xl:grid-cols-3 gap-8">
               {/* Columna izquierda (2/3) */}
-              <div className="xl:col-span-2 space-y-6">
-                {/* Descripción detallada */}
+              <div className="xl:col-span-2 space-y-8">
+                {/* Descripción detallada premium */}
                 <div
-                  className={`rounded-2xl p-6 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra}`}
+                  className={`rounded-3xl p-8 ${tema.colores.card} ${tema.colores.borde} border-2 ${tema.colores.sombra} backdrop-blur-xl hover:scale-[1.01] transition-all duration-300 animate-slideUp`}
                 >
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-4">
                       <div
-                        className={`w-9 h-9 rounded-xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center`}
+                        className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center shadow-xl`}
                       >
-                        <FileText className="w-4 h-4 text-white" />
+                        <FileText className="w-6 h-6 text-white" />
                       </div>
                       <div>
                         <h3
-                          className={`text-lg font-black ${tema.colores.texto}`}
+                          className={`text-2xl font-black ${tema.colores.texto}`}
                         >
                           Detalle funcional de la tarea
                         </h3>
                         <p
-                          className={`text-xs ${tema.colores.textoSecundario}`}
+                          className={`text-sm font-bold ${tema.colores.textoSecundario}`}
                         >
-                          Contexto ampliado para que cualquier persona entienda
-                          qué hay que hacer
+                          Contexto completo y especificaciones técnicas
                         </p>
                       </div>
                     </div>
+                    <button
+                      onClick={() => setVistaExpandida(!vistaExpandida)}
+                      className={`p-3 rounded-xl ${tema.colores.secundario} ${tema.colores.texto} hover:scale-110 transition-all`}
+                    >
+                      <Maximize2 className="w-5 h-5" />
+                    </button>
                   </div>
 
-                  <p
-                    className={`text-sm md:text-base leading-relaxed ${tema.colores.textoSecundario} whitespace-pre-line`}
+                  <div
+                    className={`${
+                      vistaExpandida ? "max-h-none" : "max-h-96"
+                    } overflow-y-auto custom-scrollbar`}
                   >
-                    {tarea.descripcion_larga || tarea.descripcion}
-                  </p>
+                    <p
+                      className={`text-base md:text-lg leading-relaxed ${tema.colores.textoSecundario} whitespace-pre-line`}
+                    >
+                      {tarea.descripcion_larga || tarea.descripcion}
+                    </p>
+                  </div>
                 </div>
 
-                {/* Checklist / subtareas */}
+                {/* Checklist / subtareas premium */}
                 {tarea.subtareas && tarea.subtareas.length > 0 && (
                   <div
-                    className={`rounded-2xl p-6 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra}`}
+                    className={`rounded-3xl p-8 ${tema.colores.card} ${tema.colores.borde} border-2 ${tema.colores.sombra} backdrop-blur-xl hover:scale-[1.01] transition-all duration-300 animate-slideUp`}
+                    style={{ animationDelay: "0.1s" }}
                   >
-                    <div className="flex items-center justify-between mb-4">
-                      <div className="flex items-center gap-2">
+                    <div className="flex items-center justify-between mb-6">
+                      <div className="flex items-center gap-4">
                         <div
-                          className={`w-9 h-9 rounded-xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center`}
+                          className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center shadow-xl`}
                         >
-                          <ClipboardCheck className="w-4 h-4 text-white" />
+                          <ClipboardCheck className="w-6 h-6 text-white" />
                         </div>
                         <div>
                           <h3
-                            className={`text-lg font-black ${tema.colores.texto}`}
+                            className={`text-2xl font-black ${tema.colores.texto}`}
                           >
                             Checklist operativo
                           </h3>
                           <p
-                            className={`text-xs ${tema.colores.textoSecundario}`}
+                            className={`text-sm font-bold ${tema.colores.textoSecundario}`}
                           >
-                            Marca los pasos completados para ver el avance en
-                            tiempo real
+                            Seguimiento paso a paso del progreso
                           </p>
                         </div>
                       </div>
                       {progresoTarea && (
-                        <span
-                          className={`text-xs font-semibold ${tema.colores.textoSecundario}`}
-                        >
-                          {progresoTarea.completadas}/{progresoTarea.total} pasos
-                          completados
-                        </span>
+                        <div className="text-right">
+                          <span
+                            className={`text-sm font-bold ${tema.colores.textoSecundario}`}
+                          >
+                            {progresoTarea.completadas}/{progresoTarea.total}{" "}
+                            completados
+                          </span>
+                          <div
+                            className={`text-2xl font-black ${tema.colores.texto}`}
+                          >
+                            {progresoTarea.porcentaje}%
+                          </div>
+                        </div>
                       )}
                     </div>
 
-                    <div className="space-y-2 max-h-64 overflow-y-auto custom-scrollbar pr-1">
-                      {tarea.subtareas.map((s) => (
+                    <div className="space-y-3 max-h-96 overflow-y-auto custom-scrollbar pr-2">
+                      {tarea.subtareas.map((s, index) => (
                         <button
                           key={s.id_subtarea}
                           onClick={() => marcarSubtarea(s, !s.completada)}
-                          className={`w-full flex items-start gap-3 px-3 py-2 rounded-xl text-left transition-all ${
+                          className={`w-full flex items-start gap-4 px-5 py-4 rounded-2xl text-left transition-all hover:scale-[1.02] ${
                             s.completada
-                              ? "bg-emerald-500/10 border border-emerald-500/40"
-                              : "bg-black/5 border border-white/5 hover:border-indigo-400/60"
+                              ? "bg-gradient-to-r from-emerald-500/20 to-teal-500/20 border-2 border-emerald-500/50 shadow-lg"
+                              : "bg-gradient-to-r from-black/10 to-black/5 border-2 border-white/10 hover:border-indigo-400/60"
                           }`}
+                          style={{ animationDelay: `${index * 0.05}s` }}
                         >
                           <div
-                            className={`mt-0.5 w-5 h-5 rounded-md border flex items-center justify-center ${
+                            className={`mt-1 w-7 h-7 rounded-xl border-2 flex items-center justify-center transition-all ${
                               s.completada
-                                ? "bg-emerald-500 border-emerald-500"
-                                : "border-gray-500/40"
+                                ? "bg-gradient-to-br from-emerald-500 to-teal-500 border-emerald-500 shadow-lg scale-110"
+                                : "border-gray-500/50 hover:border-indigo-500"
                             }`}
                           >
                             {s.completada && (
-                              <Check className="w-3 h-3 text-white" />
+                              <Check className="w-5 h-5 text-white font-bold" />
                             )}
                           </div>
-                          <p
-                            className={`text-sm ${
-                              s.completada
-                                ? "line-through opacity-70"
-                                : tema.colores.texto
-                            }`}
-                          >
-                            {s.titulo}
-                          </p>
+                          <div className="flex-1">
+                            <p
+                              className={`text-base font-bold ${
+                                s.completada
+                                  ? "line-through opacity-70"
+                                  : tema.colores.texto
+                              }`}
+                            >
+                              {s.titulo}
+                            </p>
+                            {s.completada && (
+                              <span className="text-xs text-emerald-400 font-bold mt-1 inline-flex items-center gap-1">
+                                <CheckCircle2 className="w-3 h-3" />
+                                Completado
+                              </span>
+                            )}
+                          </div>
                         </button>
                       ))}
                     </div>
                   </div>
                 )}
 
-                {/* Historial */}
+                {/* Historial premium */}
                 <div
-                  className={`rounded-2xl p-6 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra}`}
+                  className={`rounded-3xl p-8 ${tema.colores.card} ${tema.colores.borde} border-2 ${tema.colores.sombra} backdrop-blur-xl hover:scale-[1.01] transition-all duration-300 animate-slideUp`}
+                  style={{ animationDelay: "0.2s" }}
                 >
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-4">
                       <div
-                        className={`w-9 h-9 rounded-xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center`}
+                        className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center shadow-xl`}
                       >
-                        <History className="w-4 h-4 text-white" />
+                        <History className="w-6 h-6 text-white" />
                       </div>
                       <div>
                         <h3
-                          className={`text-lg font-black ${tema.colores.texto}`}
+                          className={`text-2xl font-black ${tema.colores.texto}`}
                         >
                           Línea de tiempo de cambios
                         </h3>
                         <p
-                          className={`text-xs ${tema.colores.textoSecundario}`}
+                          className={`text-sm font-bold ${tema.colores.textoSecundario}`}
                         >
-                          Seguimiento completo de quién hizo qué y cuándo
+                          Trazabilidad completa de modificaciones
                         </p>
                       </div>
                     </div>
+                    <span
+                      className={`px-4 py-2 rounded-xl text-sm font-bold bg-gradient-to-r from-indigo-500/20 to-purple-500/20 border-2 border-indigo-500/40`}
+                    >
+                      {historial.length} eventos
+                    </span>
                   </div>
 
                   {historial.length === 0 ? (
-                    <p className={tema.colores.textoSecundario}>
-                      Aún no hay historial para esta tarea.
-                    </p>
+                    <div className="text-center py-10">
+                      <History
+                        className={`w-16 h-16 mx-auto mb-4 ${tema.colores.textoSecundario} opacity-50`}
+                      />
+                      <p
+                        className={`font-bold ${tema.colores.textoSecundario}`}
+                      >
+                        Aún no hay historial para esta tarea.
+                      </p>
+                    </div>
                   ) : (
-                    <div className="relative pl-4 max-h-72 overflow-y-auto custom-scrollbar">
-                      <div className="absolute left-1 top-0 bottom-0 w-px bg-gradient-to-b from-indigo-500/70 via-indigo-500/20 to-transparent" />
-                      <div className="space-y-4">
-                        {historial.map((h) => (
+                    <div className="relative pl-6 max-h-96 overflow-y-auto custom-scrollbar">
+                      <div className="absolute left-2 top-0 bottom-0 w-1 bg-gradient-to-b from-indigo-500 via-purple-500 to-pink-500 rounded-full" />
+                      <div className="space-y-6">
+                        {historial.map((h, index) => (
                           <div
                             key={h.id_historial}
-                            className="relative flex gap-3"
+                            className="relative flex gap-4 animate-slideRight"
+                            style={{ animationDelay: `${index * 0.05}s` }}
                           >
                             <div className="flex flex-col items-center">
-                              <div className="w-3 h-3 rounded-full bg-indigo-500 border-2 border-white shadow-md" />
+                              <div className="w-5 h-5 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 border-4 border-white shadow-xl" />
                             </div>
-                            <div className="flex-1">
-                              <div className="flex items-center justify-between">
+                            <div className="flex-1 pb-6">
+                              <div className="flex items-center justify-between mb-2">
                                 <p
-                                  className={`text-sm font-semibold ${tema.colores.texto}`}
+                                  className={`text-base font-black ${tema.colores.texto}`}
                                 >
                                   {h.accion}
                                 </p>
                                 <span
-                                  className={`text-[11px] ${tema.colores.textoSecundario}`}
+                                  className={`text-xs font-bold ${tema.colores.textoSecundario} flex items-center gap-1`}
                                 >
+                                  <Clock className="w-3 h-3" />
                                   {formatearFechaHora(h.fecha)}
                                 </span>
                               </div>
                               <p
-                                className={`text-xs ${tema.colores.textoSecundario}`}
+                                className={`text-sm font-bold ${tema.colores.textoSecundario} flex items-center gap-2`}
                               >
-                                Por {h.usuario}
+                                <User className="w-4 h-4" />
+                                {h.usuario}
                               </p>
                               {h.detalle && (
-                                <p className="text-xs mt-1 text-gray-400">
+                                <p className="text-sm mt-2 text-gray-400 italic">
                                   {h.detalle}
                                 </p>
                               )}
@@ -1865,64 +2007,74 @@ const formatearFechaHora = (fecha: any) => {
                   )}
                 </div>
 
-                {/* Comentarios */}
+                {/* Comentarios premium */}
                 <div
-                  className={`rounded-2xl p-6 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra}`}
+                  className={`rounded-3xl p-8 ${tema.colores.card} ${tema.colores.borde} border-2 ${tema.colores.sombra} backdrop-blur-xl hover:scale-[1.01] transition-all duration-300 animate-slideUp`}
+                  style={{ animationDelay: "0.3s" }}
                 >
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="flex items-center gap-2">
+                  <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-4">
                       <div
-                        className={`w-9 h-9 rounded-xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center`}
+                        className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center shadow-xl`}
                       >
-                        <MessageSquare className="w-4 h-4 text-white" />
+                        <MessageSquare className="w-6 h-6 text-white" />
                       </div>
                       <div>
                         <h3
-                          className={`text-lg font-black ${tema.colores.texto}`}
+                          className={`text-2xl font-black ${tema.colores.texto}`}
                         >
-                          Conversación sobre la tarea
+                          Conversación del equipo
                         </h3>
                         <p
-                          className={`text-xs ${tema.colores.textoSecundario}`}
+                          className={`text-sm font-bold ${tema.colores.textoSecundario}`}
                         >
-                          Coordina con tu equipo sin salir del módulo
+                          Colaboración en tiempo real
                         </p>
                       </div>
                     </div>
+                    <span
+                      className={`px-4 py-2 rounded-xl text-sm font-bold bg-gradient-to-r from-cyan-500/20 to-blue-500/20 border-2 border-cyan-500/40`}
+                    >
+                      {comentarios.length} comentarios
+                    </span>
                   </div>
 
-                  {/* Nuevo comentario */}
-                  <div className="mb-4">
+                  {/* Nuevo comentario premium */}
+                  <div className="mb-6">
                     <div
-                      className={`rounded-2xl border ${tema.colores.borde} ${tema.colores.card} p-3 flex gap-3`}
+                      className={`rounded-2xl border-2 ${tema.colores.borde} ${tema.colores.card} p-5 flex gap-4 backdrop-blur-sm hover:border-indigo-400/60 transition-all`}
                     >
                       <div
-                        className={`w-9 h-9 rounded-xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center text-white font-bold`}
+                        className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center text-white font-black shadow-xl flex-shrink-0`}
                       >
                         {usuario.foto_perfil_url ? (
                           <Image
                             src={usuario.foto_perfil_url}
                             alt={usuario.nombre}
-                            width={36}
-                            height={36}
-                            className="rounded-xl object-cover"
+                            width={48}
+                            height={48}
+                            className="rounded-2xl object-cover"
                           />
                         ) : (
                           `${usuario.nombre[0]}${usuario.apellido_paterno[0]}`
                         )}
                       </div>
-                      <div className="flex-1 flex flex-col gap-2">
+                      <div className="flex-1 flex flex-col gap-3">
                         <textarea
                           value={nuevoComentario}
                           onChange={(e) => setNuevoComentario(e.target.value)}
-                          rows={2}
-                          placeholder="Escribe un comentario para coordinar esta tarea..."
-                          className={`w-full text-sm bg-transparent border-none outline-none resize-none ${tema.colores.texto} placeholder:${tema.colores.textoSecundario}`}
+                          rows={3}
+                          placeholder="Escribe un comentario para coordinar con tu equipo..."
+                          className={`w-full text-base bg-transparent border-none outline-none resize-none ${tema.colores.texto} placeholder:${tema.colores.textoSecundario} font-medium`}
                         />
                         <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2 text-xs text-gray-400">
-                            <Paperclip className="w-3 h-3" />
-                            <span>Adjuntos desde la vista de documentos</span>
+                          <div className="flex items-center gap-3 text-sm text-gray-400">
+                            <button className="hover:text-indigo-400 transition-colors">
+                              <Paperclip className="w-5 h-5" />
+                            </button>
+                            <button className="hover:text-indigo-400 transition-colors">
+                              <Mic className="w-5 h-5" />
+                            </button>
                           </div>
                           <button
                             onClick={agregarComentario}
@@ -1930,151 +2082,181 @@ const formatearFechaHora = (fecha: any) => {
                               guardandoComentario ||
                               !nuevoComentario.trim().length
                             }
-                            className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold ${tema.colores.primario} text-white ${tema.colores.sombra} hover:scale-105 transition-all disabled:opacity-40 disabled:cursor-not-allowed`}
+                            className={`inline-flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-black ${tema.colores.primario} text-white ${tema.colores.sombra} hover:scale-110 transition-all disabled:opacity-40 disabled:cursor-not-allowed`}
                           >
-                            {guardandoComentario && (
-                              <Loader2 className="w-3 h-3 animate-spin" />
+                            {guardandoComentario ? (
+                              <>
+                                <Loader2 className="w-4 h-4 animate-spin" />
+                                Enviando...
+                              </>
+                            ) : (
+                              <>
+                                <Send className="w-4 h-4" />
+                                Enviar comentario
+                              </>
                             )}
-                            Enviar comentario
                           </button>
                         </div>
                       </div>
                     </div>
                   </div>
 
-{/* Lista de comentarios */}
-{comentarios.length === 0 ? (
-  <p className={tema.colores.textoSecundario}>
-    Aún no hay comentarios. Inicia la conversación con tu equipo.
-  </p>
-) : (
-  <div className="space-y-3 max-h-64 overflow-y-auto custom-scrollbar pr-1">
-    {comentarios.map((c) => {
-      const autor = c.autor || {
-        nombre_completo: "Usuario desconocido",
-        rol: "sin rol",
-        foto_perfil_url: null,
-      };
+                  {/* Lista de comentarios premium */}
+                  {comentarios.length === 0 ? (
+                    <div className="text-center py-10">
+                      <MessageSquare
+                        className={`w-16 h-16 mx-auto mb-4 ${tema.colores.textoSecundario} opacity-50`}
+                      />
+                      <p
+                        className={`font-bold ${tema.colores.textoSecundario}`}
+                      >
+                        Aún no hay comentarios. Inicia la conversación con tu
+                        equipo.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-4 max-h-96 overflow-y-auto custom-scrollbar pr-2">
+                      {comentarios.map((c, index) => {
+                        const autor = c.autor || {
+                          nombre_completo: "Usuario desconocido",
+                          rol: "sin rol",
+                          foto_perfil_url: null,
+                        };
 
-      const iniciales = autor.nombre_completo
-        .split(" ")
-        .map((n) => n[0])
-        .join("")
-        .slice(0, 2);
+                        const iniciales = autor.nombre_completo
+                          .split(" ")
+                          .map((n) => n[0])
+                          .join("")
+                          .slice(0, 2);
 
-      return (
-        <div
-          key={c.id_comentario}
-          className="flex gap-3 rounded-2xl bg-black/5 p-3"
-        >
-          {/* AVATAR */}
-          <div
-            className={`w-8 h-8 rounded-xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center text-white text-xs font-bold flex-shrink-0`}
-          >
-            {autor.foto_perfil_url ? (
-              <Image
-                src={autor.foto_perfil_url}
-                alt={autor.nombre_completo}
-                width={32}
-                height={32}
-                className="rounded-xl object-cover"
-              />
-            ) : (
-              iniciales
-            )}
-          </div>
+                        return (
+                          <div
+                            key={c.id_comentario}
+                            className="flex gap-4 rounded-2xl bg-gradient-to-r from-black/10 to-black/5 border-2 border-white/10 p-5 backdrop-blur-sm hover:scale-[1.01] hover:border-indigo-400/40 transition-all animate-slideUp"
+                            style={{ animationDelay: `${index * 0.05}s` }}
+                          >
+                            {/* AVATAR premium */}
+                            <div
+                              className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center text-white text-sm font-black flex-shrink-0 shadow-xl`}
+                            >
+                              {autor.foto_perfil_url ? (
+                                <Image
+                                  src={autor.foto_perfil_url}
+                                  alt={autor.nombre_completo}
+                                  width={48}
+                                  height={48}
+                                  className="rounded-2xl object-cover"
+                                />
+                              ) : (
+                                iniciales
+                              )}
+                            </div>
 
-          <div className="flex-1 min-w-0">
-            {/* Nombre y fecha */}
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <p className={`text-sm font-semibold ${tema.colores.texto}`}>
-                  {autor.nombre_completo}
-                </p>
+                            <div className="flex-1 min-w-0">
+                              {/* Nombre y fecha */}
+                              <div className="flex items-center justify-between mb-2">
+                                <div className="flex items-center gap-3">
+                                  <p
+                                    className={`text-base font-black ${tema.colores.texto}`}
+                                  >
+                                    {autor.nombre_completo}
+                                  </p>
 
-                <span
-                  className={`text-[10px] px-2 py-0.5 rounded-full bg-black/10 ${tema.colores.textoSecundario}`}
-                >
-                  {autor.rol}
-                  {c.es_del_responsable && " · Responsable"}
-                </span>
-              </div>
+                                  <span
+                                    className={`text-xs px-3 py-1 rounded-full bg-gradient-to-r from-indigo-500/20 to-purple-500/20 border border-indigo-500/40 font-bold ${tema.colores.textoSecundario}`}
+                                  >
+                                    {autor.rol}
+                                    {c.es_del_responsable && " · Responsable"}
+                                  </span>
+                                </div>
 
-              <span className={`text-[11px] ${tema.colores.textoSecundario}`}>
-                {formatearFechaHora(c.fecha)}
-              </span>
-            </div>
+                                <span
+                                  className={`text-xs font-bold ${tema.colores.textoSecundario} flex items-center gap-1`}
+                                >
+                                  <Clock className="w-3 h-3" />
+                                  {formatearFechaHora(c.fecha)}
+                                </span>
+                              </div>
 
-            {/* Contenido */}
-            <p className={`text-sm mt-1 ${tema.colores.textoSecundario}`}>
-              {c.contenido}
-            </p>
-          </div>
-        </div>
-      );
-    })}
-  </div>
-)}
-
-
+                              {/* Contenido */}
+                              <p
+                                className={`text-base ${tema.colores.textoSecundario} leading-relaxed`}
+                              >
+                                {c.contenido}
+                              </p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               </div>
 
-              {/* Columna derecha (metadatos y adjuntos) */}
-              <div className="space-y-6">
-                {/* Información de responsables */}
+              {/* Columna derecha (metadatos y adjuntos) PREMIUM */}
+              <div className="space-y-8">
+                {/* Información de responsables premium */}
                 <div
-                  className={`rounded-2xl p-6 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra}`}
+                  className={`rounded-3xl p-8 ${tema.colores.card} ${tema.colores.borde} border-2 ${tema.colores.sombra} backdrop-blur-xl hover:scale-[1.02] transition-all duration-300 animate-slideUp`}
+                  style={{ animationDelay: "0.2s" }}
                 >
-                  <div className="flex items-center gap-2 mb-4">
+                  <div className="flex items-center gap-4 mb-6">
                     <div
-                      className={`w-9 h-9 rounded-xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center`}
+                      className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center shadow-xl`}
                     >
-                      <Users className="w-4 h-4 text-white" />
+                      <Users className="w-6 h-6 text-white" />
                     </div>
                     <div>
                       <h3
-                        className={`text-lg font-black ${tema.colores.texto}`}
+                        className={`text-xl font-black ${tema.colores.texto}`}
                       >
                         Equipo asociado
                       </h3>
                       <p
-                        className={`text-xs ${tema.colores.textoSecundario}`}
+                        className={`text-xs font-bold ${tema.colores.textoSecundario}`}
                       >
-                        Personas clave involucradas en esta tarea
+                        Personas clave en esta tarea
                       </p>
                     </div>
                   </div>
 
-                  <div className="space-y-3 text-sm">
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-emerald-500/20 flex items-center justify-center">
-                        <UserCheck className="w-4 h-4 text-emerald-400" />
+                  <div className="space-y-4 text-base">
+                    <div className="flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-r from-emerald-500/10 to-teal-500/10 border-2 border-emerald-500/30 backdrop-blur-sm">
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center shadow-lg">
+                        <UserCheck className="w-6 h-6 text-white" />
                       </div>
                       <div>
-                        <p className={tema.colores.texto}>Responsable</p>
-                        <p className="font-semibold">
+                        <p
+                          className={`text-xs font-bold ${tema.colores.textoSecundario}`}
+                        >
+                          Responsable
+                        </p>
+                        <p className={`font-black ${tema.colores.texto}`}>
                           {tarea.responsable.nombre_completo}
                         </p>
                         <p
-                          className={`text-[11px] ${tema.colores.textoSecundario}`}
+                          className={`text-xs font-bold ${tema.colores.textoSecundario}`}
                         >
                           {tarea.responsable.rol}
                         </p>
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-indigo-500/20 flex items-center justify-center">
-                        <User className="w-4 h-4 text-indigo-400" />
+                    <div className="flex items-center gap-4 p-4 rounded-2xl bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border-2 border-indigo-500/30 backdrop-blur-sm">
+                      <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center shadow-lg">
+                        <User className="w-6 h-6 text-white" />
                       </div>
                       <div>
-                        <p className={tema.colores.texto}>Creador</p>
-                        <p className="font-semibold">
+                        <p
+                          className={`text-xs font-bold ${tema.colores.textoSecundario}`}
+                        >
+                          Creador
+                        </p>
+                        <p className={`font-black ${tema.colores.texto}`}>
                           {tarea.creador.nombre_completo}
                         </p>
                         <p
-                          className={`text-[11px] ${tema.colores.textoSecundario}`}
+                          className={`text-xs font-bold ${tema.colores.textoSecundario}`}
                         >
                           {tarea.creador.rol}
                         </p>
@@ -2083,68 +2265,77 @@ const formatearFechaHora = (fecha: any) => {
                   </div>
                 </div>
 
-                {/* Centro y fechas */}
+                {/* Centro y fechas premium */}
                 <div
-                  className={`rounded-2xl p-6 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra}`}
+                  className={`rounded-3xl p-8 ${tema.colores.card} ${tema.colores.borde} border-2 ${tema.colores.sombra} backdrop-blur-xl hover:scale-[1.02] transition-all duration-300 animate-slideUp`}
+                  style={{ animationDelay: "0.3s" }}
                 >
-                  <div className="flex items-center gap-2 mb-4">
+                  <div className="flex items-center gap-4 mb-6">
                     <div
-                      className={`w-9 h-9 rounded-xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center`}
+                      className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center shadow-xl`}
                     >
-                      <MapPin className="w-4 h-4 text-white" />
+                      <MapPin className="w-6 h-6 text-white" />
                     </div>
                     <div>
                       <h3
-                        className={`text-lg font-black ${tema.colores.texto}`}
+                        className={`text-xl font-black ${tema.colores.texto}`}
                       >
                         Contexto asistencial
                       </h3>
                       <p
-                        className={`text-xs ${tema.colores.textoSecundario}`}
+                        className={`text-xs font-bold ${tema.colores.textoSecundario}`}
                       >
-                        Dónde se ejecuta esta tarea dentro de la red
+                        Ubicación y temporalidad
                       </p>
                     </div>
                   </div>
 
-                  <div className="space-y-3 text-sm">
-                    <div>
+                  <div className="space-y-4 text-base">
+                    <div className="p-4 rounded-2xl bg-gradient-to-r from-black/10 to-black/5 border-2 border-white/10 backdrop-blur-sm">
                       <p
-                        className={`text-xs font-semibold ${tema.colores.textoSecundario}`}
+                        className={`text-xs font-bold ${tema.colores.textoSecundario} mb-1`}
                       >
                         Centro de salud
                       </p>
-                      <p className={`text-sm font-bold ${tema.colores.texto}`}>
+                      <p
+                        className={`text-base font-black ${tema.colores.texto}`}
+                      >
                         {tarea.centro?.nombre || "Sin centro asignado"}
                       </p>
                     </div>
-                    <div>
+                    <div className="p-4 rounded-2xl bg-gradient-to-r from-black/10 to-black/5 border-2 border-white/10 backdrop-blur-sm">
                       <p
-                        className={`text-xs font-semibold ${tema.colores.textoSecundario}`}
+                        className={`text-xs font-bold ${tema.colores.textoSecundario} mb-1`}
                       >
                         Sucursal / dispositivo
                       </p>
-                      <p className={`text-sm font-bold ${tema.colores.texto}`}>
+                      <p
+                        className={`text-base font-black ${tema.colores.texto}`}
+                      >
                         {tarea.sucursal?.nombre || "Sin sucursal asignada"}
                       </p>
                     </div>
-                    <div className="grid grid-cols-2 gap-3 text-xs">
-                      <div className="rounded-xl bg-black/5 p-3">
-                        <p className={tema.colores.textoSecundario}>
-                          Fecha de creación
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div className="rounded-2xl bg-gradient-to-br from-purple-500/10 to-pink-500/10 border-2 border-purple-500/30 p-4 backdrop-blur-sm">
+                        <p
+                          className={`text-xs font-bold ${tema.colores.textoSecundario} mb-1`}
+                        >
+                          Fecha creación
                         </p>
                         <p
-                          className={`text-sm font-bold ${tema.colores.texto}`}
+                          className={`text-base font-black ${tema.colores.texto}`}
                         >
                           {formatearFecha(tarea.fecha_creacion)}
                         </p>
                       </div>
-                      <div className="rounded-xl bg-black/5 p-3">
-                        <p className={tema.colores.textoSecundario}>
+                      <div className="rounded-2xl bg-gradient-to-br from-orange-500/10 to-red-500/10 border-2 border-orange-500/30 p-4 backdrop-blur-sm">
+                        <p
+                          className={`text-xs font-bold ${tema.colores.textoSecundario} mb-1`}
+                        >
                           Fecha límite
                         </p>
                         <p
-                          className={`text-sm font-bold ${tema.colores.texto}`}
+                          className={`text-base font-black ${tema.colores.texto}`}
                         >
                           {formatearFecha(tarea.fecha_limite)}
                         </p>
@@ -2153,83 +2344,93 @@ const formatearFechaHora = (fecha: any) => {
                   </div>
                 </div>
 
-                {/* Adjuntos */}
+                {/* Adjuntos premium */}
                 <div
-                  className={`rounded-2xl p-6 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra}`}
+                  className={`rounded-3xl p-8 ${tema.colores.card} ${tema.colores.borde} border-2 ${tema.colores.sombra} backdrop-blur-xl hover:scale-[1.02] transition-all duration-300 animate-slideUp`}
+                  style={{ animationDelay: "0.4s" }}
                 >
-                  <div className="flex items-center gap-2 mb-4">
+                  <div className="flex items-center gap-4 mb-6">
                     <div
-                      className={`w-9 h-9 rounded-xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center`}
+                      className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center shadow-xl`}
                     >
-                      <Paperclip className="w-4 h-4 text-white" />
+                      <Paperclip className="w-6 h-6 text-white" />
                     </div>
                     <div>
                       <h3
-                        className={`text-lg font-black ${tema.colores.texto}`}
+                        className={`text-xl font-black ${tema.colores.texto}`}
                       >
                         Archivos adjuntos
                       </h3>
                       <p
-                        className={`text-xs ${tema.colores.textoSecundario}`}
+                        className={`text-xs font-bold ${tema.colores.textoSecundario}`}
                       >
-                        Documentos que respaldan esta tarea
+                        Documentación de respaldo
                       </p>
                     </div>
                   </div>
 
                   {adjuntos.length === 0 ? (
-                    <p className={tema.colores.textoSecundario}>
-                      No hay archivos adjuntos registrados para esta tarea.
-                    </p>
+                    <div className="text-center py-8">
+                      <Paperclip
+                        className={`w-12 h-12 mx-auto mb-3 ${tema.colores.textoSecundario} opacity-50`}
+                      />
+                      <p
+                        className={`text-sm font-bold ${tema.colores.textoSecundario}`}
+                      >
+                        No hay archivos adjuntos
+                      </p>
+                    </div>
                   ) : (
-                    <div className="space-y-2 text-sm max-h-48 overflow-y-auto custom-scrollbar">
-                      {adjuntos.map((a) => (
+                    <div className="space-y-3 text-base max-h-64 overflow-y-auto custom-scrollbar">
+                      {adjuntos.map((a, index) => (
                         <a
                           key={a.id_adjunto}
                           href={a.url}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="flex items-center justify-between gap-3 px-3 py-2 rounded-xl bg-black/5 border border-white/5 hover:border-indigo-400/60 hover:bg-black/10 transition-all"
+                          className="flex items-center justify-between gap-4 px-5 py-4 rounded-2xl bg-gradient-to-r from-black/10 to-black/5 border-2 border-white/10 hover:border-indigo-400/60 hover:scale-[1.02] transition-all animate-slideUp"
+                          style={{ animationDelay: `${index * 0.05}s` }}
                         >
-                          <div className="flex items-center gap-3 min-w-0">
-                            <FileText className="w-4 h-4 text-indigo-400" />
+                          <div className="flex items-center gap-4 min-w-0">
+                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center shadow-lg">
+                              <FileText className="w-5 h-5 text-white" />
+                            </div>
                             <div className="min-w-0">
                               <p
-                                className={`text-sm truncate ${tema.colores.texto}`}
+                                className={`text-sm font-black truncate ${tema.colores.texto}`}
                               >
                                 {a.nombre_archivo}
                               </p>
                               <p
-                                className={`text-[11px] ${tema.colores.textoSecundario}`}
+                                className={`text-xs font-bold ${tema.colores.textoSecundario}`}
                               >
-                                {a.tipo} · Subido el{" "}
-                                {formatearFecha(a.fecha_subida)}
+                                {a.tipo} · {formatearFecha(a.fecha_subida)}
                               </p>
                             </div>
                           </div>
-                          <Download className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                          <Download className="w-5 h-5 text-indigo-400 flex-shrink-0" />
                         </a>
                       ))}
                     </div>
                   )}
                 </div>
 
-                {/* Acciones peligrosas */}
+                {/* Acciones peligrosas premium */}
                 <div
-                  className={`rounded-2xl p-6 border border-red-500/40 bg-red-500/5 ${tema.colores.sombra}`}
+                  className={`rounded-3xl p-8 border-2 border-red-500/50 bg-gradient-to-br from-red-500/10 to-pink-500/10 ${tema.colores.sombra} backdrop-blur-xl hover:scale-[1.02] transition-all duration-300 animate-slideUp`}
+                  style={{ animationDelay: "0.5s" }}
                 >
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-2">
-                      <div className="w-9 h-9 rounded-xl bg-red-500/20 flex items-center justify-center">
-                        <Trash className="w-4 h-4 text-red-400" />
+                  <div className="flex items-center justify-between mb-5">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-red-500 to-pink-500 flex items-center justify-center shadow-xl">
+                        <Trash className="w-6 h-6 text-white" />
                       </div>
                       <div>
-                        <h3 className="text-sm font-black text-red-300">
-                          Zona de acciones avanzadas
+                        <h3 className="text-lg font-black text-red-300">
+                          Zona de peligro
                         </h3>
-                        <p className="text-[11px] text-red-200/80">
-                          Eliminar la tarea la quitará de todos los paneles y
-                          reportes.
+                        <p className="text-xs font-bold text-red-200/80">
+                          Acciones irreversibles
                         </p>
                       </div>
                     </div>
@@ -2237,9 +2438,9 @@ const formatearFechaHora = (fecha: any) => {
                   <button
                     onClick={() => setModalEliminarAbierto(true)}
                     disabled={!tarea.puede_eliminar}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-red-600 hover:bg-red-700 text-white disabled:opacity-40 disabled:cursor-not-allowed hover:scale-105 transition-all"
+                    className="inline-flex items-center gap-3 px-6 py-4 rounded-2xl text-sm font-black bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 text-white disabled:opacity-40 disabled:cursor-not-allowed hover:scale-110 transition-all shadow-xl"
                   >
-                    <Trash className="w-4 h-4" />
+                    <Trash className="w-5 h-5" />
                     Eliminar tarea definitivamente
                   </button>
                 </div>
@@ -2248,43 +2449,43 @@ const formatearFechaHora = (fecha: any) => {
           </>
         )}
 
-        {/* Modal eliminar */}
+        {/* Modal eliminar premium */}
         {modalEliminarAbierto && tarea && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm animate-fadeIn">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md animate-fadeIn">
             <div
-              className={`w-full max-w-md rounded-2xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} p-6 animate-scaleIn`}
+              className={`w-full max-w-lg rounded-3xl ${tema.colores.card} ${tema.colores.borde} border-2 ${tema.colores.sombra} p-8 animate-scaleIn backdrop-blur-xl`}
             >
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 rounded-xl bg-red-500/20 flex items-center justify-center">
-                  <Trash className="w-5 h-5 text-red-400" />
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-red-500 to-pink-500 flex items-center justify-center shadow-2xl">
+                  <Trash className="w-8 h-8 text-white" />
                 </div>
-                <h3 className={`text-lg font-black ${tema.colores.texto}`}>
+                <h3 className={`text-2xl font-black ${tema.colores.texto}`}>
                   Eliminar tarea
                 </h3>
               </div>
-              <p className={`text-sm mb-4 ${tema.colores.textoSecundario}`}>
+              <p className={`text-base mb-6 ${tema.colores.textoSecundario}`}>
                 ¿Estás seguro de que deseas eliminar la tarea{" "}
-                <span className={`font-semibold ${tema.colores.texto}`}>
+                <span className={`font-black ${tema.colores.texto}`}>
                   "{tarea.titulo}"
                 </span>
-                ? Esta acción no se puede deshacer y se sacará de todos los
-                reportes.
+                ? Esta acción no se puede deshacer y se eliminará de todos los
+                reportes y sistemas.
               </p>
-              <div className="flex items-center justify-end gap-3">
+              <div className="flex items-center justify-end gap-4">
                 <button
                   onClick={() => setModalEliminarAbierto(false)}
                   disabled={eliminando}
-                  className={`px-4 py-2 rounded-xl text-sm font-semibold ${tema.colores.secundario} ${tema.colores.texto} hover:scale-105 transition-all disabled:opacity-50`}
+                  className={`px-6 py-4 rounded-2xl text-base font-bold ${tema.colores.secundario} ${tema.colores.texto} hover:scale-110 transition-all disabled:opacity-50`}
                 >
                   Cancelar
                 </button>
                 <button
                   onClick={eliminarTarea}
                   disabled={eliminando}
-                  className="px-4 py-2 rounded-xl text-sm font-semibold bg-red-600 hover:bg-red-700 text-white flex items-center gap-2 disabled:opacity-50 hover:scale-105 transition-all"
+                  className="px-6 py-4 rounded-2xl text-base font-black bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-700 hover:to-pink-700 text-white flex items-center gap-3 disabled:opacity-50 hover:scale-110 transition-all shadow-xl"
                 >
                   {eliminando && (
-                    <Loader2 className="w-4 h-4 animate-spin" />
+                    <Loader2 className="w-5 h-5 animate-spin" />
                   )}
                   Eliminar definitivamente
                 </button>
@@ -2294,41 +2495,41 @@ const formatearFechaHora = (fecha: any) => {
         )}
       </main>
 
-      {/* FOOTER */}
+      {/* FOOTER PREMIUM */}
       <footer
         className={`transition-all duration-300 ${
           sidebarAbierto ? "ml-72" : "ml-20"
-        } ${tema.colores.card} ${tema.colores.borde} border-t py-6 mt-12`}
+        } ${tema.colores.card} ${tema.colores.borde} border-t-2 py-8 mt-16 backdrop-blur-xl`}
       >
-        <div className="max-w-[1920px] mx-auto px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
+        <div className="max-w-[1920px] mx-auto px-8 flex flex-col sm:flex-row items-center justify-between gap-6">
+          <div className="flex items-center gap-3">
             <p
-              className={`text-sm font-semibold ${tema.colores.textoSecundario}`}
+              className={`text-base font-bold ${tema.colores.textoSecundario}`}
             >
-              © 2025 AnyssaMed · Módulo de Tareas INFOGES (Secretaría).
+              © 2025 AnyssaMed · Módulo Premium de Tareas INFOGES.
             </p>
             <span
-              className={`px-3 py-1 rounded-full text-xs font-bold bg-gradient-to-r ${tema.colores.gradiente} text-white`}
+              className={`px-4 py-2 rounded-xl text-xs font-black bg-gradient-to-r ${tema.colores.gradiente} text-white shadow-lg`}
             >
-              v1.0.0 PREMIUM · Detalle
+              v2.0.0 PREMIUM · Detalle Extraordinario
             </span>
           </div>
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-8">
             <Link
               href="/ayuda"
-              className={`text-sm font-bold transition-colors ${tema.colores.textoSecundario} hover:${tema.colores.acento}`}
+              className={`text-base font-black transition-colors ${tema.colores.textoSecundario} hover:${tema.colores.acento}`}
             >
               Ayuda
             </Link>
             <Link
               href="/privacidad"
-              className={`text-sm font-bold transition-colors ${tema.colores.textoSecundario} hover:${tema.colores.acento}`}
+              className={`text-base font-black transition-colors ${tema.colores.textoSecundario} hover:${tema.colores.acento}`}
             >
               Privacidad
             </Link>
             <button
               onClick={cerrarSesion}
-              className="text-sm font-bold text-red-400 hover:text-red-300 transition-colors"
+              className="text-base font-black text-red-400 hover:text-red-300 transition-colors"
             >
               Cerrar Sesión
             </button>
@@ -2336,7 +2537,7 @@ const formatearFechaHora = (fecha: any) => {
         </div>
       </footer>
 
-      {/* ESTILOS GLOBALES */}
+      {/* ESTILOS GLOBALES PREMIUM */}
       <style jsx global>{`
         @keyframes wave {
           0%,
@@ -2371,21 +2572,107 @@ const formatearFechaHora = (fecha: any) => {
           }
         }
 
+        @keyframes slideDown {
+          from {
+            opacity: 0;
+            transform: translateY(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes slideUp {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes slideRight {
+          from {
+            opacity: 0;
+            transform: translateX(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+
+        @keyframes float {
+          0%,
+          100% {
+            transform: translateY(0px) rotate(0deg);
+          }
+          50% {
+            transform: translateY(-20px) rotate(5deg);
+          }
+        }
+
+        @keyframes float-delayed {
+          0%,
+          100% {
+            transform: translateY(0px) rotate(0deg);
+          }
+          50% {
+            transform: translateY(-30px) rotate(-5deg);
+          }
+        }
+
+        @keyframes spin-reverse {
+          from {
+            transform: rotate(360deg);
+          }
+          to {
+            transform: rotate(0deg);
+          }
+        }
+
         .animate-wave {
           animation: wave 1s ease-in-out infinite;
         }
 
         .animate-fadeIn {
-          animation: fadeIn 0.2s ease-out;
+          animation: fadeIn 0.3s ease-out;
         }
 
         .animate-scaleIn {
-          animation: scaleIn 0.3s ease-out;
+          animation: scaleIn 0.4s ease-out;
+        }
+
+        .animate-slideDown {
+          animation: slideDown 0.4s ease-out;
+        }
+
+        .animate-slideUp {
+          animation: slideUp 0.5s ease-out;
+        }
+
+        .animate-slideRight {
+          animation: slideRight 0.4s ease-out;
+        }
+
+        .animate-float {
+          animation: float 6s ease-in-out infinite;
+        }
+
+        .animate-float-delayed {
+          animation: float-delayed 8s ease-in-out infinite;
+        }
+
+        .animate-spin-reverse {
+          animation: spin-reverse 3s linear infinite;
         }
 
         .custom-scrollbar::-webkit-scrollbar {
-          width: 8px;
-          height: 8px;
+          width: 10px;
+          height: 10px;
         }
 
         .custom-scrollbar::-webkit-scrollbar-track {
@@ -2398,22 +2685,1011 @@ const formatearFechaHora = (fecha: any) => {
         }
 
         .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: ${["dark", "blue", "purple", "green"].includes(
-            temaActual
-          )
-            ? "rgba(99, 102, 241, 0.5)"
-            : "rgba(99, 102, 241, 0.7)"};
+          background: linear-gradient(
+            135deg,
+            rgba(99, 102, 241, 0.8),
+            rgba(168, 85, 247, 0.8)
+          );
           border-radius: 10px;
+          border: 2px solid
+            ${["dark", "blue", "purple", "green"].includes(temaActual)
+              ? "rgba(31, 41, 55, 0.5)"
+              : "rgba(243, 244, 246, 0.5)"};
         }
 
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: ${["dark", "blue", "purple", "green"].includes(
-            temaActual
-          )
-            ? "rgba(99, 102, 241, 0.7)"
-            : "rgba(99, 102, 241, 0.9)"};
+          background: linear-gradient(
+            135deg,
+            rgba(99, 102, 241, 1),
+            rgba(168, 85, 247, 1)
+          );
+          box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
+        }
+
+        /* Efectos de brillo premium */
+        .glow-effect {
+          box-shadow: 0 0 20px rgba(99, 102, 241, 0.3),
+            0 0 40px rgba(168, 85, 247, 0.2);
+        }
+
+        /* Transiciones suaves premium */
+        * {
+          transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Animación de carga premium */
+        @keyframes shimmer {
+          0% {
+            background-position: -1000px 0;
+          }
+          100% {
+            background-position: 1000px 0;
+          }
+        }
+
+        .shimmer {
+          animation: shimmer 2s infinite linear;
+          background: linear-gradient(
+            to right,
+            transparent 0%,
+            rgba(255, 255, 255, 0.1) 50%,
+            transparent 100%
+          );
+          background-size: 1000px 100%;
+        }
+
+        /* Efectos de hover premium */
+        .hover-lift {
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .hover-lift:hover {
+          transform: translateY(-4px);
+          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Gradientes animados premium */
+        @keyframes gradient-shift {
+          0% {
+            background-position: 0% 50%;
+          }
+          50% {
+            background-position: 100% 50%;
+          }
+          100% {
+            background-position: 0% 50%;
+          }
+        }
+
+        .animated-gradient {
+          background-size: 200% 200%;
+          animation: gradient-shift 3s ease infinite;
+        }
+
+        /* Efectos de texto premium */
+        .text-glow {
+          text-shadow: 0 0 10px rgba(99, 102, 241, 0.5),
+            0 0 20px rgba(168, 85, 247, 0.3);
+        }
+
+        /* Bordes animados premium */
+        @keyframes border-dance {
+          0%,
+          100% {
+            border-color: rgba(99, 102, 241, 0.5);
+          }
+          50% {
+            border-color: rgba(168, 85, 247, 0.8);
+          }
+        }
+
+        .animated-border {
+          animation: border-dance 2s ease-in-out infinite;
+        }
+
+        /* Efectos de pulso premium */
+        @keyframes pulse-ring {
+          0% {
+            transform: scale(0.95);
+            box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7);
+          }
+          70% {
+            transform: scale(1);
+            box-shadow: 0 0 0 10px rgba(99, 102, 241, 0);
+          }
+          100% {
+            transform: scale(0.95);
+            box-shadow: 0 0 0 0 rgba(99, 102, 241, 0);
+          }
+        }
+
+        .pulse-ring {
+          animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        /* Efectos de partículas premium */
+        @keyframes particle-float {
+          0%,
+          100% {
+            transform: translateY(0) translateX(0) rotate(0deg);
+            opacity: 0;
+          }
+          10% {
+            opacity: 1;
+          }
+          90% {
+            opacity: 1;
+          }
+          100% {
+            transform: translateY(-100px) translateX(50px) rotate(360deg);
+            opacity: 0;
+          }
+        }
+
+        .particle {
+          animation: particle-float 4s ease-in-out infinite;
+        }
+
+        /* Efectos de glassmorphism premium */
+        .glass-effect {
+          background: rgba(255, 255, 255, 0.05);
+          backdrop-filter: blur(20px) saturate(180%);
+          -webkit-backdrop-filter: blur(20px) saturate(180%);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Efectos de neomorphism premium */
+        .neo-effect-light {
+          background: linear-gradient(145deg, #ffffff, #f0f0f0);
+          box-shadow: 8px 8px 16px #d1d1d1, -8px -8px 16px #ffffff;
+        }
+
+        .neo-effect-dark {
+          background: linear-gradient(145deg, #1a1a1a, #2d2d2d);
+          box-shadow: 8px 8px 16px #0d0d0d, -8px -8px 16px #272727;
+        }
+
+        /* Animaciones de entrada premium */
+        @keyframes fade-in-up {
+          from {
+            opacity: 0;
+            transform: translateY(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes fade-in-down {
+          from {
+            opacity: 0;
+            transform: translateY(-30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes fade-in-left {
+          from {
+            opacity: 0;
+            transform: translateX(-30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+
+        @keyframes fade-in-right {
+          from {
+            opacity: 0;
+            transform: translateX(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+
+        @keyframes zoom-in {
+          from {
+            opacity: 0;
+            transform: scale(0.8);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+
+        @keyframes rotate-in {
+          from {
+            opacity: 0;
+            transform: rotate(-180deg) scale(0.5);
+          }
+          to {
+            opacity: 1;
+            transform: rotate(0deg) scale(1);
+          }
+        }
+
+        /* Efectos de hover avanzados premium */
+        .hover-glow:hover {
+          box-shadow: 0 0 30px rgba(99, 102, 241, 0.6),
+            0 0 60px rgba(168, 85, 247, 0.4);
+          transform: translateY(-2px);
+        }
+
+        .hover-rotate:hover {
+          transform: rotate(5deg) scale(1.05);
+        }
+
+        .hover-flip:hover {
+          transform: rotateY(180deg);
+        }
+
+        /* Efectos de texto premium avanzados */
+        @keyframes text-shimmer {
+          0% {
+            background-position: -500px 0;
+          }
+          100% {
+            background-position: 500px 0;
+          }
+        }
+
+        .text-shimmer {
+          background: linear-gradient(
+            90deg,
+            currentColor 0%,
+            rgba(255, 255, 255, 0.8) 50%,
+            currentColor 100%
+          );
+          background-size: 500px 100%;
+          -webkit-background-clip: text;
+          background-clip: text;
+          animation: text-shimmer 3s linear infinite;
+        }
+
+        /* Efectos de botón premium */
+        .button-premium {
+          position: relative;
+          overflow: hidden;
+        }
+
+        .button-premium::before {
+          content: "";
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          width: 0;
+          height: 0;
+          border-radius: 50%;
+          background: rgba(255, 255, 255, 0.3);
+          transform: translate(-50%, -50%);
+          transition: width 0.6s, height 0.6s;
+        }
+
+        .button-premium:hover::before {
+          width: 300px;
+          height: 300px;
+        }
+
+        /* Efectos de card premium */
+        .card-premium {
+          position: relative;
+          overflow: hidden;
+        }
+
+        .card-premium::after {
+          content: "";
+          position: absolute;
+          top: -50%;
+          right: -50%;
+          bottom: -50%;
+          left: -50%;
+          background: linear-gradient(
+            to bottom,
+            rgba(255, 255, 255, 0) 0%,
+            rgba(255, 255, 255, 0.1) 50%,
+            rgba(255, 255, 255, 0) 100%
+          );
+          transform: rotate(45deg);
+          transition: all 0.5s;
+        }
+
+        .card-premium:hover::after {
+          animation: shine 1.5s ease-in-out;
+        }
+
+        @keyframes shine {
+          0% {
+            top: -50%;
+            right: -50%;
+            bottom: -50%;
+            left: -50%;
+          }
+          100% {
+            top: 150%;
+            right: 150%;
+            bottom: 150%;
+            left: 150%;
+          }
+        }
+
+        /* Efectos de loading premium */
+        @keyframes loading-dots {
+          0%,
+          20% {
+            opacity: 0;
+          }
+          50% {
+            opacity: 1;
+          }
+          100% {
+            opacity: 0;
+          }
+        }
+
+        .loading-dot {
+          animation: loading-dots 1.4s infinite;
+        }
+
+        .loading-dot:nth-child(2) {
+          animation-delay: 0.2s;
+        }
+
+        .loading-dot:nth-child(3) {
+          animation-delay: 0.4s;
+        }
+
+        /* Efectos de skeleton premium */
+        @keyframes skeleton-loading {
+          0% {
+            background-position: -200px 0;
+          }
+          100% {
+            background-position: calc(200px + 100%) 0;
+          }
+        }
+
+        .skeleton {
+          background: linear-gradient(
+            90deg,
+            rgba(255, 255, 255, 0.05) 0px,
+            rgba(255, 255, 255, 0.15) 40px,
+            rgba(255, 255, 255, 0.05) 80px
+          );
+          background-size: 200px 100%;
+          animation: skeleton-loading 1.5s ease-in-out infinite;
+        }
+
+        /* Efectos de badge premium */
+        @keyframes badge-pulse {
+          0%,
+          100% {
+            transform: scale(1);
+            opacity: 1;
+          }
+          50% {
+            transform: scale(1.1);
+            opacity: 0.8;
+          }
+        }
+
+        .badge-pulse {
+          animation: badge-pulse 2s ease-in-out infinite;
+        }
+
+        /* Efectos de tooltip premium */
+        .tooltip {
+          position: relative;
+        }
+
+        .tooltip::before {
+          content: attr(data-tooltip);
+          position: absolute;
+          bottom: 100%;
+          left: 50%;
+          transform: translateX(-50%) translateY(-8px);
+          padding: 8px 12px;
+          background: rgba(0, 0, 0, 0.9);
+          color: white;
+          border-radius: 8px;
+          font-size: 12px;
+          white-space: nowrap;
+          opacity: 0;
+          pointer-events: none;
+          transition: all 0.3s;
+          z-index: 1000;
+        }
+
+        .tooltip::after {
+          content: "";
+          position: absolute;
+          bottom: 100%;
+          left: 50%;
+          transform: translateX(-50%);
+          border: 6px solid transparent;
+          border-top-color: rgba(0, 0, 0, 0.9);
+          opacity: 0;
+          pointer-events: none;
+          transition: all 0.3s;
+        }
+
+        .tooltip:hover::before,
+        .tooltip:hover::after {
+          opacity: 1;
+        }
+
+        /* Efectos de progress bar premium */
+        @keyframes progress-bar-stripes {
+          0% {
+            background-position: 40px 0;
+          }
+          100% {
+            background-position: 0 0;
+          }
+        }
+
+        .progress-bar-animated {
+          background-image: linear-gradient(
+            45deg,
+            rgba(255, 255, 255, 0.15) 25%,
+            transparent 25%,
+            transparent 50%,
+            rgba(255, 255, 255, 0.15) 50%,
+            rgba(255, 255, 255, 0.15) 75%,
+            transparent 75%,
+            transparent
+          );
+          background-size: 40px 40px;
+          animation: progress-bar-stripes 1s linear infinite;
+        }
+
+        /* Efectos de ripple premium */
+        @keyframes ripple {
+          0% {
+            transform: scale(0);
+            opacity: 1;
+          }
+          100% {
+            transform: scale(4);
+            opacity: 0;
+          }
+        }
+
+        .ripple-effect {
+          position: relative;
+          overflow: hidden;
+        }
+
+        .ripple-effect::after {
+          content: "";
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          width: 20px;
+          height: 20px;
+          background: rgba(255, 255, 255, 0.5);
+          border-radius: 50%;
+          transform: translate(-50%, -50%) scale(0);
+          pointer-events: none;
+        }
+
+        .ripple-effect:active::after {
+          animation: ripple 0.6s ease-out;
+        }
+
+        /* Efectos de modal premium */
+        @keyframes modal-fade-in {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+
+        @keyframes modal-slide-up {
+          from {
+            transform: translateY(100px);
+            opacity: 0;
+          }
+          to {
+            transform: translateY(0);
+            opacity: 1;
+          }
+        }
+
+        .modal-overlay {
+          animation: modal-fade-in 0.3s ease-out;
+        }
+
+        .modal-content {
+          animation: modal-slide-up 0.4s ease-out;
+        }
+
+        /* Efectos de notification premium */
+        @keyframes notification-slide-in {
+          from {
+            transform: translateX(400px);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+
+        @keyframes notification-slide-out {
+          from {
+            transform: translateX(0);
+            opacity: 1;
+          }
+          to {
+            transform: translateX(400px);
+            opacity: 0;
+          }
+        }
+
+        .notification-enter {
+          animation: notification-slide-in 0.4s ease-out;
+        }
+
+        .notification-exit {
+          animation: notification-slide-out 0.3s ease-in;
+        }
+
+        /* Efectos de accordion premium */
+        @keyframes accordion-expand {
+          from {
+            max-height: 0;
+            opacity: 0;
+          }
+          to {
+            max-height: 1000px;
+            opacity: 1;
+          }
+        }
+
+        .accordion-content {
+          animation: accordion-expand 0.4s ease-out;
+        }
+
+        /* Efectos de tabs premium */
+        .tab-indicator {
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Efectos de dropdown premium */
+        @keyframes dropdown-fade-in {
+          from {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        .dropdown-menu {
+          animation: dropdown-fade-in 0.2s ease-out;
+        }
+
+        /* Efectos de checkbox premium */
+        @keyframes checkbox-check {
+          0% {
+            transform: scale(0) rotate(45deg);
+          }
+          50% {
+            transform: scale(1.2) rotate(45deg);
+          }
+          100% {
+            transform: scale(1) rotate(45deg);
+          }
+        }
+
+        .checkbox-check {
+          animation: checkbox-check 0.3s ease-out;
+        }
+
+        /* Efectos de radio premium */
+        @keyframes radio-check {
+          0% {
+            transform: scale(0);
+          }
+          50% {
+            transform: scale(1.2);
+          }
+          100% {
+            transform: scale(1);
+          }
+        }
+
+        .radio-check {
+          animation: radio-check 0.3s ease-out;
+        }
+
+        /* Efectos de switch premium */
+        .switch-toggle {
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Efectos de slider premium */
+        .slider-thumb {
+          transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .slider-thumb:hover {
+          transform: scale(1.2);
+        }
+
+        /* Efectos de avatar premium */
+        .avatar-ring {
+          position: relative;
+        }
+
+        .avatar-ring::before {
+          content: "";
+          position: absolute;
+          inset: -4px;
+          border-radius: inherit;
+          padding: 2px;
+          background: linear-gradient(
+            135deg,
+            rgba(99, 102, 241, 0.8),
+            rgba(168, 85, 247, 0.8)
+          );
+          -webkit-mask: linear-gradient(#fff 0 0) content-box,
+            linear-gradient(#fff 0 0);
+          -webkit-mask-composite: xor;
+          mask-composite: exclude;
+        }
+
+        /* Efectos de divider premium */
+        .divider-gradient {
+          background: linear-gradient(
+            90deg,
+            transparent 0%,
+            rgba(99, 102, 241, 0.5) 50%,
+            transparent 100%
+          );
+          height: 2px;
+        }
+
+        /* Efectos de code block premium */
+        .code-block {
+          position: relative;
+          background: rgba(0, 0, 0, 0.5);
+          border-radius: 12px;
+          padding: 20px;
+          overflow-x: auto;
+        }
+
+        .code-block::before {
+          content: "";
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          height: 30px;
+          background: linear-gradient(
+            to bottom,
+            rgba(255, 255, 255, 0.05),
+            transparent
+          );
+          border-radius: 12px 12px 0 0;
+        }
+
+        /* Efectos de table premium */
+        .table-row-hover {
+          transition: all 0.2s ease;
+        }
+
+        .table-row-hover:hover {
+          background: rgba(99, 102, 241, 0.1);
+          transform: scale(1.01);
+        }
+
+        /* Efectos de pagination premium */
+        .pagination-item {
+          transition: all 0.3s ease;
+        }
+
+        .pagination-item:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+        }
+
+        /* Efectos de breadcrumb premium */
+        .breadcrumb-separator {
+          opacity: 0.5;
+          transition: opacity 0.3s ease;
+        }
+
+        .breadcrumb-item:hover .breadcrumb-separator {
+          opacity: 1;
+        }
+
+        /* Efectos de stepper premium */
+        .stepper-line {
+          transition: all 0.5s ease;
+        }
+
+        .stepper-step {
+          transition: all 0.3s ease;
+        }
+
+        .stepper-step.active {
+          transform: scale(1.1);
+        }
+
+        /* Efectos de timeline premium */
+        .timeline-item {
+          position: relative;
+        }
+
+        .timeline-item::before {
+          content: "";
+          position: absolute;
+          left: 0;
+          top: 0;
+          bottom: 0;
+          width: 2px;
+          background: linear-gradient(
+            to bottom,
+            rgba(99, 102, 241, 0.8),
+            rgba(168, 85, 247, 0.8)
+          );
+        }
+
+        /* Efectos de carousel premium */
+        @keyframes carousel-slide {
+          from {
+            transform: translateX(100%);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
+        }
+
+        .carousel-item {
+          animation: carousel-slide 0.5s ease-out;
+        }
+
+        /* Efectos de gallery premium */
+        .gallery-item {
+          transition: all 0.3s ease;
+          overflow: hidden;
+        }
+
+        .gallery-item:hover {
+          transform: scale(1.05);
+          z-index: 10;
+        }
+
+        .gallery-item img {
+          transition: transform 0.5s ease;
+        }
+
+        .gallery-item:hover img {
+          transform: scale(1.1);
+        }
+
+        /* Efectos de masonry premium */
+        .masonry-item {
+          break-inside: avoid;
+          margin-bottom: 20px;
+          transition: all 0.3s ease;
+        }
+
+        .masonry-item:hover {
+          transform: translateY(-4px);
+        }
+
+        /* Efectos de infinite scroll premium */
+        @keyframes infinite-scroll {
+          0% {
+            transform: translateX(0);
+          }
+          100% {
+            transform: translateX(-50%);
+          }
+        }
+
+        .infinite-scroll {
+          animation: infinite-scroll 30s linear infinite;
+        }
+
+        /* Efectos de parallax premium */
+        .parallax-layer {
+          transition: transform 0.1s ease-out;
+        }
+
+        /* Efectos de zoom premium */
+        .zoom-container {
+          overflow: hidden;
+          cursor: zoom-in;
+        }
+
+        .zoom-container img {
+          transition: transform 0.3s ease;
+        }
+
+        .zoom-container:hover img {
+          transform: scale(1.5);
+        }
+
+        /* Efectos de flip card premium */
+        .flip-card {
+          perspective: 1000px;
+        }
+
+        .flip-card-inner {
+          transition: transform 0.6s;
+          transform-style: preserve-3d;
+        }
+
+        .flip-card:hover .flip-card-inner {
+          transform: rotateY(180deg);
+        }
+
+        .flip-card-front,
+        .flip-card-back {
+          backface-visibility: hidden;
+        }
+
+        .flip-card-back {
+          transform: rotateY(180deg);
+        }
+
+        /* Efectos de 3D card premium */
+        .card-3d {
+          transform-style: preserve-3d;
+          transition: transform 0.3s ease;
+        }
+
+        .card-3d:hover {
+          transform: rotateY(10deg) rotateX(10deg);
+        }
+
+        /* Efectos de confetti premium */
+        @keyframes confetti-fall {
+          0% {
+            transform: translateY(-100vh) rotate(0deg);
+            opacity: 1;
+          }
+          100% {
+            transform: translateY(100vh) rotate(720deg);
+            opacity: 0;
+          }
+        }
+
+        .confetti {
+          animation: confetti-fall 3s ease-in infinite;
+        }
+
+        /* Efectos de fireworks premium */
+        @keyframes firework {
+          0% {
+            transform: translate(0, 0);
+            opacity: 1;
+          }
+          100% {
+            transform: translate(var(--x), var(--y));
+            opacity: 0;
+          }
+        }
+
+        .firework {
+          animation: firework 1s ease-out;
+        }
+
+        /* Efectos de typing premium */
+        @keyframes typing {
+          from {
+            width: 0;
+          }
+          to {
+            width: 100%;
+          }
+        }
+
+        @keyframes blink-caret {
+          from,
+          to {
+            border-color: transparent;
+          }
+          50% {
+            border-color: currentColor;
+          }
+        }
+
+        .typing-effect {
+          overflow: hidden;
+          border-right: 2px solid;
+          white-space: nowrap;
+          animation: typing 3.5s steps(40, end),
+            blink-caret 0.75s step-end infinite;
+        }
+
+        /* Optimizaciones de rendimiento */
+        .gpu-accelerated {
+          transform: translateZ(0);
+          will-change: transform;
+        }
+
+        /* Modo oscuro suave */
+        @media (prefers-color-scheme: dark) {
+          .auto-dark {
+            filter: invert(1) hue-rotate(180deg);
+          }
+        }
+
+        /* Responsive premium */
+        @media (max-width: 768px) {
+          .mobile-stack {
+            flex-direction: column;
+          }
+
+          .mobile-full {
+            width: 100%;
+          }
+
+          .mobile-hide {
+            display: none;
+          }
+        }
+
+        /* Print styles premium */
+        @media print {
+          .no-print {
+            display: none !important;
+          }
+
+          .print-break {
+            page-break-after: always;
+          }
+        }
+
+        /* Accesibilidad premium */
+        .focus-visible:focus-visible {
+          outline: 3px solid rgba(99, 102, 241, 0.6);
+          outline-offset: 2px;
+        }
+
+        .sr-only {
+          position: absolute;
+          width: 1px;
+          height: 1px;
+          padding: 0;
+          margin: -1px;
+          overflow: hidden;
+          clip: rect(0, 0, 0, 0);
+          white-space: nowrap;
+          border-width: 0;
+        }
+
+        /* Reducir movimiento para usuarios con preferencias */
+        @media (prefers-reduced-motion: reduce) {
+          *,
+          *::before,
+          *::after {
+            animation-duration: 0.01ms !important;
+            animation-iteration-count: 1 !important;
+            transition-duration: 0.01ms !important;
+          }
         }
       `}</style>
     </div>
   );
 }
+
+

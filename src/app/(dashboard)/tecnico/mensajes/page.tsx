@@ -1293,7 +1293,7 @@ export default function MensajesPagePremium() {
         <div className="flex items-center justify-between px-6 py-4 max-w-full">
           <div className="flex items-center gap-4 flex-1 min-w-0">
             <Link
-              href="/dashboard"
+              href="/tecnico"
               className={`p-2 rounded-xl ${tema.colores.hover} transition-all duration-300 hover:scale-110 flex-shrink-0`}
               title="Volver al dashboard"
             >

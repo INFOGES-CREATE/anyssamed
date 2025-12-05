@@ -3,11 +3,8 @@
 
 import { useState, useEffect, useMemo } from "react";
 import SidebarTecnico from "@/components/tecnico/SidebarTecnico";
-
 import Link from "next/link";
 import Image from "next/image";
-import { LayoutGrid } from "lucide-react";
-import { Grid2x2 } from "lucide-react";
 
 import {
   Activity,
@@ -120,13 +117,18 @@ import {
   AlertCircle as AlertCircleIcon,
   MapPin as MapPinIcon,
   Phone as PhoneIcon,
+  Grid2X2,
+  List,
+  Move,
+  Maximize2,
+  Minimize2,
 } from "lucide-react";
 
 // ========================================
 // TIPOS DE DATOS
 // ========================================
 
-type TemaColor = "light" | "dark" | "blue" | "purple" | "green";
+type TemaColor = "light" | "dark" | "blue" | "purple" | "green" | "cosmic" | "sunset";
 
 interface ConfiguracionTema {
   nombre: string;
@@ -146,6 +148,8 @@ interface ConfiguracionTema {
     header: string;
     card: string;
     hover: string;
+    glow: string;
+    particulas: string;
   };
 }
 
@@ -254,117 +258,171 @@ interface AlertaTecnico {
   url_accion: string | null;
 }
 
-type VistaTickets = "lista" | "tablero";
+type VistaTickets = "lista" | "tablero" | "timeline";
 
 // ========================================
-// CONFIGURACIONES DE TEMAS
+// CONFIGURACIONES DE TEMAS PREMIUM
 // ========================================
 
 const TEMAS: Record<TemaColor, ConfiguracionTema> = {
   light: {
-    nombre: "Claro",
+    nombre: "Cristal Luminoso",
     icono: Sun,
     colores: {
-      fondo: "from-slate-50 via-blue-50 to-indigo-50",
-      fondoSecundario: "bg-white",
+      fondo: "from-slate-50 via-blue-50 to-indigo-100",
+      fondoSecundario: "bg-white/80",
       texto: "text-gray-900",
       textoSecundario: "text-gray-600",
-      primario: "bg-indigo-600 hover:bg-indigo-700",
-      secundario: "bg-gray-200 hover:bg-gray-300",
+      primario: "bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 hover:from-indigo-700 hover:via-purple-700 hover:to-pink-700",
+      secundario: "bg-white/60 hover:bg-white/80 backdrop-blur-xl",
       acento: "text-indigo-600",
-      borde: "border-gray-200",
-      sombra: "shadow-xl shadow-indigo-100/50",
+      borde: "border-indigo-200/50",
+      sombra: "shadow-2xl shadow-indigo-500/20",
       gradiente: "from-indigo-500 via-purple-500 to-pink-500",
-      sidebar: "bg-white/95 backdrop-blur-xl border-gray-200",
-      header: "bg-white/80 backdrop-blur-xl border-gray-200",
-      card: "bg-white border-gray-200 hover:border-indigo-300",
-      hover: "hover:bg-gray-50",
+      sidebar: "bg-white/70 backdrop-blur-2xl border-indigo-200/30",
+      header: "bg-white/60 backdrop-blur-2xl border-indigo-200/30",
+      card: "bg-white/70 backdrop-blur-xl border-indigo-200/40 hover:border-indigo-400/60 hover:shadow-indigo-500/30",
+      hover: "hover:bg-indigo-50/80",
+      glow: "shadow-[0_0_30px_rgba(99,102,241,0.3)]",
+      particulas: "bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400",
     },
   },
   dark: {
-    nombre: "Oscuro",
+    nombre: "Obsidiana Estelar",
     icono: Moon,
     colores: {
       fondo: "from-slate-950 via-indigo-950 to-purple-950",
-      fondoSecundario: "bg-gray-900",
+      fondoSecundario: "bg-gray-900/80",
       texto: "text-white",
       textoSecundario: "text-gray-400",
-      primario: "bg-indigo-600 hover:bg-indigo-700",
-      secundario: "bg-gray-800 hover:bg-gray-700",
+      primario: "bg-gradient-to-r from-indigo-600 via-purple-600 to-fuchsia-600 hover:from-indigo-500 hover:via-purple-500 hover:to-fuchsia-500",
+      secundario: "bg-gray-800/60 hover:bg-gray-700/80 backdrop-blur-xl",
       acento: "text-indigo-400",
-      borde: "border-gray-800",
-      sombra: "shadow-2xl shadow-indigo-500/20",
-      gradiente: "from-indigo-500 via-purple-500 to-pink-500",
-      sidebar: "bg-gray-900/95 backdrop-blur-xl border-gray-800",
-      header: "bg-gray-900/80 backdrop-blur-xl border-gray-800",
-      card: "bg-gray-800/50 border-gray-700 hover:border-indigo-500/50",
-      hover: "hover:bg-gray-800",
+      borde: "border-indigo-800/50",
+      sombra: "shadow-2xl shadow-indigo-500/30",
+      gradiente: "from-indigo-500 via-purple-500 to-fuchsia-500",
+      sidebar: "bg-gray-900/70 backdrop-blur-2xl border-indigo-800/30",
+      header: "bg-gray-900/60 backdrop-blur-2xl border-indigo-800/30",
+      card: "bg-gray-800/50 backdrop-blur-xl border-indigo-700/40 hover:border-indigo-500/60 hover:shadow-indigo-500/40",
+      hover: "hover:bg-gray-800/80",
+      glow: "shadow-[0_0_40px_rgba(99,102,241,0.4)]",
+      particulas: "bg-gradient-to-r from-indigo-500 via-purple-500 to-fuchsia-500",
     },
   },
   blue: {
-    nombre: "Azul Técnico",
+    nombre: "Océano Cuántico",
     icono: Wifi,
     colores: {
       fondo: "from-blue-950 via-cyan-950 to-teal-950",
-      fondoSecundario: "bg-blue-900",
+      fondoSecundario: "bg-blue-900/80",
       texto: "text-white",
       textoSecundario: "text-cyan-300",
-      primario: "bg-cyan-600 hover:bg-cyan-700",
-      secundario: "bg-blue-800 hover:bg-blue-700",
+      primario: "bg-gradient-to-r from-cyan-600 via-blue-600 to-indigo-600 hover:from-cyan-500 hover:via-blue-500 hover:to-indigo-500",
+      secundario: "bg-blue-800/60 hover:bg-blue-700/80 backdrop-blur-xl",
       acento: "text-cyan-400",
-      borde: "border-cyan-800",
-      sombra: "shadow-2xl shadow-cyan-500/20",
+      borde: "border-cyan-800/50",
+      sombra: "shadow-2xl shadow-cyan-500/30",
       gradiente: "from-cyan-500 via-blue-500 to-indigo-500",
-      sidebar: "bg-blue-900/95 backdrop-blur-xl border-cyan-800",
-      header: "bg-blue-900/80 backdrop-blur-xl border-cyan-800",
-      card: "bg-blue-800/50 border-cyan-700 hover:border-cyan-500/50",
-      hover: "hover:bg-blue-800",
+      sidebar: "bg-blue-900/70 backdrop-blur-2xl border-cyan-800/30",
+      header: "bg-blue-900/60 backdrop-blur-2xl border-cyan-800/30",
+      card: "bg-blue-800/50 backdrop-blur-xl border-cyan-700/40 hover:border-cyan-500/60 hover:shadow-cyan-500/40",
+      hover: "hover:bg-blue-800/80",
+      glow: "shadow-[0_0_40px_rgba(6,182,212,0.4)]",
+      particulas: "bg-gradient-to-r from-cyan-500 via-blue-500 to-indigo-500",
     },
   },
   purple: {
-    nombre: "Púrpura Industrial",
+    nombre: "Nebulosa Violeta",
     icono: Sparkles,
     colores: {
       fondo: "from-purple-950 via-fuchsia-950 to-pink-950",
-      fondoSecundario: "bg-purple-900",
+      fondoSecundario: "bg-purple-900/80",
       texto: "text-white",
       textoSecundario: "text-purple-300",
-      primario: "bg-fuchsia-600 hover:bg-fuchsia-700",
-      secundario: "bg-purple-800 hover:bg-purple-700",
+      primario: "bg-gradient-to-r from-fuchsia-600 via-purple-600 to-violet-600 hover:from-fuchsia-500 hover:via-purple-500 hover:to-violet-500",
+      secundario: "bg-purple-800/60 hover:bg-purple-700/80 backdrop-blur-xl",
       acento: "text-fuchsia-400",
-      borde: "border-purple-800",
-      sombra: "shadow-2xl shadow-fuchsia-500/20",
-      gradiente: "from-fuchsia-500 via-purple-500 to-pink-500",
-      sidebar: "bg-purple-900/95 backdrop-blur-xl border-purple-800",
-      header: "bg-purple-900/80 backdrop-blur-xl border-purple-800",
-      card: "bg-purple-800/50 border-purple-700 hover:border-fuchsia-500/50",
-      hover: "hover:bg-purple-800",
+      borde: "border-purple-800/50",
+      sombra: "shadow-2xl shadow-fuchsia-500/30",
+      gradiente: "from-fuchsia-500 via-purple-500 to-violet-500",
+      sidebar: "bg-purple-900/70 backdrop-blur-2xl border-purple-800/30",
+      header: "bg-purple-900/60 backdrop-blur-2xl border-purple-800/30",
+      card: "bg-purple-800/50 backdrop-blur-xl border-purple-700/40 hover:border-fuchsia-500/60 hover:shadow-fuchsia-500/40",
+      hover: "hover:bg-purple-800/80",
+      glow: "shadow-[0_0_40px_rgba(217,70,239,0.4)]",
+      particulas: "bg-gradient-to-r from-fuchsia-500 via-purple-500 to-violet-500",
     },
   },
   green: {
-    nombre: "Verde Operacional",
+    nombre: "Selva Bioluminiscente",
     icono: HeartPulse,
     colores: {
       fondo: "from-emerald-950 via-teal-950 to-cyan-950",
-      fondoSecundario: "bg-emerald-900",
+      fondoSecundario: "bg-emerald-900/80",
       texto: "text-white",
       textoSecundario: "text-emerald-300",
-      primario: "bg-emerald-600 hover:bg-emerald-700",
-      secundario: "bg-teal-800 hover:bg-teal-700",
+      primario: "bg-gradient-to-r from-emerald-600 via-teal-600 to-cyan-600 hover:from-emerald-500 hover:via-teal-500 hover:to-cyan-500",
+      secundario: "bg-teal-800/60 hover:bg-teal-700/80 backdrop-blur-xl",
       acento: "text-emerald-400",
-      borde: "border-emerald-800",
-      sombra: "shadow-2xl shadow-emerald-500/20",
+      borde: "border-emerald-800/50",
+      sombra: "shadow-2xl shadow-emerald-500/30",
       gradiente: "from-emerald-500 via-teal-500 to-cyan-500",
-      sidebar: "bg-emerald-900/95 backdrop-blur-xl border-emerald-800",
-      header: "bg-emerald-900/80 backdrop-blur-xl border-emerald-800",
-      card: "bg-emerald-800/50 border-emerald-700 hover:border-emerald-500/50",
-      hover: "hover:bg-emerald-800",
+      sidebar: "bg-emerald-900/70 backdrop-blur-2xl border-emerald-800/30",
+      header: "bg-emerald-900/60 backdrop-blur-2xl border-emerald-800/30",
+      card: "bg-emerald-800/50 backdrop-blur-xl border-emerald-700/40 hover:border-emerald-500/60 hover:shadow-emerald-500/40",
+      hover: "hover:bg-emerald-800/80",
+      glow: "shadow-[0_0_40px_rgba(16,185,129,0.4)]",
+      particulas: "bg-gradient-to-r from-emerald-500 via-teal-500 to-cyan-500",
+    },
+  },
+  cosmic: {
+    nombre: "Cosmos Infinito",
+    icono: Rocket,
+    colores: {
+      fondo: "from-slate-950 via-violet-950 to-fuchsia-950",
+      fondoSecundario: "bg-slate-900/80",
+      texto: "text-white",
+      textoSecundario: "text-violet-300",
+      primario: "bg-gradient-to-r from-violet-600 via-fuchsia-600 to-pink-600 hover:from-violet-500 hover:via-fuchsia-500 hover:to-pink-500",
+      secundario: "bg-slate-800/60 hover:bg-slate-700/80 backdrop-blur-xl",
+      acento: "text-violet-400",
+      borde: "border-violet-800/50",
+      sombra: "shadow-2xl shadow-violet-500/30",
+      gradiente: "from-violet-500 via-fuchsia-500 to-pink-500",
+      sidebar: "bg-slate-900/70 backdrop-blur-2xl border-violet-800/30",
+      header: "bg-slate-900/60 backdrop-blur-2xl border-violet-800/30",
+      card: "bg-slate-800/50 backdrop-blur-xl border-violet-700/40 hover:border-violet-500/60 hover:shadow-violet-500/40",
+      hover: "hover:bg-slate-800/80",
+      glow: "shadow-[0_0_50px_rgba(139,92,246,0.5)]",
+      particulas: "bg-gradient-to-r from-violet-500 via-fuchsia-500 to-pink-500",
+    },
+  },
+  sunset: {
+    nombre: "Atardecer Dorado",
+    icono: Sun,
+    colores: {
+      fondo: "from-orange-950 via-rose-950 to-pink-950",
+      fondoSecundario: "bg-orange-900/80",
+      texto: "text-white",
+      textoSecundario: "text-orange-300",
+      primario: "bg-gradient-to-r from-orange-600 via-rose-600 to-pink-600 hover:from-orange-500 hover:via-rose-500 hover:to-pink-500",
+      secundario: "bg-orange-800/60 hover:bg-orange-700/80 backdrop-blur-xl",
+      acento: "text-orange-400",
+      borde: "border-orange-800/50",
+      sombra: "shadow-2xl shadow-orange-500/30",
+      gradiente: "from-orange-500 via-rose-500 to-pink-500",
+      sidebar: "bg-orange-900/70 backdrop-blur-2xl border-orange-800/30",
+      header: "bg-orange-900/60 backdrop-blur-2xl border-orange-800/30",
+      card: "bg-orange-800/50 backdrop-blur-xl border-orange-700/40 hover:border-orange-500/60 hover:shadow-orange-500/40",
+      hover: "hover:bg-orange-800/80",
+      glow: "shadow-[0_0_40px_rgba(249,115,22,0.4)]",
+      particulas: "bg-gradient-to-r from-orange-500 via-rose-500 to-pink-500",
     },
   },
 };
 
 // ========================================
-// COMPONENTE PRINCIPAL: TICKETS TÉCNICO
+// COMPONENTE PRINCIPAL
 // ========================================
 
 export default function TicketsTecnicoPage() {
@@ -377,19 +435,18 @@ export default function TicketsTecnicoPage() {
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [alertas, setAlertas] = useState<AlertaTecnico[]>([]);
 
-  const [temaActual, setTemaActual] = useState<TemaColor>("blue");
+  const [temaActual, setTemaActual] = useState<TemaColor>("cosmic");
   const [sidebarAbierto, setSidebarAbierto] = useState(true);
   const [notificacionesAbiertas, setNotificacionesAbiertas] = useState(false);
   const [perfilAbierto, setPerfilAbierto] = useState(false);
 
   const [busqueda, setBusqueda] = useState("");
-  const [seccionActiva] = useState("tickets");
 
   const [filtroEstado, setFiltroEstado] = useState<string>("todos");
   const [filtroPrioridad, setFiltroPrioridad] = useState<string>("todas");
   const [filtroTipo, setFiltroTipo] = useState<string>("todos");
   const [filtroCentro, setFiltroCentro] = useState<string>("todos");
-  const [vista, setVista] = useState<VistaTickets>("lista");
+  const [vista, setVista] = useState<VistaTickets>("tablero");
 
   const [paginaActual, setPaginaActual] = useState(1);
   const [tamanoPagina] = useState(10);
@@ -417,16 +474,10 @@ export default function TicketsTecnicoPage() {
   const tema = useMemo(() => TEMAS[temaActual], [temaActual]);
 
   // ========================================
-  // MENÚ DE NAVEGACIÓN
-  // ========================================
-
-
-  // ========================================
   // EFECTOS
   // ========================================
 
   useEffect(() => {
-    // Tema desde localStorage
     if (typeof window !== "undefined") {
       const saved = localStorage.getItem("tema_tecnico") as TemaColor | null;
       if (saved && TEMAS[saved]) {
@@ -450,13 +501,13 @@ export default function TicketsTecnicoPage() {
       if (usuario?.tecnico) {
         cargarDatosTickets(false);
       }
-    }, 180000); // cada 3 minutos
+    }, 180000);
 
     return () => clearInterval(interval);
   }, [usuario]);
 
   useEffect(() => {
-    document.body.className = `bg-gradient-to-br ${tema.colores.fondo} min-h-screen transition-all duration-500`;
+    document.body.className = `bg-gradient-to-br ${tema.colores.fondo} min-h-screen transition-all duration-700`;
   }, [tema]);
 
   // ========================================
@@ -533,7 +584,6 @@ export default function TicketsTecnicoPage() {
     try {
       if (mostrarLoader) setLoadingData(true);
 
-      // Reutilizamos el endpoint general del dashboard para no romper nada
       const res = await fetch(
         `/api/tecnico/dashboard?id_tecnico=${usuario.tecnico.id_tecnico}`,
         {
@@ -615,38 +665,6 @@ export default function TicketsTecnicoPage() {
     } catch (error) {
       console.error("Error al actualizar estado del ticket:", error);
       alert("Error al actualizar estado del ticket");
-    }
-  };
-
-  const actualizarPrioridadTicket = async (
-    idTicket: number,
-    nuevaPrioridad: Ticket["prioridad"]
-  ) => {
-    try {
-      const response = await fetch(
-        `/api/tecnico/tickets/${idTicket}/prioridad`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify({ prioridad: nuevaPrioridad }),
-        }
-      );
-
-      if (response.ok) {
-        setTickets((prev) =>
-          prev.map((ticket) =>
-            ticket.id_ticket === idTicket
-              ? { ...ticket, prioridad: nuevaPrioridad }
-              : ticket
-          )
-        );
-      } else {
-        alert("Error al actualizar prioridad");
-      }
-    } catch (error) {
-      console.error("Error al actualizar prioridad:", error);
-      alert("Error al actualizar prioridad");
     }
   };
 
@@ -759,7 +777,7 @@ export default function TicketsTecnicoPage() {
   };
 
   const obtenerColorEstado = (estado: string) => {
-    const isDark = ["dark", "blue", "purple", "green"].includes(temaActual);
+    const isDark = ["dark", "blue", "purple", "green", "cosmic", "sunset"].includes(temaActual);
     const colores: { [key: string]: string } = {
       abierto: isDark
         ? "bg-red-500/20 text-red-300 border-red-400/40"
@@ -784,7 +802,7 @@ export default function TicketsTecnicoPage() {
   };
 
   const obtenerColorPrioridad = (prioridad: string) => {
-    const isDark = ["dark", "blue", "purple", "green"].includes(temaActual);
+    const isDark = ["dark", "blue", "purple", "green", "cosmic", "sunset"].includes(temaActual);
     const colores: { [key: string]: string } = {
       critica: isDark
         ? "bg-red-500/20 text-red-300 border-red-400/50"
@@ -874,7 +892,7 @@ export default function TicketsTecnicoPage() {
   }, [ticketsFiltrados.length, tamanoPagina]);
 
   const ticketsPaginados = useMemo(() => {
-    if (vista === "tablero") return ticketsFiltrados; // todo en tablero
+    if (vista === "tablero" || vista === "timeline") return ticketsFiltrados;
     const inicio = (paginaActual - 1) * tamanoPagina;
     const fin = inicio + tamanoPagina;
     return ticketsFiltrados.slice(inicio, fin);
@@ -905,23 +923,22 @@ export default function TicketsTecnicoPage() {
     return base;
   }, [tickets]);
 
-  // Kanban columnas
   const columnasKanban: { id: Ticket["estado"]; titulo: string; descripcion: string }[] = [
-    { id: "abierto", titulo: "Abiertos", descripcion: "Recién creados / pendientes de inicio" },
+    { id: "abierto", titulo: "🔴 Abiertos", descripcion: "Pendientes de inicio" },
     {
       id: "en_progreso",
-      titulo: "En progreso",
-      descripcion: "Tickets que estás trabajando actualmente",
+      titulo: "🔵 En Progreso",
+      descripcion: "En desarrollo activo",
     },
     {
       id: "resuelto",
-      titulo: "Resueltos",
-      descripcion: "Completados a la espera de confirmación/cierre",
+      titulo: "✅ Resueltos",
+      descripcion: "Completados exitosamente",
     },
     {
       id: "cancelado",
-      titulo: "Cancelados",
-      descripcion: "Tickets cerrados por cancelación o error",
+      titulo: "⚫ Cancelados",
+      descripcion: "Cerrados sin resolver",
     },
   ];
 
@@ -932,24 +949,45 @@ export default function TicketsTecnicoPage() {
   if (loading) {
     return (
       <div
-        className={`min-h-screen flex items-center justify-center bg-gradient-to-br ${tema.colores.fondo}`}
+        className={`min-h-screen flex items-center justify-center bg-gradient-to-br ${tema.colores.fondo} relative overflow-hidden`}
       >
-        <div className="text-center">
-          <div className="relative mb-8">
-            <div className="w-32 h-32 border-4 border-indigo-400 border-t-transparent rounded-full animate-spin"></div>
+        {/* Partículas de fondo */}
+        <div className="absolute inset-0 overflow-hidden">
+          {[...Array(30)].map((_, i) => (
             <div
-              className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-20 h-20 bg-gradient-to-br ${tema.colores.gradiente} rounded-full flex items-center justify-center animate-pulse`}
+              key={i}
+              className={`absolute w-2 h-2 rounded-full ${tema.colores.particulas} opacity-20 animate-float`}
+              style={{
+                left: `${Math.random() * 100}%`,
+                top: `${Math.random() * 100}%`,
+                animationDelay: `${Math.random() * 5}s`,
+                animationDuration: `${5 + Math.random() * 10}s`,
+              }}
+            />
+          ))}
+        </div>
+
+        <div className="text-center relative z-10">
+          <div className="relative mb-8">
+            <div className={`w-40 h-40 border-4 border-transparent bg-gradient-to-r ${tema.colores.gradiente} rounded-full animate-spin`} style={{
+              WebkitMaskImage: 'linear-gradient(transparent 40%, black 60%)',
+              maskImage: 'linear-gradient(transparent 40%, black 60%)',
+            }}></div>
+            <div
+              className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-28 h-28 bg-gradient-to-br ${tema.colores.gradiente} rounded-full flex items-center justify-center animate-pulse ${tema.colores.glow}`}
             >
-              <ClipboardList className="w-10 h-10 text-white" />
+              <ClipboardList className="w-14 h-14 text-white animate-bounce" />
             </div>
           </div>
-          <h2 className={`text-4xl font-black mb-4 ${tema.colores.texto}`}>
-            Cargando Módulo de Tickets
+          <h2 className={`text-5xl font-black mb-4 ${tema.colores.texto} animate-pulse bg-gradient-to-r ${tema.colores.gradiente} bg-clip-text text-transparent`}>
+            Cargando Módulo Premium
           </h2>
           <p
-            className={`text-lg font-semibold ${tema.colores.textoSecundario} animate-pulse`}
+            className={`text-xl font-bold ${tema.colores.textoSecundario} animate-pulse flex items-center justify-center gap-3`}
           >
-            Preparando tus tickets asignados...
+            <Sparkles className="w-6 h-6 animate-spin" />
+            Preparando experiencia extraordinaria...
+            <Sparkles className="w-6 h-6 animate-spin" />
           </p>
         </div>
       </div>
@@ -962,7 +1000,7 @@ export default function TicketsTecnicoPage() {
         className={`min-h-screen flex items-center justify-center bg-gradient-to-br ${tema.colores.fondo}`}
       >
         <div
-          className={`text-center max-w-md mx-auto p-8 rounded-3xl ${tema.colores.card} ${tema.colores.sombra} ${tema.colores.borde} border`}
+          className={`text-center max-w-md mx-auto p-8 rounded-3xl ${tema.colores.card} ${tema.colores.sombra} ${tema.colores.borde} border ${tema.colores.glow}`}
         >
           <div
             className={`w-24 h-24 bg-gradient-to-br ${tema.colores.gradiente} rounded-3xl flex items-center justify-center mx-auto mb-6 animate-pulse`}
@@ -988,15 +1026,31 @@ export default function TicketsTecnicoPage() {
   }
 
   // ========================================
-  // RENDER
+  // RENDER PRINCIPAL
   // ========================================
 
   return (
     <div
-      className={`min-h-screen transition-all duration-500 bg-gradient-to-br ${tema.colores.fondo}`}
+      className={`min-h-screen transition-all duration-700 bg-gradient-to-br ${tema.colores.fondo} relative overflow-hidden`}
     >
+      {/* Partículas de fondo animadas */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        {[...Array(50)].map((_, i) => (
+          <div
+            key={i}
+            className={`absolute w-1 h-1 rounded-full ${tema.colores.particulas} opacity-30 animate-float`}
+            style={{
+              left: `${Math.random() * 100}%`,
+              top: `${Math.random() * 100}%`,
+              animationDelay: `${Math.random() * 10}s`,
+              animationDuration: `${10 + Math.random() * 20}s`,
+            }}
+          />
+        ))}
+      </div>
+
       {/* SIDEBAR */}
-           <SidebarTecnico
+      <SidebarTecnico
         usuario={usuario}
         tema={tema}
         sidebarAbierto={sidebarAbierto}
@@ -1004,29 +1058,28 @@ export default function TicketsTecnicoPage() {
         estadisticas={estadisticas}
       />
 
-
       {/* HEADER */}
       <header
         className={`fixed top-0 right-0 z-40 transition-all duration-300 ${
           sidebarAbierto ? "left-72" : "left-20"
-        } ${tema.colores.header} ${tema.colores.borde} border-b ${tema.colores.sombra}`}
+        } ${tema.colores.header} ${tema.colores.borde} border-b ${tema.colores.sombra} ${tema.colores.glow}`}
       >
         <div className="flex items-center justify-between px-8 py-4">
-          {/* Búsqueda */}
-          <div className="flex-1 max-w-2xl">
-            <div className="relative">
+          {/* Búsqueda mejorada */}
+          <div className="flex-1 max-w-2xl relative">
+            <div className="relative group">
               <Search
-                className={`absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 ${tema.colores.textoSecundario}`}
+                className={`absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 ${tema.colores.textoSecundario} group-hover:scale-110 transition-transform`}
               />
               <input
                 type="text"
-                placeholder="Buscar ticket por número, título, centro o solicitante..."
+                placeholder="🔍 Buscar ticket por número, título, centro o solicitante..."
                 value={busqueda}
                 onChange={(e) => {
                   setBusqueda(e.target.value);
                   setPaginaActual(1);
                 }}
-                className={`w-full pl-12 pr-4 py-3 rounded-xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto} placeholder:${tema.colores.textoSecundario} focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all duration-300`}
+                className={`w-full pl-12 pr-4 py-3 rounded-xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto} placeholder:${tema.colores.textoSecundario} focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-offset-transparent focus:${tema.colores.glow} transition-all duration-300`}
               />
               {busqueda && (
                 <button
@@ -1034,7 +1087,7 @@ export default function TicketsTecnicoPage() {
                     setBusqueda("");
                     setPaginaActual(1);
                   }}
-                  className={`absolute right-4 top-1/2 transform -translate-y-1/2 p-1 rounded-lg ${tema.colores.hover}`}
+                  className={`absolute right-4 top-1/2 transform -translate-y-1/2 p-1 rounded-lg ${tema.colores.hover} transition-all duration-300 hover:scale-110`}
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -1044,27 +1097,28 @@ export default function TicketsTecnicoPage() {
 
           {/* Acciones header */}
           <div className="flex items-center gap-3 ml-6">
-            {/* Temas */}
+            {/* Selector de temas premium */}
             <div className="relative group">
               <button
-                className={`p-3 rounded-xl font-semibold transition-all duration-300 ${tema.colores.secundario} ${tema.colores.texto}`}
+                className={`p-3 rounded-xl font-semibold transition-all duration-300 ${tema.colores.secundario} ${tema.colores.texto} hover:scale-110 ${tema.colores.glow}`}
               >
-                <Sparkles className="w-5 h-5" />
+                <Sparkles className="w-5 h-5 animate-pulse" />
               </button>
 
               <div
-                className={`absolute right-0 mt-2 w-64 rounded-2xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 p-4 space-y-2`}
+                className={`absolute right-0 mt-2 w-80 rounded-2xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} ${tema.colores.glow} opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 p-4 space-y-2`}
               >
-                <p className={`text-sm font-bold mb-3 ${tema.colores.texto}`}>
-                  Seleccionar Tema
+                <p className={`text-sm font-black mb-3 ${tema.colores.texto} flex items-center gap-2`}>
+                  <Sparkles className="w-4 h-4" />
+                  Temas Premium Disponibles
                 </p>
                 {Object.entries(TEMAS).map(([key, t]) => (
                   <button
                     key={key}
                     onClick={() => cambiarTema(key as TemaColor)}
-                    className={`w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl font-semibold transition-all duration-300 ${
+                    className={`w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl font-semibold transition-all duration-300 hover:scale-105 ${
                       temaActual === key
-                        ? `bg-gradient-to-r ${t.colores.gradiente} text-white`
+                        ? `bg-gradient-to-r ${t.colores.gradiente} text-white ${t.colores.glow}`
                         : `${tema.colores.hover} ${tema.colores.texto}`
                     }`}
                   >
@@ -1072,21 +1126,21 @@ export default function TicketsTecnicoPage() {
                       <t.icono className="w-5 h-5" />
                       <span>{t.nombre}</span>
                     </div>
-                    {temaActual === key && <Check className="w-5 h-5" />}
+                    {temaActual === key && <Check className="w-5 h-5 animate-pulse" />}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Alertas */}
+            {/* Alertas con animación */}
             <div className="relative">
               <button
                 onClick={() => setNotificacionesAbiertas(!notificacionesAbiertas)}
-                className={`relative p-3 rounded-xl font-semibold transition-all duration-300 ${tema.colores.secundario} ${tema.colores.texto}`}
+                className={`relative p-3 rounded-xl font-semibold transition-all duration-300 ${tema.colores.secundario} ${tema.colores.texto} hover:scale-110`}
               >
                 <AlertCircle className="w-5 h-5" />
                 {alertas.filter((a) => !a.leida).length > 0 && (
-                  <span className="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center animate-pulse">
+                  <span className="absolute -top-1 -right-1 w-6 h-6 bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs font-bold rounded-full flex items-center justify-center animate-bounce shadow-lg shadow-red-500/50">
                     {alertas.filter((a) => !a.leida).length > 9
                       ? "9+"
                       : alertas.filter((a) => !a.leida).length}
@@ -1096,14 +1150,15 @@ export default function TicketsTecnicoPage() {
 
               {notificacionesAbiertas && (
                 <div
-                  className={`absolute right-0 mt-2 w-96 rounded-2xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} max-h-96 overflow-y-auto`}
+                  className={`absolute right-0 mt-2 w-96 rounded-2xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} ${tema.colores.glow} max-h-96 overflow-y-auto custom-scrollbar`}
                 >
                   <div
-                    className={`p-4 border-b ${tema.colores.borde} sticky top-0 ${tema.colores.card}`}
+                    className={`p-4 border-b ${tema.colores.borde} sticky top-0 ${tema.colores.card} backdrop-blur-xl`}
                   >
                     <h3
-                      className={`text-lg font-black ${tema.colores.texto}`}
+                      className={`text-lg font-black ${tema.colores.texto} flex items-center gap-2`}
                     >
+                      <Bell className="w-5 h-5 animate-swing" />
                       Alertas Activas
                     </h3>
                   </div>
@@ -1111,7 +1166,7 @@ export default function TicketsTecnicoPage() {
                   {alertas.length === 0 ? (
                     <div className="p-8 text-center">
                       <BellOff
-                        className={`w-12 h-12 mx-auto mb-3 ${tema.colores.textoSecundario}`}
+                        className={`w-12 h-12 mx-auto mb-3 ${tema.colores.textoSecundario} opacity-50`}
                       />
                       <p
                         className={`text-sm ${tema.colores.textoSecundario}`}
@@ -1121,18 +1176,21 @@ export default function TicketsTecnicoPage() {
                     </div>
                   ) : (
                     <div className={`divide-y ${tema.colores.borde}`}>
-                      {alertas.slice(0, 5).map((alerta) => (
+                      {alertas.slice(0, 5).map((alerta, idx) => (
                         <div
                           key={alerta.id_alerta}
-                          className={`p-4 ${tema.colores.hover} transition-colors cursor-pointer ${
-                            !alerta.leida ? "bg-indigo-500/5" : ""
+                          className={`p-4 ${tema.colores.hover} transition-all duration-300 cursor-pointer hover:scale-[1.02] ${
+                            !alerta.leida ? `bg-gradient-to-r ${tema.colores.gradiente} bg-opacity-5` : ""
                           }`}
+                          style={{
+                            animationDelay: `${idx * 50}ms`,
+                          }}
                         >
                           <div className="flex items-start gap-3">
                             <div
                               className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${obtenerColorPrioridad(
                                 alerta.prioridad
-                              )}`}
+                              )} shadow-lg`}
                             >
                               <AlertCircle className="w-5 h-5" />
                             </div>
@@ -1164,13 +1222,13 @@ export default function TicketsTecnicoPage() {
               )}
             </div>
 
-            {/* Disponibilidad */}
+            {/* Disponibilidad con efectos */}
             <div className="flex items-center gap-2">
               <button
                 onClick={() => cambiarDisponibilidad("disponible")}
-                className={`px-4 py-2 rounded-xl font-semibold text-sm transition-all duration-300 ${
+                className={`px-4 py-2 rounded-xl font-semibold text-sm transition-all duration-300 hover:scale-105 ${
                   disponibilidad === "disponible"
-                    ? "bg-green-600 text-white"
+                    ? "bg-gradient-to-r from-green-600 to-emerald-600 text-white shadow-lg shadow-green-500/50"
                     : `${tema.colores.secundario} ${tema.colores.texto}`
                 }`}
               >
@@ -1178,9 +1236,9 @@ export default function TicketsTecnicoPage() {
               </button>
               <button
                 onClick={() => cambiarDisponibilidad("ocupado")}
-                className={`px-4 py-2 rounded-xl font-semibold text-sm transition-all duration-300 ${
+                className={`px-4 py-2 rounded-xl font-semibold text-sm transition-all duration-300 hover:scale-105 ${
                   disponibilidad === "ocupado"
-                    ? "bg-yellow-600 text-white"
+                    ? "bg-gradient-to-r from-yellow-600 to-orange-600 text-white shadow-lg shadow-yellow-500/50"
                     : `${tema.colores.secundario} ${tema.colores.texto}`
                 }`}
               >
@@ -1188,9 +1246,9 @@ export default function TicketsTecnicoPage() {
               </button>
               <button
                 onClick={() => cambiarDisponibilidad("fuera_servicio")}
-                className={`px-4 py-2 rounded-xl font-semibold text-sm transition-all duration-300 ${
+                className={`px-4 py-2 rounded-xl font-semibold text-sm transition-all duration-300 hover:scale-105 ${
                   disponibilidad === "fuera_servicio"
-                    ? "bg-red-600 text-white"
+                    ? "bg-gradient-to-r from-red-600 to-rose-600 text-white shadow-lg shadow-red-500/50"
                     : `${tema.colores.secundario} ${tema.colores.texto}`
                 }`}
               >
@@ -1198,22 +1256,22 @@ export default function TicketsTecnicoPage() {
               </button>
             </div>
 
-            {/* Perfil */}
+            {/* Perfil mejorado */}
             <div className="relative">
               <button
                 onClick={() => setPerfilAbierto(!perfilAbierto)}
-                className={`flex items-center gap-3 px-4 py-2 rounded-xl transition-all duration-300 ${tema.colores.hover}`}
+                className={`flex items-center gap-3 px-4 py-2 rounded-xl transition-all duration-300 ${tema.colores.hover} hover:scale-105`}
               >
                 <div className="text-right hidden md:block">
                   <p className={`text-sm font-bold ${tema.colores.texto}`}>
                     {usuario.nombre} {usuario.apellido_paterno}
                   </p>
                   <p className={`text-xs ${tema.colores.textoSecundario}`}>
-                    Técnico
+                    Técnico Premium
                   </p>
                 </div>
                 <div
-                  className={`w-10 h-10 rounded-xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center text-white font-bold shadow-lg`}
+                  className={`w-10 h-10 rounded-xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center text-white font-bold shadow-lg ${tema.colores.glow} ring-2 ring-white/20`}
                 >
                   {usuario.foto_perfil_url ? (
                     <Image
@@ -1228,7 +1286,7 @@ export default function TicketsTecnicoPage() {
                   )}
                 </div>
                 <ChevronDown
-                  className={`w-4 h-4 ${tema.colores.texto} transition-transform ${
+                  className={`w-4 h-4 ${tema.colores.texto} transition-transform duration-300 ${
                     perfilAbierto ? "rotate-180" : ""
                   }`}
                 />
@@ -1236,11 +1294,11 @@ export default function TicketsTecnicoPage() {
 
               {perfilAbierto && (
                 <div
-                  className={`absolute right-0 mt-2 w-80 rounded-2xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} p-4`}
+                  className={`absolute right-0 mt-2 w-80 rounded-2xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} ${tema.colores.glow} p-4`}
                 >
                   <div className="flex items-center gap-4 mb-4 pb-4 border-b border-gray-700/50">
                     <div
-                      className={`w-16 h-16 rounded-xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center text-white font-bold text-xl shadow-lg`}
+                      className={`w-16 h-16 rounded-xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center text-white font-bold text-xl shadow-lg ${tema.colores.glow} ring-2 ring-white/20`}
                     >
                       {usuario.foto_perfil_url ? (
                         <Image
@@ -1276,28 +1334,28 @@ export default function TicketsTecnicoPage() {
                   <div className="space-y-1">
                     <Link
                       href="/tecnico/perfil"
-                      className={`flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all duration-300 ${tema.colores.hover} ${tema.colores.texto}`}
+                      className={`flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all duration-300 ${tema.colores.hover} ${tema.colores.texto} hover:scale-105`}
                     >
                       <User className="w-5 h-5" />
                       <span>Mi Perfil</span>
                     </Link>
                     <Link
                       href="/tecnico/configuracion"
-                      className={`flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all duration-300 ${tema.colores.hover} ${tema.colores.texto}`}
+                      className={`flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all duration-300 ${tema.colores.hover} ${tema.colores.texto} hover:scale-105`}
                     >
                       <Settings className="w-5 h-5" />
                       <span>Configuración</span>
                     </Link>
                     <Link
                       href="/tecnico/ayuda"
-                      className={`flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all duration-300 ${tema.colores.hover} ${tema.colores.texto}`}
+                      className={`flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all duration-300 ${tema.colores.hover} ${tema.colores.texto} hover:scale-105`}
                     >
                       <Lightbulb className="w-5 h-5" />
                       <span>Ayuda</span>
                     </Link>
                     <button
                       onClick={cerrarSesion}
-                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all duration-300 ${tema.colores.hover} text-red-500 hover:text-red-400`}
+                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all duration-300 ${tema.colores.hover} text-red-500 hover:text-red-400 hover:scale-105`}
                     >
                       <LogOut className="w-5 h-5" />
                       <span>Cerrar Sesión</span>
@@ -1310,757 +1368,466 @@ export default function TicketsTecnicoPage() {
         </div>
       </header>
 
-      {/* MAIN */}
+      {/* MAIN CONTENT */}
       <main
         className={`transition-all duration-300 ${
           sidebarAbierto ? "ml-72" : "ml-20"
-        } pt-24 p-8`}
+        } pt-24 p-8 relative z-10`}
       >
-        {/* Encabezado de página */}
-        <div className="mb-8 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-          <div>
-            <h2
-              className={`text-4xl lg:text-5xl font-black mb-2 ${tema.colores.texto} flex items-center gap-3`}
-            >
-              {obtenerSaludo()}, {usuario.nombre}
-              <span className="animate-wave inline-block">👋</span>
-            </h2>
-            <p
-              className={`text-lg font-semibold ${tema.colores.textoSecundario}`}
-            >
-              Gestión avanzada de tus tickets técnicos.
-            </p>
-            <p
-              className={`text-sm font-semibold mt-2 ${tema.colores.textoSecundario} flex items-center gap-2`}
-            >
-              <MapPin className="w-4 h-4" />
-              {(usuario?.tecnico?.centro?.nombre ?? "Centro no definido")} •{" "}
-              {(usuario?.tecnico?.area_tecnica ?? "Área técnica no definida")}
-            </p>
-          </div>
+        {/* Hero Section Premium */}
+        <div className="mb-8">
+          <div className={`rounded-3xl p-8 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} ${tema.colores.glow} relative overflow-hidden`}>
+            {/* Efectos de fondo */}
+            <div className="absolute inset-0 opacity-10">
+              <div className={`absolute top-0 right-0 w-96 h-96 bg-gradient-to-br ${tema.colores.gradiente} rounded-full blur-3xl animate-pulse`}></div>
+              <div className={`absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-tr ${tema.colores.gradiente} rounded-full blur-3xl animate-pulse`} style={{ animationDelay: '1s' }}></div>
+            </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              onClick={() => cargarDatosTickets()}
-              className={`flex items-center gap-2 px-5 py-3 ${tema.colores.secundario} rounded-xl font-semibold text-sm ${tema.colores.texto} transition-all duration-300 hover:scale-105`}
-            >
-              <RefreshCw
-                className={`w-4 h-4 ${loadingData ? "animate-spin" : ""}`}
-              />
-              Actualizar
-            </button>
-            <button
-              onClick={() => setVista(vista === "lista" ? "tablero" : "lista")}
-              className={`flex items-center gap-2 px-5 py-3 ${tema.colores.secundario} rounded-xl font-semibold text-sm ${tema.colores.texto} transition-all duration-300 hover:scale-105`}
-            >
-              {vista === "lista" ? (
-                <>
-                  <Squares2X2Icon />
-                  Vista tablero
-                </>
-              ) : (
-                <>
-                  <ListIcon />
-                  Vista lista
-                </>
-              )}
-            </button>
-            <button
-              onClick={() => setModalNuevoAbierto(true)}
-              className={`flex items-center gap-2 px-6 py-3 ${tema.colores.primario} text-white rounded-xl font-bold text-sm transition-all duration-300 hover:scale-105 ${tema.colores.sombra}`}
-            >
-              <Plus className="w-4 h-4" />
-              Nuevo Ticket
-            </button>
+            <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+              <div className="flex-1">
+                <div className="flex items-center gap-4 mb-4">
+  <div
+    className={`w-20 h-20 rounded-2xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center shadow-2xl ${tema.colores.glow} animate-float`}
+  >
+    <ClipboardList className="w-10 h-10 text-white" />
+  </div>
+  <div>
+    {/* ANTES: text-5xl lg:text-6xl */}
+    <h1
+      className={`text-3xl lg:text-4xl font-black ${tema.colores.texto} flex items-center gap-3 mb-1`}
+    >
+      {obtenerSaludo()}, {usuario.nombre}
+      <span className="animate-wave inline-block text-2xl">👋</span>
+    </h1>
+    {/* ANTES: text-xl */}
+    <p
+      className={`text-base lg:text-lg font-bold ${tema.colores.textoSecundario} flex items-center gap-2`}
+    >
+      <Sparkles className="w-5 h-5 animate-spin" />
+      Sistema de Gestión Técnica Premium
+      <Sparkles className="w-5 h-5 animate-spin" />
+    </p>
+  </div>
+</div>
+
+                
+                <div className={`flex flex-wrap items-center gap-3 text-sm font-semibold ${tema.colores.textoSecundario}`}>
+                  <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 backdrop-blur-sm">
+                    <MapPin className="w-4 h-4" />
+                    {usuario?.tecnico?.centro?.nombre ?? "Centro no definido"}
+                  </div>
+                  <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 backdrop-blur-sm">
+                    <Building2 className="w-4 h-4" />
+                    {usuario?.tecnico?.area_tecnica ?? "Área técnica no definida"}
+                  </div>
+                  <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-white/5 backdrop-blur-sm">
+                    <Clock className="w-4 h-4" />
+                    {new Date().toLocaleTimeString('es-CL', { hour: '2-digit', minute: '2-digit' })}
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-3">
+                <button
+                  onClick={() => cargarDatosTickets()}
+                  className={`flex items-center gap-2 px-6 py-3 ${tema.colores.secundario} rounded-xl font-bold text-sm ${tema.colores.texto} transition-all duration-300 hover:scale-105 shadow-lg`}
+                >
+                  <RefreshCw className={`w-5 h-5 ${loadingData ? "animate-spin" : ""}`} />
+                  Actualizar
+                </button>
+                
+                <div className="flex items-center gap-2 p-1 rounded-xl bg-white/5 backdrop-blur-sm">
+                  <button
+                    onClick={() => setVista("lista")}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-sm transition-all duration-300 ${
+                      vista === "lista"
+                        ? `bg-gradient-to-r ${tema.colores.gradiente} text-white shadow-lg ${tema.colores.glow}`
+                        : `${tema.colores.texto} hover:bg-white/10`
+                    }`}
+                  >
+                    <List className="w-4 h-4" />
+                    Lista
+                  </button>
+                  <button
+                    onClick={() => setVista("tablero")}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-sm transition-all duration-300 ${
+                      vista === "tablero"
+                        ? `bg-gradient-to-r ${tema.colores.gradiente} text-white shadow-lg ${tema.colores.glow}`
+                        : `${tema.colores.texto} hover:bg-white/10`
+                    }`}
+                  >
+                    <Grid2X2 className="w-4 h-4" />
+                    Tablero
+                  </button>
+                  <button
+                    onClick={() => setVista("timeline")}
+                    className={`flex items-center gap-2 px-4 py-2 rounded-lg font-bold text-sm transition-all duration-300 ${
+                      vista === "timeline"
+                        ? `bg-gradient-to-r ${tema.colores.gradiente} text-white shadow-lg ${tema.colores.glow}`
+                        : `${tema.colores.texto} hover:bg-white/10`
+                    }`}
+                  >
+                    <CalendarClock className="w-4 h-4" />
+                    Timeline
+                  </button>
+                </div>
+
+                <button
+                  onClick={() => setModalNuevoAbierto(true)}
+                  className={`flex items-center gap-2 px-6 py-3 ${tema.colores.primario} text-white rounded-xl font-bold text-sm transition-all duration-300 hover:scale-105 shadow-2xl ${tema.colores.glow}`}
+                >
+                  <Plus className="w-5 h-5" />
+                  Nuevo Ticket
+                </button>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Resumen rápido */}
-        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-6 mb-8">
-          <ResumenCard
+        {/* Dashboard de Estadísticas Premium */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 mb-8">
+          <ResumenCardPremium
             tema={tema}
             icono={ClipboardList}
             titulo="Total Tickets"
             valor={resumenTickets.total}
-            chip="+ módulo completo"
-            color="from-indigo-500 to-purple-500"
+            chip="Sistema completo"
+            color="from-indigo-500 via-purple-500 to-pink-500"
+            tendencia="+12%"
+            tendenciaPositiva={true}
           />
-          <ResumenCard
+          <ResumenCardPremium
             tema={tema}
             icono={AlertCircle}
             titulo="Abiertos"
             valor={resumenTickets.abiertos}
-            chip="Por iniciar"
-            color="from-red-500 to-rose-500"
+            chip="Requieren atención"
+            color="from-red-500 via-rose-500 to-pink-500"
+            tendencia="-5%"
+            tendenciaPositiva={true}
           />
-          <ResumenCard
+          <ResumenCardPremium
             tema={tema}
             icono={Clock}
             titulo="En Progreso"
             valor={resumenTickets.en_progreso}
-            chip="En curso"
-            color="from-blue-500 to-cyan-500"
+            chip="En desarrollo"
+            color="from-blue-500 via-cyan-500 to-teal-500"
+            tendencia="+8%"
+            tendenciaPositiva={true}
           />
-          <ResumenCard
+          <ResumenCardPremium
             tema={tema}
             icono={CheckCircle2}
             titulo="Resueltos"
             valor={resumenTickets.resueltos}
-            chip="Completados"
-            color="from-emerald-500 to-teal-500"
+            chip="Completados hoy"
+            color="from-emerald-500 via-teal-500 to-green-500"
+            tendencia="+15%"
+            tendenciaPositiva={true}
           />
-          <ResumenCard
+          <ResumenCardPremium
             tema={tema}
             icono={Flame}
             titulo="Críticos"
             valor={resumenTickets.criticos}
             chip="Alta prioridad"
-            color="from-orange-500 to-red-500"
+            color="from-orange-500 via-red-500 to-rose-500"
+            tendencia="-3%"
+            tendenciaPositiva={true}
           />
-          <ResumenCard
+          <ResumenCardPremium
             tema={tema}
             icono={CalendarClock}
             titulo="Hoy"
             valor={resumenTickets.hoy}
             chip="Creados hoy"
-            color="from-violet-500 to-purple-500"
+            color="from-violet-500 via-purple-500 to-fuchsia-500"
+            tendencia="+20%"
+            tendenciaPositiva={true}
           />
         </div>
 
-        {/* Filtros */}
-        <div
-          className={`rounded-2xl p-5 mb-6 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra}`}
-        >
-          <div className="flex flex-wrap items-center justify-between gap-4">
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="flex items-center gap-2">
-                <Filter className={`w-4 h-4 ${tema.colores.acento}`} />
-                <span
-                  className={`text-sm font-semibold ${tema.colores.textoSecundario}`}
-                >
-                  Filtros
-                </span>
+        {/* Panel de Filtros Premium */}
+        <div className={`rounded-2xl p-6 mb-8 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} ${tema.colores.glow} relative overflow-hidden`}>
+          {/* Fondo decorativo */}
+          <div className="absolute inset-0 opacity-5">
+            <div className={`absolute top-0 right-0 w-64 h-64 bg-gradient-to-br ${tema.colores.gradiente} rounded-full blur-3xl`}></div>
+          </div>
+
+          <div className="relative z-10">
+            <div className="flex items-center gap-3 mb-6">
+              <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center shadow-lg ${tema.colores.glow}`}>
+                <Filter className="w-6 h-6 text-white" />
               </div>
-
-              <select
-                value={filtroEstado}
-                onChange={(e) => {
-                  setFiltroEstado(e.target.value);
-                  setPaginaActual(1);
-                }}
-                className={`px-3 py-2 rounded-xl text-xs md:text-sm ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto}`}
-              >
-                <option value="todos">Todos los estados</option>
-                <option value="abierto">Abiertos</option>
-                <option value="en_progreso">En progreso</option>
-                <option value="resuelto">Resueltos</option>
-                <option value="cancelado">Cancelados</option>
-              </select>
-
-              <select
-                value={filtroPrioridad}
-                onChange={(e) => {
-                  setFiltroPrioridad(e.target.value);
-                  setPaginaActual(1);
-                }}
-                className={`px-3 py-2 rounded-xl text-xs md:text-sm ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto}`}
-              >
-                <option value="todas">Todas las prioridades</option>
-                <option value="critica">Crítica</option>
-                <option value="alta">Alta</option>
-                <option value="media">Media</option>
-                <option value="baja">Baja</option>
-              </select>
-
-              <select
-                value={filtroTipo}
-                onChange={(e) => {
-                  setFiltroTipo(e.target.value);
-                  setPaginaActual(1);
-                }}
-                className={`px-3 py-2 rounded-xl text-xs md:text-sm ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto}`}
-              >
-                <option value="todos">Todos los tipos</option>
-                {tiposDisponibles.map((tipo) => (
-                  <option key={tipo} value={tipo}>
-                    {tipo.toUpperCase()}
-                  </option>
-                ))}
-              </select>
-
-              <select
-                value={filtroCentro}
-                onChange={(e) => {
-                  setFiltroCentro(e.target.value);
-                  setPaginaActual(1);
-                }}
-                className={`px-3 py-2 rounded-xl text-xs md:text-sm ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto}`}
-              >
-                <option value="todos">Todos los centros</option>
-                {centrosDisponibles.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
+              <div>
+                <h3 className={`text-2xl font-black ${tema.colores.texto}`}>
+                  Filtros Avanzados
+                </h3>
+                <p className={`text-sm font-semibold ${tema.colores.textoSecundario}`}>
+                  Personaliza tu vista de tickets
+                </p>
+              </div>
             </div>
 
-            <div className="flex items-center gap-3 text-xs md:text-sm">
-              <span className={tema.colores.textoSecundario}>
-                {ticketsFiltrados.length} tickets filtrados
-              </span>
-              <button
-                onClick={() => {
-                  setFiltroEstado("todos");
-                  setFiltroPrioridad("todas");
-                  setFiltroTipo("todos");
-                  setFiltroCentro("todos");
-                  setPaginaActual(1);
-                }}
-                className={`px-3 py-2 rounded-xl font-semibold ${tema.colores.hover} ${tema.colores.texto}`}
-              >
-                Limpiar filtros
-              </button>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+              <div className="space-y-2">
+                <label className={`text-xs font-bold uppercase tracking-wider ${tema.colores.textoSecundario}`}>
+                  Estado
+                </label>
+                <select
+                  value={filtroEstado}
+                  onChange={(e) => {
+                    setFiltroEstado(e.target.value);
+                    setPaginaActual(1);
+                  }}
+                  className={`w-full px-4 py-3 rounded-xl text-sm font-semibold ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto} focus:outline-none focus:ring-2 focus:${tema.colores.glow} transition-all duration-300`}
+                >
+                  <option value="todos">📋 Todos los estados</option>
+                  <option value="abierto">🔴 Abiertos</option>
+                  <option value="en_progreso">🔵 En progreso</option>
+                  <option value="resuelto">✅ Resueltos</option>
+                  <option value="cancelado">⚫ Cancelados</option>
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <label className={`text-xs font-bold uppercase tracking-wider ${tema.colores.textoSecundario}`}>
+                  Prioridad
+                </label>
+                <select
+                  value={filtroPrioridad}
+                  onChange={(e) => {
+                    setFiltroPrioridad(e.target.value);
+                    setPaginaActual(1);
+                  }}
+                  className={`w-full px-4 py-3 rounded-xl text-sm font-semibold ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto} focus:outline-none focus:ring-2 focus:${tema.colores.glow} transition-all duration-300`}
+                >
+                  <option value="todas">⚡ Todas las prioridades</option>
+                  <option value="critica">🔥 Crítica</option>
+                  <option value="alta">🟠 Alta</option>
+                  <option value="media">🟡 Media</option>
+                  <option value="baja">🟢 Baja</option>
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <label className={`text-xs font-bold uppercase tracking-wider ${tema.colores.textoSecundario}`}>
+                  Tipo
+                </label>
+                <select
+                  value={filtroTipo}
+                  onChange={(e) => {
+                    setFiltroTipo(e.target.value);
+                    setPaginaActual(1);
+                  }}
+                  className={`w-full px-4 py-3 rounded-xl text-sm font-semibold ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto} focus:outline-none focus:ring-2 focus:${tema.colores.glow} transition-all duration-300`}
+                >
+                  <option value="todos">🎯 Todos los tipos</option>
+                  {tiposDisponibles.map((tipo) => (
+                    <option key={tipo} value={tipo}>
+                      {tipo === 'soporte' && '🎧'} 
+                      {tipo === 'mantenimiento' && '🔧'} 
+                      {tipo === 'ingenieria' && '⚙️'} 
+                      {tipo === 'biomedico' && '🔬'} 
+                      {tipo === 'infraestructura' && '🏗️'} 
+                      {tipo.toUpperCase()}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <label className={`text-xs font-bold uppercase tracking-wider ${tema.colores.textoSecundario}`}>
+                  Centro
+                </label>
+                <select
+                  value={filtroCentro}
+                  onChange={(e) => {
+                    setFiltroCentro(e.target.value);
+                    setPaginaActual(1);
+                  }}
+                  className={`w-full px-4 py-3 rounded-xl text-sm font-semibold ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto} focus:outline-none focus:ring-2 focus:${tema.colores.glow} transition-all duration-300`}
+                >
+                  <option value="todos">🏢 Todos los centros</option>
+                  {centrosDisponibles.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="flex items-end">
+                <button
+                  onClick={() => {
+                    setFiltroEstado("todos");
+                    setFiltroPrioridad("todas");
+                    setFiltroTipo("todos");
+                    setFiltroCentro("todos");
+                    setPaginaActual(1);
+                  }}
+                  className={`w-full px-4 py-3 rounded-xl font-bold text-sm ${tema.colores.secundario} ${tema.colores.texto} transition-all duration-300 hover:scale-105 shadow-lg flex items-center justify-center gap-2`}
+                >
+                  <X className="w-4 h-4" />
+                  Limpiar Filtros
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-4 flex items-center justify-between">
+              <div className={`flex items-center gap-2 text-sm font-bold ${tema.colores.textoSecundario}`}>
+                <Target className="w-4 h-4" />
+                <span>
+                  Mostrando <span className={tema.colores.acento}>{ticketsFiltrados.length}</span> de <span className={tema.colores.acento}>{tickets.length}</span> tickets
+                </span>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <button className={`px-3 py-1 rounded-lg text-xs font-bold ${tema.colores.hover} ${tema.colores.texto} transition-all duration-300 hover:scale-105`}>
+                  <Download className="w-4 h-4 inline mr-1" />
+                  Exportar
+                </button>
+                <button className={`px-3 py-1 rounded-lg text-xs font-bold ${tema.colores.hover} ${tema.colores.texto} transition-all duration-300 hover:scale-105`}>
+                  <Printer className="w-4 h-4 inline mr-1" />
+                  Imprimir
+                </button>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Contenido principal: lista o tablero */}
+        {/* Contenido según vista seleccionada */}
         {loadingData ? (
-          <div className="flex items-center justify-center py-20">
-            <div className="text-center">
-              <Loader2 className="w-16 h-16 animate-spin text-indigo-500 mx-auto mb-4" />
-              <p
-                className={`text-lg font-semibold ${tema.colores.textoSecundario}`}
-              >
-                Cargando tickets técnicos...
+          <div className={`rounded-3xl p-16 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} ${tema.colores.glow}`}>
+            <div className="flex flex-col items-center justify-center">
+              <div className="relative mb-8">
+                <div className={`w-32 h-32 border-4 border-transparent bg-gradient-to-r ${tema.colores.gradiente} rounded-full animate-spin`} style={{
+                  WebkitMaskImage: 'linear-gradient(transparent 40%, black 60%)',
+                  maskImage: 'linear-gradient(transparent 40%, black 60%)',
+                }}></div>
+                <div className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-20 h-20 bg-gradient-to-br ${tema.colores.gradiente} rounded-full flex items-center justify-center animate-pulse ${tema.colores.glow}`}>
+                  <Loader2 className="w-10 h-10 text-white animate-spin" />
+                </div>
+              </div>
+              <h3 className={`text-2xl font-black mb-2 ${tema.colores.texto}`}>
+                Cargando Tickets
+              </h3>
+              <p className={`text-lg font-semibold ${tema.colores.textoSecundario} animate-pulse`}>
+                Preparando tu vista personalizada...
               </p>
             </div>
           </div>
         ) : tickets.length === 0 ? (
-          <div
-            className={`rounded-2xl p-12 text-center ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra}`}
-          >
-            <div
-              className={`w-24 h-24 bg-gradient-to-br ${tema.colores.gradiente} rounded-full flex items-center justify-center mx-auto mb-6 animate-pulse`}
-            >
-              <ClipboardList className="w-12 h-12 text-white" />
+          <div className={`rounded-3xl p-16 text-center ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} ${tema.colores.glow} relative overflow-hidden`}>
+            <div className="absolute inset-0 opacity-5">
+              <div className={`absolute top-0 right-0 w-96 h-96 bg-gradient-to-br ${tema.colores.gradiente} rounded-full blur-3xl animate-pulse`}></div>
+              <div className={`absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-tr ${tema.colores.gradiente} rounded-full blur-3xl animate-pulse`} style={{ animationDelay: '1s' }}></div>
             </div>
-            <h3 className={`text-2xl font-black mb-2 ${tema.colores.texto}`}>
-              Aún no tienes tickets asignados
-            </h3>
-            <p className={tema.colores.textoSecundario}>
-              Cuando se te asignen tickets, aparecerán aquí. También puedes crear uno
-              manualmente si tu rol lo permite.
-            </p>
-            <button
-              onClick={() => setModalNuevoAbierto(true)}
-              className={`mt-6 inline-flex items-center gap-2 px-6 py-3 ${tema.colores.primario} text-white rounded-xl font-bold text-sm transition-all duration-300 hover:scale-105 ${tema.colores.sombra}`}
-            >
-              <Plus className="w-4 h-4" />
-              Crear Ticket Manual
-            </button>
+
+            <div className="relative z-10">
+              <div className={`w-32 h-32 bg-gradient-to-br ${tema.colores.gradiente} rounded-full flex items-center justify-center mx-auto mb-6 animate-float shadow-2xl ${tema.colores.glow}`}>
+                <ClipboardList className="w-16 h-16 text-white" />
+              </div>
+              <h3 className={`text-4xl font-black mb-4 ${tema.colores.texto}`}>
+                Sin Tickets Asignados
+              </h3>
+              <p className={`text-xl font-semibold mb-8 ${tema.colores.textoSecundario}`}>
+                Cuando se te asignen tickets, aparecerán aquí en tiempo real
+              </p>
+              <button
+                onClick={() => setModalNuevoAbierto(true)}
+                className={`inline-flex items-center gap-3 px-8 py-4 ${tema.colores.primario} text-white rounded-2xl font-bold text-lg transition-all duration-300 hover:scale-105 shadow-2xl ${tema.colores.glow}`}
+              >
+                <Plus className="w-6 h-6" />
+                Crear Primer Ticket
+              </button>
+            </div>
           </div>
         ) : vista === "lista" ? (
-          <>
-            {/* Tabla de tickets */}
-            <div
-              className={`rounded-2xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} overflow-hidden mb-6`}
-            >
-              <div className="flex items-center justify-between px-6 py-4 border-b border-gray-700/40">
-                <div className="flex items-center gap-3">
-                  <div
-                    className={`w-10 h-10 rounded-xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center text-white`}
-                  >
-                    <Grid2x2 className="w-5 h-5" />
-
-                  </div>
-                  <div>
-                    <h3
-                      className={`text-xl font-black ${tema.colores.texto}`}
-                    >
-                      Mis Tickets (Vista Lista)
-                    </h3>
-                    <p
-                      className={`text-xs md:text-sm font-semibold ${tema.colores.textoSecundario}`}
-                    >
-                      Ordenados por fecha de creación, de más reciente a más antiguo.
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              <div className="overflow-x-auto custom-scrollbar">
-                <table className="min-w-full text-xs md:text-sm">
-                  <thead>
-                    <tr
-                      className={`border-b ${tema.colores.borde} ${tema.colores.textoSecundario}`}
-                    >
-                      <th className="px-4 py-3 text-left font-semibold">Ticket</th>
-                      <th className="px-4 py-3 text-left font-semibold">Estado</th>
-                      <th className="px-4 py-3 text-left font-semibold">Prioridad</th>
-                      <th className="px-4 py-3 text-left font-semibold">Tipo</th>
-                      <th className="px-4 py-3 text-left font-semibold">Centro</th>
-                      <th className="px-4 py-3 text-left font-semibold">Solicitante</th>
-                      <th className="px-4 py-3 text-left font-semibold">Creado</th>
-                      <th className="px-4 py-3 text-left font-semibold">Estimado</th>
-                      <th className="px-4 py-3 text-right font-semibold">
-                        Acciones
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {ticketsPaginados.map((ticket, index) => (
-                      <tr
-                        key={ticket.id_ticket}
-                        className={`border-b ${tema.colores.borde} hover:bg-black/5 cursor-pointer`}
-                        onClick={() => setTicketSeleccionado(ticket)}
-                        style={{ animationDelay: `${index * 40}ms` }}
-                      >
-                        <td className="px-4 py-3 align-top">
-                          <div className="flex items-start gap-3">
-                            <div
-                              className={`w-8 h-8 rounded-lg bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center text-white flex-shrink-0`}
-                            >
-                              {(() => {
-                                const Icono = obtenerIconoTipo(ticket.tipo);
-                                return <Icono className="w-4 h-4" />;
-                              })()}
-                            </div>
-                            <div>
-                              <p
-                                className={`font-bold ${tema.colores.texto} text-xs md:text-sm`}
-                              >
-                                {ticket.numero_ticket} — {ticket.titulo}
-                              </p>
-                              {ticket.equipo_afectado && (
-                                <p
-                                  className={`text-[11px] md:text-xs ${tema.colores.textoSecundario} flex items-center gap-1`}
-                                >
-                                  <Cpu className="w-3 h-3" />
-                                  {ticket.equipo_afectado.nombre} (
-                                  {ticket.equipo_afectado.tipo})
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 align-top">
-                          <span
-                            className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-bold border ${obtenerColorEstado(
-                              ticket.estado
-                            )}`}
-                          >
-                            <Activity className="w-3 h-3" />
-                            {ticket.estado}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 align-top">
-                          <span
-                            className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-[11px] font-bold border ${obtenerColorPrioridad(
-                              ticket.prioridad
-                            )}`}
-                          >
-                            {ticket.prioridad === "critica" && (
-                              <Flame className="w-3 h-3" />
-                            )}
-                            {ticket.prioridad !== "critica" && (
-                              <ZapIcon className="w-3 h-3" />
-                            )}
-                            {ticket.prioridad}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 align-top">
-                          <span
-                            className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-semibold ${tema.colores.hover}`}
-                          >
-                            {(() => {
-                              const Icono = obtenerIconoTipo(ticket.tipo);
-                              return <Icono className="w-3 h-3" />;
-                            })()}
-                            {ticket.tipo.toUpperCase()}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 align-top">
-                          <div className="text-[11px] md:text-xs">
-                            <p className={tema.colores.texto}>
-                              {ticket.centro?.nombre}
-                            </p>
-                            <p className={tema.colores.textoSecundario}>
-                              {ticket.centro?.ciudad}
-                            </p>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 align-top">
-                          <div className="text-[11px] md:text-xs">
-                            <p className={tema.colores.texto}>
-                              {ticket.solicitante.nombre_completo}
-                            </p>
-                            <p className={tema.colores.textoSecundario}>
-                              {ticket.solicitante.email}
-                            </p>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 align-top">
-                          <span
-                            className={`text-[11px] md:text-xs ${tema.colores.textoSecundario}`}
-                          >
-                            {formatearFecha(ticket.fecha_creacion)}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 align-top">
-                          <span
-                            className={`text-[11px] md:text-xs font-semibold ${tema.colores.texto}`}
-                          >
-                            {ticket.tiempo_estimado_minutos} min
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 align-top text-right">
-                          <div className="flex flex-wrap justify-end gap-1">
-                            {ticket.estado === "abierto" && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  actualizarEstadoTicket(
-                                    ticket.id_ticket,
-                                    "en_progreso"
-                                  );
-                                }}
-                                className="px-3 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[11px] font-bold transition-all duration-300"
-                              >
-                                Iniciar
-                              </button>
-                            )}
-                            {ticket.estado === "en_progreso" && (
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  actualizarEstadoTicket(
-                                    ticket.id_ticket,
-                                    "resuelto"
-                                  );
-                                }}
-                                className="px-3 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-[11px] font-bold transition-all duration-300"
-                              >
-                                Resolver
-                              </button>
-                            )}
-                            <a
-                              href={
-                                ticket.solicitante.telefono
-                                  ? `tel:${ticket.solicitante.telefono}`
-                                  : "#"
-                              }
-                              onClick={(e) => {
-                                if (!ticket.solicitante.telefono) e.preventDefault();
-                                e.stopPropagation();
-                              }}
-                              className={`px-3 py-1 rounded-lg text-[11px] font-semibold flex items-center gap-1 ${
-                                tema.colores.secundario
-                              } ${
-                                ticket.solicitante.telefono
-                                  ? ""
-                                  : "opacity-50 cursor-not-allowed"
-                              }`}
-                            >
-                              <Phone className="w-3 h-3" />
-                              Llamar
-                            </a>
-                            <Link
-                              href={`/tecnico/tickets/${ticket.id_ticket}`}
-                              onClick={(e) => e.stopPropagation()}
-                              className={`px-3 py-1 ${tema.colores.primario} text-white rounded-lg text-[11px] font-semibold flex items-center gap-1`}
-                            >
-                              <Eye className="w-3 h-3" />
-                              Detalle
-                            </Link>
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setTicketSeleccionado(ticket);
-                              }}
-                              className={`p-1 rounded-lg ${tema.colores.secundario}`}
-                            >
-                              <MoreVertical className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-
-              {/* Paginación */}
-              <div className="flex items-center justify-between px-6 py-4 border-t border-gray-700/40 text-xs md:text-sm">
-                <span className={tema.colores.textoSecundario}>
-                  Mostrando{" "}
-                  <strong className={tema.colores.texto}>
-                    {ticketsPaginados.length}
-                  </strong>{" "}
-                  de{" "}
-                  <strong className={tema.colores.texto}>
-                    {ticketsFiltrados.length}
-                  </strong>{" "}
-                  tickets filtrados.
-                </span>
-                <div className="flex items-center gap-2">
-                  <button
-                    disabled={paginaActual === 1}
-                    onClick={() => setPaginaActual((p) => Math.max(1, p - 1))}
-                    className={`px-3 py-1 rounded-lg border text-xs ${
-                      paginaActual === 1
-                        ? "opacity-50 cursor-not-allowed"
-                        : tema.colores.hover
-                    }`}
-                  >
-                    Anterior
-                  </button>
-                  <span className={tema.colores.textoSecundario}>
-                    Página{" "}
-                    <span className={tema.colores.texto}>{paginaActual}</span> de{" "}
-                    <span className={tema.colores.texto}>{totalPaginas}</span>
-                  </span>
-                  <button
-                    disabled={paginaActual === totalPaginas}
-                    onClick={() =>
-                      setPaginaActual((p) => Math.min(totalPaginas, p + 1))
-                    }
-                    className={`px-3 py-1 rounded-lg border text-xs ${
-                      paginaActual === totalPaginas
-                        ? "opacity-50 cursor-not-allowed"
-                        : tema.colores.hover
-                    }`}
-                  >
-                    Siguiente
-                  </button>
-                </div>
-              </div>
-            </div>
-          </>
+          <VistaListaPremium
+            tema={tema}
+            tickets={ticketsPaginados}
+            obtenerIconoTipo={obtenerIconoTipo}
+            obtenerColorEstado={obtenerColorEstado}
+            obtenerColorPrioridad={obtenerColorPrioridad}
+            formatearFecha={formatearFecha}
+            actualizarEstadoTicket={actualizarEstadoTicket}
+            setTicketSeleccionado={setTicketSeleccionado}
+            paginaActual={paginaActual}
+            setPaginaActual={setPaginaActual}
+            totalPaginas={totalPaginas}
+            ticketsFiltrados={ticketsFiltrados}
+          />
+        ) : vista === "tablero" ? (
+          <VistaTableroPremium
+            tema={tema}
+            tickets={ticketsFiltrados}
+            columnasKanban={columnasKanban}
+            obtenerIconoTipo={obtenerIconoTipo}
+            obtenerColorPrioridad={obtenerColorPrioridad}
+            formatearFechaSoloDia={formatearFechaSoloDia}
+            actualizarEstadoTicket={actualizarEstadoTicket}
+            setTicketSeleccionado={setTicketSeleccionado}
+          />
         ) : (
-          // Vista tablero (Kanban)
-          <div
-            className={`rounded-2xl p-4 md:p-6 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra}`}
-          >
-            <div className="flex items-center justify-between mb-4 md:mb-6">
-              <div className="flex items-center gap-3">
-                <div
-                  className={`w-10 h-10 rounded-xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center text-white`}
-                >
-                  <Grid2x2 className="w-5 h-5" />
-
-                </div>
-                <div>
-                  <h3
-                    className={`text-xl font-black ${tema.colores.texto}`}
-                  >
-                    Mis Tickets (Tablero Kanban)
-                  </h3>
-                  <p
-                    className={`text-xs md:text-sm font-semibold ${tema.colores.textoSecundario}`}
-                  >
-                    Arranca por los críticos y visualiza el flujo completo.
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 md:gap-6">
-              {columnasKanban.map((col) => {
-                const items = ticketsFiltrados.filter(
-                  (t) => t.estado === col.id
-                );
-
-                return (
-                  <div
-                    key={col.id}
-                    className={`flex flex-col rounded-2xl p-3 md:p-4 ${tema.colores.card} ${tema.colores.borde} border bg-opacity-60`}
-                  >
-                    <div className="flex items-center justify-between mb-3">
-                      <div>
-                        <h4
-                          className={`text-sm md:text-base font-black ${tema.colores.texto}`}
-                        >
-                          {col.titulo}
-                        </h4>
-                        <p
-                          className={`text-[11px] md:text-xs ${tema.colores.textoSecundario}`}
-                        >
-                          {col.descripcion}
-                        </p>
-                      </div>
-                      <span
-                        className={`px-2 py-1 rounded-full text-[11px] font-bold ${tema.colores.hover}`}
-                      >
-                        {items.length}
-                      </span>
-                    </div>
-
-                    <div className="space-y-3 max-h-[500px] overflow-y-auto custom-scrollbar pr-1">
-                      {items.length === 0 ? (
-                        <div
-                          className={`border border-dashed rounded-xl p-4 text-center text-[11px] md:text-xs ${tema.colores.textoSecundario}`}
-                        >
-                          Sin tickets en esta columna
-                        </div>
-                      ) : (
-                        items.map((ticket) => (
-                          <div
-                            key={ticket.id_ticket}
-                            className={`rounded-xl p-3 md:p-4 ${tema.colores.card} ${tema.colores.borde} border transition-all duration-300 hover:scale-[1.02] hover:-translate-y-0.5 cursor-pointer`}
-                            onClick={() => setTicketSeleccionado(ticket)}
-                          >
-                            <div className="flex items-start gap-2 mb-2">
-                              <div
-                                className={`w-8 h-8 rounded-lg bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center text-white flex-shrink-0`}
-                              >
-                                {(() => {
-                                  const Icono = obtenerIconoTipo(ticket.tipo);
-                                  return <Icono className="w-4 h-4" />;
-                                })()}
-                              </div>
-                              <div className="flex-1 min-w-0">
-                                <p
-                                  className={`text-xs md:text-sm font-bold ${tema.colores.texto} truncate`}
-                                >
-                                  {ticket.numero_ticket}
-                                </p>
-                                <p
-                                  className={`text-[11px] md:text-xs ${tema.colores.textoSecundario} line-clamp-2`}
-                                >
-                                  {ticket.titulo}
-                                </p>
-                              </div>
-                            </div>
-
-                            <div className="flex flex-wrap items-center gap-1 mb-2">
-                              <span
-                                className={`px-2 py-1 rounded-full text-[10px] font-bold border ${obtenerColorPrioridad(
-                                  ticket.prioridad
-                                )}`}
-                              >
-                                {ticket.prioridad}
-                              </span>
-                              <span
-                                className={`px-2 py-1 rounded-full text-[10px] font-semibold ${tema.colores.hover}`}
-                              >
-                                {ticket.centro?.nombre}
-                              </span>
-                            </div>
-
-                            <p
-                              className={`text-[10px] md:text-[11px] mb-2 ${tema.colores.textoSecundario}`}
-                            >
-                              Creado: {formatearFechaSoloDia(ticket.fecha_creacion)}
-                            </p>
-
-                            <div className="flex flex-wrap gap-1 text-[10px] mt-1">
-                              {col.id !== "abierto" && (
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    actualizarEstadoTicket(
-                                      ticket.id_ticket,
-                                      "abierto"
-                                    );
-                                  }}
-                                  className="px-2 py-1 rounded-lg bg-gray-700/40 text-white"
-                                >
-                                  ⇠ Abierto
-                                </button>
-                              )}
-                              {col.id !== "en_progreso" && (
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    actualizarEstadoTicket(
-                                      ticket.id_ticket,
-                                      "en_progreso"
-                                    );
-                                  }}
-                                  className="px-2 py-1 rounded-lg bg-blue-600/80 text-white"
-                                >
-                                  ▶ En progreso
-                                </button>
-                              )}
-                              {col.id !== "resuelto" && (
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    actualizarEstadoTicket(
-                                      ticket.id_ticket,
-                                      "resuelto"
-                                    );
-                                  }}
-                                  className="px-2 py-1 rounded-lg bg-emerald-600/90 text-white"
-                                >
-                                  ✓ Resuelto
-                                </button>
-                              )}
-                              {col.id !== "cancelado" && (
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    actualizarEstadoTicket(
-                                      ticket.id_ticket,
-                                      "cancelado"
-                                    );
-                                  }}
-                                  className="px-2 py-1 rounded-lg bg-gray-500/80 text-white"
-                                >
-                                  ✕ Cancelar
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        ))
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+          <VistaTimelinePremium
+            tema={tema}
+            tickets={ticketsFiltrados}
+            obtenerIconoTipo={obtenerIconoTipo}
+            obtenerColorEstado={obtenerColorEstado}
+            obtenerColorPrioridad={obtenerColorPrioridad}
+            formatearFecha={formatearFecha}
+            setTicketSeleccionado={setTicketSeleccionado}
+          />
         )}
 
-        {/* FOOTER */}
-        <footer
-          className={`transition-all duration-300 mt-10 rounded-2xl px-6 py-4 ${tema.colores.card} ${tema.colores.borde} border`}
-        >
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-xs md:text-sm">
-            <div className="flex items-center gap-2">
-              <p className={tema.colores.textoSecundario}>
-                © 2025 AnyssaMed - Módulo de Tickets Técnicos.
-              </p>
-              <span
-                className={`px-3 py-1 rounded-full text-[10px] font-bold bg-gradient-to-r ${tema.colores.gradiente} text-white`}
-              >
-                v4.0.0
+        {/* Footer Premium */}
+        <footer className={`mt-12 rounded-3xl px-8 py-6 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} ${tema.colores.glow} relative overflow-hidden`}>
+          <div className="absolute inset-0 opacity-5">
+            <div className={`absolute top-0 right-0 w-64 h-64 bg-gradient-to-br ${tema.colores.gradiente} rounded-full blur-3xl`}></div>
+          </div>
+
+          <div className="relative z-10 flex flex-col lg:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center shadow-lg ${tema.colores.glow}`}>
+                <Sparkles className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <p className={`text-sm font-bold ${tema.colores.texto}`}>
+                  © 2025 AnyssaMed - Sistema de Gestión Técnica Premium
+                </p>
+                <p className={`text-xs font-semibold ${tema.colores.textoSecundario}`}>
+                  Desarrollado con tecnología de vanguardia
+                </p>
+              </div>
+              <span className={`px-4 py-2 rounded-xl text-xs font-black bg-gradient-to-r ${tema.colores.gradiente} text-white shadow-lg ${tema.colores.glow}`}>
+                v5.0.0 PREMIUM
               </span>
             </div>
+
             <div className="flex items-center gap-4">
               <Link
                 href="/ayuda"
-                className={`text-xs md:text-sm font-bold transition-colors ${tema.colores.textoSecundario} hover:${tema.colores.acento}`}
+                className={`text-sm font-bold transition-all duration-300 ${tema.colores.textoSecundario} hover:${tema.colores.acento} hover:scale-110`}
               >
                 Ayuda
               </Link>
               <Link
                 href="/privacidad"
-                className={`text-xs md:text-sm font-bold transition-colors ${tema.colores.textoSecundario} hover:${tema.colores.acento}`}
+                className={`text-sm font-bold transition-all duration-300 ${tema.colores.textoSecundario} hover:${tema.colores.acento} hover:scale-110`}
               >
                 Privacidad
               </Link>
               <Link
                 href="/terminos"
-                className={`text-xs md:text-sm font-bold transition-colors ${tema.colores.textoSecundario} hover:${tema.colores.acento}`}
+                className={`text-sm font-bold transition-all duration-300 ${tema.colores.textoSecundario} hover:${tema.colores.acento} hover:scale-110`}
               >
                 Términos
               </Link>
               <button
                 onClick={cerrarSesion}
-                className={`text-xs md:text-sm font-bold transition-colors ${tema.colores.textoSecundario} hover:text-red-400 flex items-center gap-1`}
+                className={`text-sm font-bold transition-all duration-300 ${tema.colores.textoSecundario} hover:text-red-400 hover:scale-110 flex items-center gap-2`}
               >
                 <LogOut className="w-4 h-4" />
                 Cerrar Sesión
@@ -2070,148 +1837,130 @@ export default function TicketsTecnicoPage() {
         </footer>
       </main>
 
-      {/* MODAL: NUEVO TICKET */}
+      {/* MODAL: NUEVO TICKET PREMIUM */}
       {modalNuevoAbierto && (
-        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/60 backdrop-blur-sm">
-          <div
-            className={`w-full max-w-lg mx-4 rounded-2xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} p-6 relative`}
-          >
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 backdrop-blur-md animate-fadeIn">
+          <div className={`w-full max-w-2xl mx-4 rounded-3xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} ${tema.colores.glow} p-8 relative animate-scaleIn`}>
             <button
               onClick={() => setModalNuevoAbierto(false)}
-              className="absolute right-4 top-4 p-1 rounded-lg hover:bg-black/10"
+              className={`absolute right-6 top-6 p-2 rounded-xl ${tema.colores.hover} transition-all duration-300 hover:scale-110 hover:rotate-90`}
             >
-              <X className="w-4 h-4" />
+              <X className="w-5 h-5" />
             </button>
 
-            <div className="flex items-center gap-3 mb-4">
-              <div
-                className={`w-10 h-10 rounded-xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center text-white`}
-              >
-                <Plus className="w-5 h-5" />
+            <div className="flex items-center gap-4 mb-6">
+              <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center text-white shadow-2xl ${tema.colores.glow} animate-float`}>
+                <Plus className="w-8 h-8" />
               </div>
               <div>
-                <h3
-                  className={`text-xl font-black ${tema.colores.texto}`}
-                >
-                  Crear nuevo Ticket
+                <h3 className={`text-3xl font-black ${tema.colores.texto}`}>
+                  Crear Nuevo Ticket
                 </h3>
-                <p className={tema.colores.textoSecundario}>
-                  Registra un incidente o requerimiento asociado a tu centro.
+                <p className={`text-sm font-semibold ${tema.colores.textoSecundario}`}>
+                  Registra un nuevo incidente o requerimiento técnico
                 </p>
               </div>
             </div>
 
-            <form className="space-y-4 mt-4" onSubmit={crearNuevoTicket}>
-              <div>
-                <label className="block text-xs font-semibold mb-1">
-                  Título del ticket
+            <form className="space-y-6 mt-6" onSubmit={crearNuevoTicket}>
+              <div className="space-y-2">
+                <label className={`text-sm font-bold uppercase tracking-wider ${tema.colores.texto} flex items-center gap-2`}>
+                  <FileText className="w-4 h-4" />
+                  Título del Ticket
                 </label>
                 <input
                   type="text"
                   required
                   value={nuevoTicketData.titulo}
-                  onChange={(e) =>
-                    manejarNuevoTicketChange("titulo", e.target.value)
-                  }
-                  className={`w-full px-3 py-2 rounded-xl text-sm ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto}`}
+                  onChange={(e) => manejarNuevoTicketChange("titulo", e.target.value)}
+                  className={`w-full px-4 py-3 rounded-xl text-sm font-semibold ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto} placeholder:${tema.colores.textoSecundario} focus:outline-none focus:ring-2 focus:${tema.colores.glow} transition-all duration-300`}
                   placeholder="Ej: Problema con servidor de fichas clínicas"
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold mb-1">
-                  Descripción
+              <div className="space-y-2">
+                <label className={`text-sm font-bold uppercase tracking-wider ${tema.colores.texto} flex items-center gap-2`}>
+                  <MessageSquare className="w-4 h-4" />
+                  Descripción Detallada
                 </label>
                 <textarea
                   required
-                  rows={4}
+                  rows={5}
                   value={nuevoTicketData.descripcion}
-                  onChange={(e) =>
-                    manejarNuevoTicketChange("descripcion", e.target.value)
-                  }
-                  className={`w-full px-3 py-2 rounded-xl text-sm ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto}`}
-                  placeholder="Describe brevemente el problema, impacto y contexto."
+                  onChange={(e) => manejarNuevoTicketChange("descripcion", e.target.value)}
+                  className={`w-full px-4 py-3 rounded-xl text-sm font-semibold ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto} placeholder:${tema.colores.textoSecundario} focus:outline-none focus:ring-2 focus:${tema.colores.glow} transition-all duration-300 resize-none`}
+                  placeholder="Describe el problema, impacto y contexto detalladamente..."
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-semibold mb-1">
-                    Tipo de ticket
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="space-y-2">
+                  <label className={`text-sm font-bold uppercase tracking-wider ${tema.colores.texto} flex items-center gap-2`}>
+                    <Layers className="w-4 h-4" />
+                    Tipo de Ticket
                   </label>
                   <select
                     value={nuevoTicketData.tipo}
-                    onChange={(e) =>
-                      manejarNuevoTicketChange(
-                        "tipo",
-                        e.target.value as Ticket["tipo"]
-                      )
-                    }
-                    className={`w-full px-3 py-2 rounded-xl text-sm ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto}`}
+                    onChange={(e) => manejarNuevoTicketChange("tipo", e.target.value as Ticket["tipo"])}
+                    className={`w-full px-4 py-3 rounded-xl text-sm font-semibold ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto} focus:outline-none focus:ring-2 focus:${tema.colores.glow} transition-all duration-300`}
                   >
-                    <option value="soporte">Soporte</option>
-                    <option value="mantenimiento">Mantenimiento</option>
-                    <option value="ingenieria">Ingeniería</option>
-                    <option value="biomedico">Biomédico</option>
-                    <option value="infraestructura">Infraestructura</option>
+                    <option value="soporte">🎧 Soporte Técnico</option>
+                    <option value="mantenimiento">🔧 Mantenimiento</option>
+                    <option value="ingenieria">⚙️ Ingeniería</option>
+                    <option value="biomedico">🔬 Biomédico</option>
+                    <option value="infraestructura">🏗️ Infraestructura</option>
                   </select>
                 </div>
 
-                <div>
-                  <label className="block text-xs font-semibold mb-1">
-                    Prioridad
+                <div className="space-y-2">
+                  <label className={`text-sm font-bold uppercase tracking-wider ${tema.colores.texto} flex items-center gap-2`}>
+                    <Flame className="w-4 h-4" />
+                    Nivel de Prioridad
                   </label>
                   <select
                     value={nuevoTicketData.prioridad}
-                    onChange={(e) =>
-                      manejarNuevoTicketChange(
-                        "prioridad",
-                        e.target.value as Ticket["prioridad"]
-                      )
-                    }
-                    className={`w-full px-3 py-2 rounded-xl text-sm ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto}`}
+                    onChange={(e) => manejarNuevoTicketChange("prioridad", e.target.value as Ticket["prioridad"])}
+                    className={`w-full px-4 py-3 rounded-xl text-sm font-semibold ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto} focus:outline-none focus:ring-2 focus:${tema.colores.glow} transition-all duration-300`}
                   >
-                    <option value="baja">Baja</option>
-                    <option value="media">Media</option>
-                    <option value="alta">Alta</option>
-                    <option value="critica">Crítica</option>
+                    <option value="baja">🟢 Baja</option>
+                    <option value="media">🟡 Media</option>
+                    <option value="alta">🟠 Alta</option>
+                    <option value="critica">🔥 Crítica</option>
                   </select>
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold mb-1">
-                  Teléfono de contacto (opcional)
+              <div className="space-y-2">
+                <label className={`text-sm font-bold uppercase tracking-wider ${tema.colores.texto} flex items-center gap-2`}>
+                  <Phone className="w-4 h-4" />
+                  Teléfono de Contacto (Opcional)
                 </label>
                 <input
                   type="tel"
                   value={nuevoTicketData.telefono}
-                  onChange={(e) =>
-                    manejarNuevoTicketChange("telefono", e.target.value)
-                  }
-                  className={`w-full px-3 py-2 rounded-xl text-sm ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto}`}
+                  onChange={(e) => manejarNuevoTicketChange("telefono", e.target.value)}
+                  className={`w-full px-4 py-3 rounded-xl text-sm font-semibold ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto} placeholder:${tema.colores.textoSecundario} focus:outline-none focus:ring-2 focus:${tema.colores.glow} transition-all duration-300`}
                   placeholder="Ej: +56 9 1234 5678"
                 />
-                <p
-                  className={`mt-1 text-[11px] ${tema.colores.textoSecundario}`}
-                >
-                  Si lo dejas vacío, se utilizará tu extensión o teléfono
-                  registrado.
+                <p className={`text-xs font-semibold ${tema.colores.textoSecundario} flex items-center gap-2`}>
+                  <Lightbulb className="w-3 h-3" />
+                  Si lo dejas vacío, se utilizará tu extensión o teléfono registrado
                 </p>
               </div>
 
-              <div className="flex items-center justify-end gap-3 mt-4">
+              <div className="flex items-center justify-end gap-4 pt-4 border-t border-gray-700/30">
                 <button
                   type="button"
                   onClick={() => setModalNuevoAbierto(false)}
-                  className={`px-4 py-2 rounded-xl text-sm font-semibold ${tema.colores.secundario} ${tema.colores.texto}`}
+                  className={`px-6 py-3 rounded-xl text-sm font-bold ${tema.colores.secundario} ${tema.colores.texto} transition-all duration-300 hover:scale-105`}
                 >
                   Cancelar
                 </button>
                 <button
                   type="submit"
-                  className={`px-6 py-2 rounded-xl text-sm font-bold text-white ${tema.colores.primario}`}
+                  className={`px-8 py-3 rounded-xl text-sm font-bold text-white ${tema.colores.primario} transition-all duration-300 hover:scale-105 shadow-2xl ${tema.colores.glow} flex items-center gap-2`}
                 >
+                  <Rocket className="w-5 h-5" />
                   Crear Ticket
                 </button>
               </div>
@@ -2220,202 +1969,219 @@ export default function TicketsTecnicoPage() {
         </div>
       )}
 
-      {/* PANEL DETALLE TICKET */}
+      {/* PANEL DETALLE TICKET PREMIUM */}
       {ticketSeleccionado && (
-        <div className="fixed inset-0 z-[55] flex justify-end">
+        <div className="fixed inset-0 z-[55] flex justify-end animate-fadeIn">
           <div
-            className="flex-1 bg-black/40"
+            className="flex-1 bg-black/60 backdrop-blur-sm"
             onClick={() => setTicketSeleccionado(null)}
           />
-          <div
-            className={`w-full max-w-md md:max-w-xl h-full ${tema.colores.card} ${tema.colores.borde} border-l ${tema.colores.sombra} p-5 md:p-6 overflow-y-auto custom-scrollbar`}
-          >
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div
-                  className={`w-10 h-10 rounded-xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center text-white`}
-                >
+          <div className={`w-full max-w-2xl h-full ${tema.colores.card} ${tema.colores.borde} border-l ${tema.colores.sombra} ${tema.colores.glow} p-8 overflow-y-auto custom-scrollbar animate-slideInRight`}>
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-4">
+                <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center text-white shadow-xl ${tema.colores.glow}`}>
                   {(() => {
                     const Icono = obtenerIconoTipo(ticketSeleccionado.tipo);
-                    return <Icono className="w-5 h-5" />;
+                    return <Icono className="w-7 h-7" />;
                   })()}
                 </div>
                 <div>
-                  <p
-                    className={`text-xs font-semibold ${tema.colores.textoSecundario}`}
-                  >
+                  <p className={`text-xs font-bold uppercase tracking-wider ${tema.colores.textoSecundario}`}>
                     {ticketSeleccionado.numero_ticket}
                   </p>
-                  <h3
-                    className={`text-lg font-black ${tema.colores.texto}`}
-                  >
+                  <h3 className={`text-2xl font-black ${tema.colores.texto}`}>
                     {ticketSeleccionado.titulo}
                   </h3>
                 </div>
               </div>
               <button
                 onClick={() => setTicketSeleccionado(null)}
-                className="p-1 rounded-lg hover:bg-black/10"
+                className={`p-2 rounded-xl ${tema.colores.hover} transition-all duration-300 hover:scale-110 hover:rotate-90`}
               >
-                <X className="w-4 h-4" />
+                <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-2 mb-4">
-              <div>
-                <p className="text-[11px] font-semibold uppercase opacity-70">
-                  Estado
-                </p>
-                <div className="mt-1 flex flex-wrap gap-1">
-                  <span
-                    className={`px-3 py-1 rounded-full text-[11px] font-bold border ${obtenerColorEstado(
-                      ticketSeleccionado.estado
-                    )}`}
-                  >
+            <div className="space-y-6">
+              {/* Estado y Prioridad */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className={`p-4 rounded-2xl ${tema.colores.card} ${tema.colores.borde} border`}>
+                  <p className={`text-xs font-bold uppercase tracking-wider mb-2 ${tema.colores.textoSecundario}`}>
+                    Estado Actual
+                  </p>
+                  <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold border ${obtenerColorEstado(ticketSeleccionado.estado)}`}>
+                    <Activity className="w-4 h-4" />
                     {ticketSeleccionado.estado}
                   </span>
                 </div>
-              </div>
-              <div>
-                <p className="text-[11px] font-semibold uppercase opacity-70">
-                  Prioridad
-                </p>
-                <div className="mt-1 flex flex-wrap gap-1">
-                  <span
-                    className={`px-3 py-1 rounded-full text-[11px] font-bold border ${obtenerColorPrioridad(
-                      ticketSeleccionado.prioridad
-                    )}`}
-                  >
+                <div className={`p-4 rounded-2xl ${tema.colores.card} ${tema.colores.borde} border`}>
+                  <p className={`text-xs font-bold uppercase tracking-wider mb-2 ${tema.colores.textoSecundario}`}>
+                    Prioridad
+                  </p>
+                  <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-bold border ${obtenerColorPrioridad(ticketSeleccionado.prioridad)}`}>
+                    <Flame className="w-4 h-4" />
                     {ticketSeleccionado.prioridad}
                   </span>
                 </div>
               </div>
-              <div>
-                <p className="text-[11px] font-semibold uppercase opacity-70">
-                  Tipo
-                </p>
-                <p className={`text-xs font-semibold ${tema.colores.texto}`}>
-                  {ticketSeleccionado.tipo.toUpperCase()}
-                </p>
-              </div>
-              <div>
-                <p className="text-[11px] font-semibold uppercase opacity-70">
-                  Centro
-                </p>
-                <p className={`text-xs font-semibold ${tema.colores.texto}`}>
-                  {ticketSeleccionado.centro?.nombre}
-                </p>
-              </div>
-            </div>
 
-            <div className="mb-4">
-              <p className="text-[11px] font-semibold uppercase opacity-70">
-                Descripción
-              </p>
-              <p className={`mt-1 text-xs ${tema.colores.textoSecundario}`}>
-                {ticketSeleccionado.descripcion}
-              </p>
-            </div>
-
-            {ticketSeleccionado.equipo_afectado && (
-              <div className="mb-4">
-                <p className="text-[11px] font-semibold uppercase opacity-70">
-                  Equipo afectado
+              {/* Descripción */}
+              <div className={`p-6 rounded-2xl ${tema.colores.card} ${tema.colores.borde} border`}>
+                <p className={`text-xs font-bold uppercase tracking-wider mb-3 ${tema.colores.textoSecundario} flex items-center gap-2`}>
+                  <FileText className="w-4 h-4" />
+                  Descripción del Problema
                 </p>
-                <p className={`mt-1 text-xs ${tema.colores.texto}`}>
-                  {ticketSeleccionado.equipo_afectado.nombre} (
-                  {ticketSeleccionado.equipo_afectado.tipo}) —{" "}
-                  {ticketSeleccionado.equipo_afectado.ubicacion}
+                <p className={`text-sm font-semibold leading-relaxed ${tema.colores.texto}`}>
+                  {ticketSeleccionado.descripcion}
                 </p>
               </div>
-            )}
 
-            <div className="grid grid-cols-2 gap-2 mb-4 text-[11px]">
-              <div>
-                <p className="font-semibold uppercase opacity-70">
-                  Solicitante
-                </p>
-                <p className={tema.colores.texto}>
-                  {ticketSeleccionado.solicitante.nombre_completo}
-                </p>
-                <p className={tema.colores.textoSecundario}>
-                  {ticketSeleccionado.solicitante.email}
-                </p>
-                {ticketSeleccionado.solicitante.telefono && (
-                  <a
-                    href={`tel:${ticketSeleccionado.solicitante.telefono}`}
-                    className={`inline-flex items-center gap-1 mt-1 text-[11px] ${tema.colores.acento}`}
-                  >
-                    <PhoneIcon className="w-3 h-3" />
-                    {ticketSeleccionado.solicitante.telefono}
-                  </a>
-                )}
-              </div>
-              <div>
-                <p className="font-semibold uppercase opacity-70">
-                  Tiempos
-                </p>
-                <p className={tema.colores.textoSecundario}>
-                  Creado: {formatearFecha(ticketSeleccionado.fecha_creacion)}
-                </p>
-                <p className={tema.colores.textoSecundario}>
-                  Estimado: {ticketSeleccionado.tiempo_estimado_minutos} min
-                </p>
-                {ticketSeleccionado.tiempo_real_minutos && (
-                  <p className={tema.colores.textoSecundario}>
-                    Real: {ticketSeleccionado.tiempo_real_minutos} min
+              {/* Información del Centro y Tipo */}
+              <div className="grid grid-cols-2 gap-4">
+                <div className={`p-4 rounded-2xl ${tema.colores.card} ${tema.colores.borde} border`}>
+                  <p className={`text-xs font-bold uppercase tracking-wider mb-2 ${tema.colores.textoSecundario}`}>
+                    Tipo
                   </p>
-                )}
+                  <p className={`text-sm font-bold ${tema.colores.texto}`}>
+                    {ticketSeleccionado.tipo.toUpperCase()}
+                  </p>
+                </div>
+                <div className={`p-4 rounded-2xl ${tema.colores.card} ${tema.colores.borde} border`}>
+                  <p className={`text-xs font-bold uppercase tracking-wider mb-2 ${tema.colores.textoSecundario}`}>
+                    Centro
+                  </p>
+                  <p className={`text-sm font-bold ${tema.colores.texto}`}>
+                    {ticketSeleccionado.centro?.nombre}
+                  </p>
+                </div>
               </div>
-            </div>
 
-            <div className="flex flex-wrap gap-2 mb-4 text-[11px]">
-              <button
-                onClick={() =>
-                  actualizarEstadoTicket(
-                    ticketSeleccionado.id_ticket,
-                    "en_progreso"
-                  )
-                }
-                className="px-3 py-2 rounded-xl bg-blue-600 text-white font-bold"
-              >
-                Marcar en progreso
-              </button>
-              <button
-                onClick={() =>
-                  actualizarEstadoTicket(
-                    ticketSeleccionado.id_ticket,
-                    "resuelto"
-                  )
-                }
-                className="px-3 py-2 rounded-xl bg-emerald-600 text-white font-bold"
-              >
-                Marcar resuelto
-              </button>
-              <button
-                onClick={() =>
-                  actualizarEstadoTicket(
-                    ticketSeleccionado.id_ticket,
-                    "cancelado"
-                  )
-                }
-                className="px-3 py-2 rounded-xl bg-gray-600 text-white font-bold"
-              >
-                Cancelar ticket
-              </button>
-              <Link
-                href={`/tecnico/tickets/${ticketSeleccionado.id_ticket}`}
-                className={`px-3 py-2 rounded-xl font-bold ${tema.colores.hover} ${tema.colores.texto} inline-flex items-center gap-1`}
-              >
-                <Eye className="w-3 h-3" />
-                Ver en página completa
-              </Link>
+              {/* Equipo Afectado */}
+              {ticketSeleccionado.equipo_afectado && (
+                <div className={`p-6 rounded-2xl ${tema.colores.card} ${tema.colores.borde} border`}>
+                  <p className={`text-xs font-bold uppercase tracking-wider mb-3 ${tema.colores.textoSecundario} flex items-center gap-2`}>
+                    <Cpu className="w-4 h-4" />
+                    Equipo Afectado
+                  </p>
+                  <div className="space-y-2">
+                    <p className={`text-sm font-bold ${tema.colores.texto}`}>
+                      {ticketSeleccionado.equipo_afectado.nombre}
+                    </p>
+                    <p className={`text-xs font-semibold ${tema.colores.textoSecundario}`}>
+                      Tipo: {ticketSeleccionado.equipo_afectado.tipo}
+                    </p>
+                    <p className={`text-xs font-semibold ${tema.colores.textoSecundario} flex items-center gap-1`}>
+                      <MapPin className="w-3 h-3" />
+                      {ticketSeleccionado.equipo_afectado.ubicacion}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Solicitante */}
+              <div className={`p-6 rounded-2xl ${tema.colores.card} ${tema.colores.borde} border`}>
+                <p className={`text-xs font-bold uppercase tracking-wider mb-3 ${tema.colores.textoSecundario} flex items-center gap-2`}>
+                  <User className="w-4 h-4" />
+                  Información del Solicitante
+                </p>
+                <div className="space-y-2">
+                  <p className={`text-sm font-bold ${tema.colores.texto}`}>
+                    {ticketSeleccionado.solicitante.nombre_completo}
+                  </p>
+                  <p className={`text-xs font-semibold ${tema.colores.textoSecundario} flex items-center gap-2`}>
+                    <Mail className="w-3 h-3" />
+                    {ticketSeleccionado.solicitante.email}
+                  </p>
+                  {ticketSeleccionado.solicitante.telefono && (
+                    <a
+                      href={`tel:${ticketSeleccionado.solicitante.telefono}`}
+                      className={`inline-flex items-center gap-2 text-xs font-bold ${tema.colores.acento} hover:underline`}
+                    >
+                      <Phone className="w-3 h-3" />
+                      {ticketSeleccionado.solicitante.telefono}
+                    </a>
+                  )}
+                </div>
+              </div>
+
+              {/* Tiempos */}
+              <div className={`p-6 rounded-2xl ${tema.colores.card} ${tema.colores.borde} border`}>
+                <p className={`text-xs font-bold uppercase tracking-wider mb-3 ${tema.colores.textoSecundario} flex items-center gap-2`}>
+                  <Clock className="w-4 h-4" />
+                  Información de Tiempos
+                </p>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <p className={`text-xs font-semibold ${tema.colores.textoSecundario} mb-1`}>
+                      Creado
+                    </p>
+                    <p className={`text-sm font-bold ${tema.colores.texto}`}>
+                      {formatearFecha(ticketSeleccionado.fecha_creacion)}
+                    </p>
+                  </div>
+                  <div>
+                    <p className={`text-xs font-semibold ${tema.colores.textoSecundario} mb-1`}>
+                      Tiempo Estimado
+                    </p>
+                    <p className={`text-sm font-bold ${tema.colores.texto}`}>
+                      {ticketSeleccionado.tiempo_estimado_minutos} minutos
+                    </p>
+                  </div>
+                  {ticketSeleccionado.tiempo_real_minutos && (
+                    <div>
+                      <p className={`text-xs font-semibold ${tema.colores.textoSecundario} mb-1`}>
+                        Tiempo Real
+                      </p>
+                      <p className={`text-sm font-bold ${tema.colores.texto}`}>
+                        {ticketSeleccionado.tiempo_real_minutos} minutos
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Acciones */}
+              <div className="space-y-3 pt-4 border-t border-gray-700/30">
+                <p className={`text-xs font-bold uppercase tracking-wider ${tema.colores.textoSecundario}`}>
+                  Acciones Rápidas
+                </p>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    onClick={() => actualizarEstadoTicket(ticketSeleccionado.id_ticket, "en_progreso")}
+                    className="px-4 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-bold text-sm transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-blue-500/50 flex items-center justify-center gap-2"
+                  >
+                    <Clock className="w-4 h-4" />
+                    En Progreso
+                  </button>
+                  <button
+                    onClick={() => actualizarEstadoTicket(ticketSeleccionado.id_ticket, "resuelto")}
+                    className="px-4 py-3 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold text-sm transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-emerald-500/50 flex items-center justify-center gap-2"
+                  >
+                    <CheckCircle2 className="w-4 h-4" />
+                    Resolver
+                  </button>
+                  <button
+                    onClick={() => actualizarEstadoTicket(ticketSeleccionado.id_ticket, "cancelado")}
+                    className="px-4 py-3 rounded-xl bg-gradient-to-r from-gray-600 to-gray-700 text-white font-bold text-sm transition-all duration-300 hover:scale-105 shadow-lg flex items-center justify-center gap-2"
+                  >
+                    <X className="w-4 h-4" />
+                    Cancelar
+                  </button>
+                  <Link
+                    href={`/tecnico/tickets/${ticketSeleccionado.id_ticket}`}
+                    className={`px-4 py-3 rounded-xl font-bold text-sm ${tema.colores.primario} text-white transition-all duration-300 hover:scale-105 shadow-lg flex items-center justify-center gap-2`}
+                  >
+                    <Eye className="w-4 h-4" />
+                    Ver Completo
+                  </Link>
+                </div>
+              </div>
             </div>
           </div>
         </div>
       )}
 
-      {/* ESTILOS GLOBALES */}
+      {/* ESTILOS GLOBALES PREMIUM */}
       <style jsx global>{`
         * {
           margin: 0;
@@ -2428,64 +2194,92 @@ export default function TicketsTecnicoPage() {
         }
 
         body {
-          font-family: "Inter", "Segoe UI", sans-serif;
+          font-family: "Inter", "Segoe UI", "Roboto", sans-serif;
           -webkit-font-smoothing: antialiased;
           -moz-osx-font-smoothing: grayscale;
         }
 
         .custom-scrollbar::-webkit-scrollbar {
-          width: 8px;
-          height: 8px;
+          width: 10px;
+          height: 10px;
         }
         .custom-scrollbar::-webkit-scrollbar-track {
-          background: transparent;
+          background: rgba(0, 0, 0, 0.1);
+          border-radius: 10px;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: rgba(99, 102, 241, 0.5);
+          background: linear-gradient(180deg, #6366f1, #8b5cf6, #d946ef);
           border-radius: 10px;
           transition: background 0.3s ease;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: rgba(99, 102, 241, 0.8);
+          background: linear-gradient(180deg, #4f46e5, #7c3aed, #c026d3);
         }
         .custom-scrollbar {
-          scrollbar-color: rgba(99, 102, 241, 0.5) transparent;
+          scrollbar-color: #6366f1 rgba(0, 0, 0, 0.1);
           scrollbar-width: thin;
         }
 
         @keyframes wave {
-          0%,
-          100% {
-            transform: rotate(0deg);
-          }
-          10%,
-          20% {
-            transform: rotate(14deg);
-          }
-          30%,
-          60%,
-          90% {
-            transform: rotate(-8deg);
-          }
-          40%,
-          80% {
-            transform: rotate(14deg);
-          }
-          50% {
-            transform: rotate(10deg);
-          }
+          0%, 100% { transform: rotate(0deg); }
+          10%, 20% { transform: rotate(14deg); }
+          30%, 60%, 90% { transform: rotate(-8deg); }
+          40%, 80% { transform: rotate(14deg); }
+          50% { transform: rotate(10deg); }
         }
         .animate-wave {
-          animation: wave 1s ease-in-out infinite;
+          animation: wave 1.5s ease-in-out infinite;
           transform-origin: 70% 70%;
           display: inline-block;
         }
 
+        @keyframes float {
+          0%, 100% { transform: translateY(0px) rotate(0deg); }
+          50% { transform: translateY(-20px) rotate(5deg); }
+        }
+        .animate-float {
+          animation: float 6s ease-in-out infinite;
+        }
+
+        @keyframes swing {
+          0%, 100% { transform: rotate(0deg); }
+          25% { transform: rotate(15deg); }
+          75% { transform: rotate(-15deg); }
+        }
+        .animate-swing {
+          animation: swing 1s ease-in-out infinite;
+          transform-origin: top center;
+        }
+
+        @keyframes fadeIn {
+          from { opacity: 0; }
+          to { opacity: 1; }
+        }
+        .animate-fadeIn {
+          animation: fadeIn 0.3s ease-out;
+        }
+
+        @keyframes scaleIn {
+          from { transform: scale(0.9); opacity: 0; }
+          to { transform: scale(1); opacity: 1; }
+        }
+        .animate-scaleIn {
+          animation: scaleIn 0.3s ease-out;
+        }
+
+        @keyframes slideInRight {
+          from { transform: translateX(100%); }
+          to { transform: translateX(0); }
+        }
+        .animate-slideInRight {
+          animation: slideInRight 0.3s ease-out;
+        }
+
         @media (max-width: 768px) {
-          .hidden.md\:block {
+          .hidden\\.md\\:block {
             display: none;
           }
-          .block.md\:hidden {
+          .block\\.md\\:hidden {
             display: block;
           }
         }
@@ -2509,9 +2303,7 @@ export default function TicketsTecnicoPage() {
         }
 
         @media (prefers-color-scheme: dark) {
-          input,
-          select,
-          textarea {
+          input, select, textarea {
             color-scheme: dark;
           }
         }
@@ -2521,16 +2313,18 @@ export default function TicketsTecnicoPage() {
 }
 
 // ========================================
-// COMPONENTES AUXILIARES
+// COMPONENTES AUXILIARES PREMIUM
 // ========================================
 
-function ResumenCard({
+function ResumenCardPremium({
   tema,
   icono: Icono,
   titulo,
   valor,
   chip,
   color,
+  tendencia,
+  tendenciaPositiva,
 }: {
   tema: ConfiguracionTema;
   icono: any;
@@ -2538,56 +2332,682 @@ function ResumenCard({
   valor: number;
   chip: string;
   color: string;
+  tendencia: string;
+  tendenciaPositiva: boolean;
 }) {
   return (
     <div
-      className={`rounded-2xl p-4 md:p-5 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} transition-all duration-300 hover:scale-105 hover:-translate-y-1 cursor-pointer group`}
+      className={`rounded-2xl p-6 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} transition-all duration-500 hover:scale-105 hover:-translate-y-2 cursor-pointer group relative overflow-hidden`}
     >
-      <div className="flex items-center justify-between mb-3">
-        <div
-          className={`w-10 h-10 bg-gradient-to-br ${color} rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform`}
-        >
-          <Icono className="w-5 h-5 text-white" />
+      {/* Fondo animado */}
+      <div className="absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-500">
+        <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${color} rounded-full blur-2xl`}></div>
+      </div>
+
+      <div className="relative z-10">
+        <div className="flex items-center justify-between mb-4">
+          <div
+            className={`w-14 h-14 bg-gradient-to-br ${color} rounded-2xl flex items-center justify-center shadow-2xl group-hover:scale-110 group-hover:rotate-6 transition-all duration-500 ${tema.colores.glow}`}
+          >
+            <Icono className="w-7 h-7 text-white" />
+          </div>
+          <div className={`flex items-center gap-1 text-xs font-bold ${tendenciaPositiva ? 'text-green-500' : 'text-red-500'}`}>
+            {tendenciaPositiva ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
+            {tendencia}
+          </div>
+        </div>
+
+        <div className={`text-4xl font-black mb-2 ${tema.colores.texto} group-hover:scale-110 transition-transform duration-300`}>
+          {valor.toLocaleString()}
+        </div>
+
+        <div className={`text-sm font-bold uppercase tracking-wider mb-3 ${tema.colores.textoSecundario}`}>
+          {titulo}
+        </div>
+
+        <div className="flex items-center gap-2">
+          <span className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-white/5 backdrop-blur-sm ${tema.colores.texto}`}>
+            <Sparkles className="w-3 h-3" />
+            {chip}
+          </span>
         </div>
       </div>
-      <div className={`text-3xl font-black mb-1 ${tema.colores.texto}`}>
-        {valor}
+    </div>
+  );
+}
+
+// Vista Lista Premium
+function VistaListaPremium({
+  tema,
+  tickets,
+  obtenerIconoTipo,
+  obtenerColorEstado,
+  obtenerColorPrioridad,
+  formatearFecha,
+  actualizarEstadoTicket,
+  setTicketSeleccionado,
+  paginaActual,
+  setPaginaActual,
+  totalPaginas,
+  ticketsFiltrados,
+}: any) {
+  return (
+    <div className={`rounded-3xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} ${tema.colores.glow} overflow-hidden`}>
+      <div className="flex items-center justify-between px-8 py-6 border-b border-gray-700/40 bg-gradient-to-r from-transparent via-white/5 to-transparent">
+        <div className="flex items-center gap-4">
+          <div className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center text-white shadow-xl ${tema.colores.glow}`}>
+            <List className="w-7 h-7" />
+          </div>
+          <div>
+            <h3 className={`text-2xl font-black ${tema.colores.texto}`}>
+              Vista de Lista Premium
+            </h3>
+            <p className={`text-sm font-semibold ${tema.colores.textoSecundario}`}>
+              Gestión detallada de todos tus tickets
+            </p>
+          </div>
+        </div>
+        <div className={`px-4 py-2 rounded-xl bg-gradient-to-r ${tema.colores.gradiente} text-white font-bold shadow-lg ${tema.colores.glow}`}>
+          {tickets.length} tickets
+        </div>
       </div>
-      <div
-        className={`text-xs font-bold uppercase tracking-wider ${tema.colores.textoSecundario}`}
-      >
-        {titulo}
+
+      <div className="overflow-x-auto custom-scrollbar">
+        <table className="min-w-full">
+          <thead>
+            <tr className={`border-b ${tema.colores.borde} bg-white/5 backdrop-blur-sm`}>
+              <th className={`px-6 py-4 text-left text-xs font-black uppercase tracking-wider ${tema.colores.textoSecundario}`}>
+                Ticket
+              </th>
+              <th className={`px-6 py-4 text-left text-xs font-black uppercase tracking-wider ${tema.colores.textoSecundario}`}>
+                Estado
+              </th>
+              <th className={`px-6 py-4 text-left text-xs font-black uppercase tracking-wider ${tema.colores.textoSecundario}`}>
+                Prioridad
+              </th>
+              <th className={`px-6 py-4 text-left text-xs font-black uppercase tracking-wider ${tema.colores.textoSecundario}`}>
+                Tipo
+              </th>
+              <th className={`px-6 py-4 text-left text-xs font-black uppercase tracking-wider ${tema.colores.textoSecundario}`}>
+                Centro
+              </th>
+              <th className={`px-6 py-4 text-left text-xs font-black uppercase tracking-wider ${tema.colores.textoSecundario}`}>
+                Solicitante
+              </th>
+              <th className={`px-6 py-4 text-left text-xs font-black uppercase tracking-wider ${tema.colores.textoSecundario}`}>
+                Creado
+              </th>
+              <th className={`px-6 py-4 text-right text-xs font-black uppercase tracking-wider ${tema.colores.textoSecundario}`}>
+                Acciones
+              </th>
+            </tr>
+          </thead>
+          <tbody className={`divide-y ${tema.colores.borde}`}>
+            {tickets.map((ticket: Ticket, index: number) => (
+              <tr
+                key={ticket.id_ticket}
+                className={`${tema.colores.hover} transition-all duration-300 hover:scale-[1.01] cursor-pointer group`}
+                onClick={() => setTicketSeleccionado(ticket)}
+                style={{ animationDelay: `${index * 50}ms` }}
+              >
+                <td className="px-6 py-4">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform duration-300 ${tema.colores.glow}`}>
+                      {(() => {
+                        const Icono = obtenerIconoTipo(ticket.tipo);
+                        return <Icono className="w-6 h-6" />;
+                      })()}
+                    </div>
+                    <div>
+                      <p className={`font-black ${tema.colores.texto} text-sm mb-1`}>
+                        {ticket.numero_ticket}
+                      </p>
+                      <p className={`text-xs font-semibold ${tema.colores.textoSecundario} line-clamp-1`}>
+                        {ticket.titulo}
+                      </p>
+                      {ticket.equipo_afectado && (
+                        <p className={`text-xs font-semibold ${tema.colores.textoSecundario} flex items-center gap-1 mt-1`}>
+                          <Cpu className="w-3 h-3" />
+                          {ticket.equipo_afectado.nombre}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </td>
+                <td className="px-6 py-4">
+                  <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold border shadow-lg ${obtenerColorEstado(ticket.estado)}`}>
+                    <Activity className="w-3 h-3" />
+                    {ticket.estado}
+                  </span>
+                </td>
+                <td className="px-6 py-4">
+                  <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold border shadow-lg ${obtenerColorPrioridad(ticket.prioridad)}`}>
+                    {ticket.prioridad === "critica" && <Flame className="w-3 h-3 animate-pulse" />}
+                    {ticket.prioridad !== "critica" && <ZapIcon className="w-3 h-3" />}
+                    {ticket.prioridad}
+                  </span>
+                </td>
+                <td className="px-6 py-4">
+                  <span className={`inline-flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold ${tema.colores.hover} bg-white/5`}>
+                    {(() => {
+                      const Icono = obtenerIconoTipo(ticket.tipo);
+                      return <Icono className="w-4 h-4" />;
+                    })()}
+                    {ticket.tipo.toUpperCase()}
+                  </span>
+                </td>
+                <td className="px-6 py-4">
+                  <div className="text-xs">
+                    <p className={`font-bold ${tema.colores.texto} mb-1`}>
+                      {ticket.centro?.nombre}
+                    </p>
+                    <p className={`font-semibold ${tema.colores.textoSecundario} flex items-center gap-1`}>
+                      <MapPin className="w-3 h-3" />
+                      {ticket.centro?.ciudad}
+                    </p>
+                  </div>
+                </td>
+                <td className="px-6 py-4">
+                  <div className="text-xs">
+                    <p className={`font-bold ${tema.colores.texto} mb-1`}>
+                      {ticket.solicitante.nombre_completo}
+                    </p>
+                    <p className={`font-semibold ${tema.colores.textoSecundario}`}>
+                      {ticket.solicitante.email}
+                    </p>
+                  </div>
+                </td>
+                <td className="px-6 py-4">
+                  <div className="flex items-center gap-2">
+                    <Clock className={`w-4 h-4 ${tema.colores.textoSecundario}`} />
+                    <span className={`text-xs font-bold ${tema.colores.texto}`}>
+                      {formatearFecha(ticket.fecha_creacion)}
+                    </span>
+                  </div>
+                </td>
+                <td className="px-6 py-4 text-right">
+                  <div className="flex flex-wrap justify-end gap-2">
+                    {ticket.estado === "abierto" && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          actualizarEstadoTicket(ticket.id_ticket, "en_progreso");
+                        }}
+                        className="px-4 py-2 bg-gradient-to-r from-blue-600 to-cyan-600 hover:from-blue-700 hover:to-cyan-700 text-white rounded-xl text-xs font-bold transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-blue-500/50"
+                      >
+                        Iniciar
+                      </button>
+                    )}
+                    {ticket.estado === "en_progreso" && (
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          actualizarEstadoTicket(ticket.id_ticket, "resuelto");
+                        }}
+                        className="px-4 py-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white rounded-xl text-xs font-bold transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-emerald-500/50"
+                      >
+                        Resolver
+                      </button>
+                    )}
+                    <Link
+                      href={`/tecnico/tickets/${ticket.id_ticket}`}
+                      onClick={(e) => e.stopPropagation()}
+                      className={`px-4 py-2 ${tema.colores.primario} text-white rounded-xl text-xs font-bold transition-all duration-300 hover:scale-105 shadow-lg flex items-center gap-2`}
+                    >
+                      <Eye className="w-4 h-4" />
+                      Ver
+                    </Link>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
       </div>
-      <div className="mt-2">
-        <span
-          className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-semibold ${tema.colores.hover}`}
-        >
-          <ZapIcon className="w-3 h-3" />
-          {chip}
-        </span>
+
+      {/* Paginación Premium */}
+      <div className="flex items-center justify-between px-8 py-6 border-t border-gray-700/40 bg-gradient-to-r from-transparent via-white/5 to-transparent">
+        <div className={`text-sm font-bold ${tema.colores.textoSecundario}`}>
+          Mostrando <span className={tema.colores.acento}>{tickets.length}</span> de{" "}
+          <span className={tema.colores.acento}>{ticketsFiltrados.length}</span> tickets
+        </div>
+        <div className="flex items-center gap-3">
+          <button
+            disabled={paginaActual === 1}
+            onClick={() => setPaginaActual((p: number) => Math.max(1, p - 1))}
+            className={`px-5 py-2 rounded-xl border font-bold text-sm transition-all duration-300 ${
+              paginaActual === 1
+                ? "opacity-50 cursor-not-allowed"
+                : `${tema.colores.hover} hover:scale-105 shadow-lg`
+            }`}
+          >
+            Anterior
+          </button>
+          <div className={`flex items-center gap-2 px-4 py-2 rounded-xl ${tema.colores.card} ${tema.colores.borde} border`}>
+            <span className={`text-sm font-bold ${tema.colores.textoSecundario}`}>
+              Página
+            </span>
+            <span className={`text-lg font-black ${tema.colores.texto}`}>
+              {paginaActual}
+            </span>
+            <span className={`text-sm font-bold ${tema.colores.textoSecundario}`}>
+              de {totalPaginas}
+            </span>
+          </div>
+          <button
+            disabled={paginaActual === totalPaginas}
+            onClick={() => setPaginaActual((p: number) => Math.min(totalPaginas, p + 1))}
+            className={`px-5 py-2 rounded-xl border font-bold text-sm transition-all duration-300 ${
+              paginaActual === totalPaginas
+                ? "opacity-50 cursor-not-allowed"
+                : `${tema.colores.hover} hover:scale-105 shadow-lg`
+            }`}
+          >
+            Siguiente
+          </button>
+        </div>
       </div>
     </div>
   );
 }
 
-// Iconos simples para vista toggle
-function Squares2X2Icon() {
+// Vista Tablero Kanban Premium
+function VistaTableroPremium({
+  tema,
+  tickets,
+  columnasKanban,
+  obtenerIconoTipo,
+  obtenerColorPrioridad,
+  formatearFechaSoloDia,
+  actualizarEstadoTicket,
+  setTicketSeleccionado,
+}: any) {
   return (
-    <div className="grid grid-cols-2 grid-rows-2 gap-[2px]">
-      <div className="w-2.5 h-2.5 rounded-[4px] bg-current" />
-      <div className="w-2.5 h-2.5 rounded-[4px] bg-current" />
-      <div className="w-2.5 h-2.5 rounded-[4px] bg-current" />
-      <div className="w-2.5 h-2.5 rounded-[4px] bg-current" />
+    <div className={`rounded-3xl p-8 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} ${tema.colores.glow} relative overflow-hidden`}>
+      {/* Fondo decorativo */}
+      <div className="absolute inset-0 opacity-5">
+        <div className={`absolute top-0 right-0 w-96 h-96 bg-gradient-to-br ${tema.colores.gradiente} rounded-full blur-3xl animate-pulse`}></div>
+        <div className={`absolute bottom-0 left-0 w-96 h-96 bg-gradient-to-tr ${tema.colores.gradiente} rounded-full blur-3xl animate-pulse`} style={{ animationDelay: '2s' }}></div>
+      </div>
+
+      <div className="relative z-10">
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-4">
+            <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center text-white shadow-2xl ${tema.colores.glow} animate-float`}>
+              <Grid2X2 className="w-8 h-8" />
+            </div>
+            <div>
+              <h3 className={`text-3xl font-black ${tema.colores.texto}`}>
+                Tablero Kanban Premium
+              </h3>
+              <p className={`text-sm font-bold ${tema.colores.textoSecundario}`}>
+                Visualización de flujo de trabajo en tiempo real
+              </p>
+            </div>
+          </div>
+          <div className={`px-6 py-3 rounded-2xl bg-gradient-to-r ${tema.colores.gradiente} text-white font-black text-lg shadow-2xl ${tema.colores.glow}`}>
+            {tickets.length} Tickets Activos
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+          {columnasKanban.map((col: any, colIndex: number) => {
+            const items = tickets.filter((t: Ticket) => t.estado === col.id);
+
+            return (
+              <div
+                key={col.id}
+                className={`flex flex-col rounded-2xl p-5 ${tema.colores.card} ${tema.colores.borde} border bg-opacity-60 backdrop-blur-xl transition-all duration-500 hover:scale-105 hover:-translate-y-1 ${tema.colores.sombra}`}
+                style={{ animationDelay: `${colIndex * 100}ms` }}
+              >
+                <div className="flex items-center justify-between mb-4 pb-4 border-b border-gray-700/30">
+                  <div>
+                    <h4 className={`text-lg font-black ${tema.colores.texto} mb-1`}>
+                      {col.titulo}
+                    </h4>
+                    <p className={`text-xs font-semibold ${tema.colores.textoSecundario}`}>
+                      {col.descripcion}
+                    </p>
+                  </div>
+                  <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center text-white font-black shadow-lg ${tema.colores.glow}`}>
+                    {items.length}
+                  </div>
+                </div>
+
+                <div className="space-y-4 max-h-[600px] overflow-y-auto custom-scrollbar pr-2">
+                  {items.length === 0 ? (
+                    <div className={`border-2 border-dashed ${tema.colores.borde} rounded-2xl p-8 text-center`}>
+                      <div className={`w-16 h-16 mx-auto mb-3 rounded-xl bg-white/5 flex items-center justify-center`}>
+                        <ClipboardList className={`w-8 h-8 ${tema.colores.textoSecundario} opacity-50`} />
+                      </div>
+                      <p className={`text-xs font-bold ${tema.colores.textoSecundario}`}>
+                        Sin tickets en esta columna
+                      </p>
+                    </div>
+                  ) : (
+                    items.map((ticket: Ticket, ticketIndex: number) => (
+                      <div
+                        key={ticket.id_ticket}
+                        className={`rounded-2xl p-5 ${tema.colores.card} ${tema.colores.borde} border transition-all duration-300 hover:scale-105 hover:-translate-y-1 cursor-pointer group ${tema.colores.sombra} relative overflow-hidden`}
+                        onClick={() => setTicketSeleccionado(ticket)}
+                        style={{ animationDelay: `${ticketIndex * 50}ms` }}
+                      >
+                        {/* Efecto de brillo en hover */}
+                        <div className="absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-300">
+                          <div className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-br ${tema.colores.gradiente} rounded-full blur-2xl`}></div>
+                        </div>
+
+                        <div className="relative z-10">
+                          <div className="flex items-start gap-3 mb-3">
+                            <div className={`w-12 h-12 rounded-xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center text-white flex-shrink-0 shadow-lg group-hover:scale-110 transition-transform duration-300 ${tema.colores.glow}`}>
+                              {(() => {
+                                const Icono = obtenerIconoTipo(ticket.tipo);
+                                return <Icono className="w-6 h-6" />;
+                              })()}
+                            </div>
+                            <div className="flex-1 min-w-0">
+                              <p className={`text-xs font-black ${tema.colores.texto} mb-1`}>
+                                {ticket.numero_ticket}
+                              </p>
+                              <p className={`text-sm font-bold ${tema.colores.texto} line-clamp-2 mb-2`}>
+                                {ticket.titulo}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-wrap items-center gap-2 mb-3">
+                            <span className={`px-3 py-1 rounded-full text-xs font-bold border shadow-md ${obtenerColorPrioridad(ticket.prioridad)}`}>
+                              {ticket.prioridad === "critica" && "🔥"}
+                              {ticket.prioridad === "alta" && "🟠"}
+                              {ticket.prioridad === "media" && "🟡"}
+                              {ticket.prioridad === "baja" && "🟢"}
+                              {" "}{ticket.prioridad}
+                            </span>
+                            <span className={`px-3 py-1 rounded-full text-xs font-bold bg-white/5 backdrop-blur-sm ${tema.colores.texto}`}>
+                              {ticket.centro?.nombre}
+                            </span>
+                          </div>
+
+                          <div className={`flex items-center gap-2 text-xs font-semibold ${tema.colores.textoSecundario} mb-3 pb-3 border-b border-gray-700/30`}>
+                            <Calendar className="w-3 h-3" />
+                            {formatearFechaSoloDia(ticket.fecha_creacion)}
+                          </div>
+
+                          <div className="flex items-center gap-2 text-xs mb-3">
+                            <User className={`w-3 h-3 ${tema.colores.textoSecundario}`} />
+                            <span className={`font-semibold ${tema.colores.texto} truncate`}>
+                              {ticket.solicitante.nombre_completo}
+                            </span>
+                          </div>
+
+                          {ticket.equipo_afectado && (
+                            <div className={`flex items-center gap-2 text-xs mb-3 p-2 rounded-lg bg-white/5`}>
+                              <Cpu className={`w-3 h-3 ${tema.colores.textoSecundario}`} />
+                              <span className={`font-semibold ${tema.colores.texto} truncate`}>
+                                {ticket.equipo_afectado.nombre}
+                              </span>
+                            </div>
+                          )}
+
+                          <div className="grid grid-cols-2 gap-2 text-xs">
+                            {col.id !== "en_progreso" && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  actualizarEstadoTicket(ticket.id_ticket, "en_progreso");
+                                }}
+                                className="px-3 py-2 rounded-lg bg-gradient-to-r from-blue-600 to-cyan-600 text-white font-bold transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-blue-500/50"
+                              >
+                                ▶ Progreso
+                              </button>
+                            )}
+                            {col.id !== "resuelto" && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  actualizarEstadoTicket(ticket.id_ticket, "resuelto");
+                                }}
+                                className="px-3 py-2 rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 text-white font-bold transition-all duration-300 hover:scale-105 shadow-lg hover:shadow-emerald-500/50"
+                              >
+                                ✓ Resolver
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
     </div>
   );
 }
 
-function ListIcon() {
+// Vista Timeline Premium
+function VistaTimelinePremium({
+  tema,
+  tickets,
+  obtenerIconoTipo,
+  obtenerColorEstado,
+  obtenerColorPrioridad,
+  formatearFecha,
+  setTicketSeleccionado,
+}: any) {
+  // Agrupar tickets por fecha
+  const ticketsPorFecha = tickets.reduce((acc: any, ticket: Ticket) => {
+    const fecha = new Date(ticket.fecha_creacion).toLocaleDateString('es-CL', {
+      weekday: 'long',
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+    if (!acc[fecha]) {
+      acc[fecha] = [];
+    }
+    acc[fecha].push(ticket);
+    return acc;
+  }, {});
+
   return (
-    <div className="flex flex-col gap-[3px]">
-      <div className="w-5 h-[2px] rounded-full bg-current" />
-      <div className="w-4 h-[2px] rounded-full bg-current" />
-      <div className="w-3 h-[2px] rounded-full bg-current" />
+    <div className={`rounded-3xl p-8 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} ${tema.colores.glow} relative overflow-hidden`}>
+      {/* Fondo decorativo */}
+      <div className="absolute inset-0 opacity-5">
+        <div className={`absolute top-0 right-0 w-96 h-96 bg-gradient-to-br ${tema.colores.gradiente} rounded-full blur-3xl animate-pulse`}></div>
+      </div>
+
+      <div className="relative z-10">
+        <div className="flex items-center justify-between mb-8">
+          <div className="flex items-center gap-4">
+            <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center text-white shadow-2xl ${tema.colores.glow} animate-float`}>
+              <CalendarClock className="w-8 h-8" />
+            </div>
+            <div>
+              <h3 className={`text-3xl font-black ${tema.colores.texto}`}>
+                Timeline Premium
+              </h3>
+              <p className={`text-sm font-bold ${tema.colores.textoSecundario}`}>
+                Cronología completa de tickets por fecha
+              </p>
+            </div>
+          </div>
+          <div className={`px-6 py-3 rounded-2xl bg-gradient-to-r ${tema.colores.gradiente} text-white font-black text-lg shadow-2xl ${tema.colores.glow}`}>
+            {Object.keys(ticketsPorFecha).length} Días
+          </div>
+        </div>
+
+        <div className="space-y-8">
+          {Object.entries(ticketsPorFecha).map(([fecha, ticketsDelDia]: [string, any], dateIndex: number) => (
+            <div
+              key={fecha}
+              className="relative"
+              style={{ animationDelay: `${dateIndex * 100}ms` }}
+            >
+              {/* Línea de tiempo */}
+              <div className="absolute left-8 top-16 bottom-0 w-1 bg-gradient-to-b from-indigo-500 via-purple-500 to-pink-500 opacity-30"></div>
+
+              {/* Encabezado de fecha */}
+              <div className="flex items-center gap-4 mb-6 relative z-10">
+                <div className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center text-white shadow-2xl ${tema.colores.glow} font-black text-sm`}>
+                  {new Date(ticketsDelDia[0].fecha_creacion).getDate()}
+                </div>
+                <div>
+                  <h4 className={`text-2xl font-black ${tema.colores.texto} capitalize`}>
+                    {fecha}
+                  </h4>
+                  <p className={`text-sm font-bold ${tema.colores.textoSecundario}`}>
+                    {ticketsDelDia.length} ticket{ticketsDelDia.length !== 1 ? 's' : ''} registrado{ticketsDelDia.length !== 1 ? 's' : ''}
+                  </p>
+                </div>
+              </div>
+
+              {/* Tickets del día */}
+              <div className="ml-24 space-y-4">
+                {ticketsDelDia.map((ticket: Ticket, ticketIndex: number) => (
+                  <div
+                    key={ticket.id_ticket}
+                    className={`rounded-2xl p-6 ${tema.colores.card} ${tema.colores.borde} border transition-all duration-300 hover:scale-105 hover:-translate-y-1 cursor-pointer group ${tema.colores.sombra} relative overflow-hidden`}
+                    onClick={() => setTicketSeleccionado(ticket)}
+                    style={{ animationDelay: `${ticketIndex * 50}ms` }}
+                  >
+                    {/* Efecto de brillo */}
+                    <div className="absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-300">
+                      <div className={`absolute top-0 right-0 w-64 h-64 bg-gradient-to-br ${tema.colores.gradiente} rounded-full blur-3xl`}></div>
+                    </div>
+
+                    <div className="relative z-10">
+                      <div className="flex items-start gap-4 mb-4">
+                        <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center text-white shadow-xl group-hover:scale-110 transition-transform duration-300 ${tema.colores.glow}`}>
+                          {(() => {
+                            const Icono = obtenerIconoTipo(ticket.tipo);
+                            return <Icono className="w-7 h-7" />;
+                          })()}
+                        </div>
+                        <div className="flex-1">
+                          <div className="flex items-start justify-between mb-2">
+                            <div>
+                              <p className={`text-xs font-black uppercase tracking-wider ${tema.colores.textoSecundario} mb-1`}>
+                                {ticket.numero_ticket}
+                              </p>
+                              <h5 className={`text-xl font-black ${tema.colores.texto} mb-2`}>
+                                {ticket.titulo}
+                              </h5>
+                            </div>
+                            <div className="flex items-center gap-2 text-xs font-bold">
+                              <Clock className={`w-4 h-4 ${tema.colores.textoSecundario}`} />
+                              <span className={tema.colores.texto}>
+                                {formatearFecha(ticket.fecha_creacion)}
+                              </span>
+                            </div>
+                          </div>
+
+                          <p className={`text-sm font-semibold ${tema.colores.textoSecundario} mb-4 line-clamp-2`}>
+                            {ticket.descripcion}
+                          </p>
+
+                          <div className="flex flex-wrap items-center gap-3 mb-4">
+                            <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold border shadow-lg ${obtenerColorEstado(ticket.estado)}`}>
+                              <Activity className="w-3 h-3" />
+                              {ticket.estado}
+                            </span>
+                            <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold border shadow-lg ${obtenerColorPrioridad(ticket.prioridad)}`}>
+                              {ticket.prioridad === "critica" && <Flame className="w-3 h-3 animate-pulse" />}
+                              {ticket.prioridad !== "critica" && <ZapIcon className="w-3 h-3" />}
+                              {ticket.prioridad}
+                            </span>
+                            <span className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold bg-white/5 backdrop-blur-sm ${tema.colores.texto}`}>
+                              {(() => {
+                                const Icono = obtenerIconoTipo(ticket.tipo);
+                                return <Icono className="w-3 h-3" />;
+                              })()}
+                              {ticket.tipo.toUpperCase()}
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                            <div className={`flex items-center gap-2 text-xs p-3 rounded-lg bg-white/5`}>
+                              <Building2 className={`w-4 h-4 ${tema.colores.textoSecundario}`} />
+                              <div>
+                                <p className={`font-bold ${tema.colores.texto}`}>
+                                  {ticket.centro?.nombre}
+                                </p>
+                                <p className={`font-semibold ${tema.colores.textoSecundario}`}>
+                                  {ticket.centro?.ciudad}
+                                </p>
+                              </div>
+                            </div>
+                            <div className={`flex items-center gap-2 text-xs p-3 rounded-lg bg-white/5`}>
+                              <User className={`w-4 h-4 ${tema.colores.textoSecundario}`} />
+                              <div>
+                                <p className={`font-bold ${tema.colores.texto}`}>
+                                  {ticket.solicitante.nombre_completo}
+                                </p>
+                                <p className={`font-semibold ${tema.colores.textoSecundario}`}>
+                                  {ticket.solicitante.email}
+                                </p>
+                              </div>
+                            </div>
+                            {ticket.equipo_afectado && (
+                              <div className={`flex items-center gap-2 text-xs p-3 rounded-lg bg-white/5`}>
+                                <Cpu className={`w-4 h-4 ${tema.colores.textoSecundario}`} />
+                                <div>
+                                  <p className={`font-bold ${tema.colores.texto}`}>
+                                    {ticket.equipo_afectado.nombre}
+                                  </p>
+                                  <p className={`font-semibold ${tema.colores.textoSecundario}`}>
+                                    {ticket.equipo_afectado.tipo}
+                                  </p>
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center gap-2 pt-4 border-t border-gray-700/30">
+                        <Link
+                          href={`/tecnico/tickets/${ticket.id_ticket}`}
+                          onClick={(e) => e.stopPropagation()}
+                          className={`flex-1 px-4 py-2 ${tema.colores.primario} text-white rounded-xl text-sm font-bold transition-all duration-300 hover:scale-105 shadow-lg flex items-center justify-center gap-2`}
+                        >
+                          <Eye className="w-4 h-4" />
+                          Ver Detalles Completos
+                        </Link>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setTicketSeleccionado(ticket);
+                          }}
+                          className={`px-4 py-2 ${tema.colores.secundario} rounded-xl font-bold text-sm transition-all duration-300 hover:scale-105`}
+                        >
+                          <MoreVertical className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {Object.keys(ticketsPorFecha).length === 0 && (
+          <div className="text-center py-16">
+            <div className={`w-24 h-24 mx-auto mb-6 rounded-2xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center opacity-50`}>
+              <CalendarClock className="w-12 h-12 text-white" />
+            </div>
+            <p className={`text-xl font-black ${tema.colores.texto} mb-2`}>
+              No hay tickets en el timeline
+            </p>
+            <p className={`text-sm font-semibold ${tema.colores.textoSecundario}`}>
+              Los tickets aparecerán aquí organizados cronológicamente
+            </p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

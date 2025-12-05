@@ -1,4 +1,4 @@
-// src/app/(dashboard)/secretaria/tareas/[id]/editar/page.tsx
+// src/app/(dashboard)/tecnico/tareas/[id]/editar/page.tsx
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
@@ -12,90 +12,56 @@ import {
   BarChart3,
   Bell,
   BellOff,
-  Briefcase,
+  Building2,
   Calendar,
-  Square,
-  CalendarCheck,
-  CalendarClock,
-  CalendarDays,
-  CalendarPlus,
-  CalendarRange,
   Check,
-  CheckSquare2,
+  UserCheck ,
   CheckCircle2,
+  CheckSquare2,
   ChevronDown,
   ChevronRight,
   Clock,
   ClipboardCheck,
   ClipboardList,
-  Cloud,
-  CreditCard,
-  Database,
-  DollarSign,
-  Download,
+  Edit,
   Eye,
-  EyeOff,
+  FileSpreadsheet,
   FileText,
   Filter,
   Flame,
-  Gift,
-  Globe,
-  Heart,
   HeartPulse,
   Home,
   Layers,
   Lightbulb,
-  LineChart,
   Loader2,
   Lock,
   LogOut,
-  Mail,
   MapPin,
-  MessageSquare,
-  Mic,
   Moon,
-  Edit,
   MoreVertical,
-  Paperclip,
-  Percent,
-  Trash,
-  Phone,
-  PhoneCall,
   PieChart,
   Plus,
   RefreshCw,
+  Save,
   Search,
   Send,
   Settings,
-  Share2,
   Shield,
   ShieldCheck,
+  Sparkles,
   Star,
   Sun,
   Target,
-  TrendingDown,
+  Trash,
   TrendingUp,
-  Upload,
   User,
-  UserCheck,
-  UserCog,
-  UserPlus,
   Users,
-  Video,
-  Wifi,
-  WifiOff,
   X,
   Zap,
-  Sparkles,
+  ArrowLeft,
   ArrowUpRight,
   ArrowDownRight,
-  ArrowLeft,
-  Stethoscope,
-  FileSpreadsheet,
-  Pill,
-  PhoneOutgoing,
-  PhoneIncoming,
-  Save,
+  Radio,
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
@@ -231,17 +197,6 @@ interface NotificacionSistema {
   prioridad: "baja" | "media" | "alta";
 }
 
-interface MenuItem {
-  titulo: string;
-  icono: any;
-  url: string;
-  badge?: number;
-  submenu?: MenuItem[];
-  activo?: boolean;
-  target?: string;
-  rel?: string;
-}
-
 interface EstadisticasTecnico {
   tickets_asignados_hoy: number;
   tickets_abiertos: number;
@@ -285,108 +240,115 @@ interface FormularioTarea {
 }
 
 // ========================================
-// CONFIGURACIÓN DE TEMAS
+// CONFIGURACIÓN DE TEMAS ULTRA PREMIUM
 // ========================================
 
 const TEMAS: Record<TemaColor, ConfiguracionTema> = {
   light: {
-    nombre: "Claro",
+    nombre: "Claro Profesional",
     icono: Sun,
     colores: {
       fondo: "from-slate-50 via-blue-50 to-indigo-50",
       fondoSecundario: "bg-white",
       texto: "text-gray-900",
       textoSecundario: "text-gray-600",
-      primario: "bg-indigo-600 hover:bg-indigo-700",
-      secundario: "bg-gray-200 hover:bg-gray-300",
+      primario:
+        "bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700",
+      secundario: "bg-gray-100 hover:bg-gray-200",
       acento: "text-indigo-600",
       borde: "border-gray-200",
-      sombra: "shadow-xl shadow-indigo-100/50",
+      sombra: "shadow-2xl shadow-indigo-500/10",
       gradiente: "from-indigo-500 via-purple-500 to-pink-500",
-      sidebar: "bg-white/95 backdrop-blur-xl border-gray-200",
-      header: "bg-white/80 backdrop-blur-xl border-gray-200",
-      card: "bg-white border-gray-200 hover:border-indigo-300",
-      hover: "hover:bg-gray-50",
+      sidebar: "bg-white/95 backdrop-blur-2xl border-gray-200",
+      header: "bg-white/90 backdrop-blur-2xl border-gray-200",
+      card: "bg-white/80 backdrop-blur-sm border-gray-200 hover:border-indigo-300 hover:shadow-xl hover:shadow-indigo-500/10",
+      hover: "hover:bg-gradient-to-r hover:from-indigo-50 hover:to-purple-50",
     },
   },
   dark: {
-    nombre: "Oscuro",
+    nombre: "Oscuro Elite",
     icono: Moon,
     colores: {
       fondo: "from-slate-950 via-indigo-950 to-purple-950",
       fondoSecundario: "bg-gray-900",
       texto: "text-white",
       textoSecundario: "text-gray-400",
-      primario: "bg-indigo-600 hover:bg-indigo-700",
-      secundario: "bg-gray-800 hover:bg-gray-700",
+      primario:
+        "bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500",
+      secundario: "bg-gray-800/50 hover:bg-gray-700/50 backdrop-blur-sm",
       acento: "text-indigo-400",
       borde: "border-gray-800",
       sombra: "shadow-2xl shadow-indigo-500/20",
       gradiente: "from-indigo-500 via-purple-500 to-pink-500",
-      sidebar: "bg-gray-900/95 backdrop-blur-xl border-gray-800",
-      header: "bg-gray-900/80 backdrop-blur-xl border-gray-800",
-      card: "bg-gray-800/50 border-gray-700 hover:border-indigo-500/50",
-      hover: "hover:bg-gray-800",
+      sidebar: "bg-gray-900/95 backdrop-blur-2xl border-gray-800",
+      header: "bg-gray-900/90 backdrop-blur-2xl border-gray-800",
+      card: "bg-gray-800/50 backdrop-blur-sm border-gray-700 hover:border-indigo-500/50 hover:shadow-2xl hover:shadow-indigo-500/20",
+      hover: "hover:bg-gradient-to-r hover:from-gray-800/80 hover:to-indigo-900/30",
     },
   },
   blue: {
-    nombre: "Azul Océano",
-    icono: Wifi,
+    nombre: "Azul Océano Pro",
+    icono: Zap,
     colores: {
       fondo: "from-blue-950 via-cyan-950 to-teal-950",
       fondoSecundario: "bg-blue-900",
       texto: "text-white",
       textoSecundario: "text-cyan-300",
-      primario: "bg-cyan-600 hover:bg-cyan-700",
-      secundario: "bg-blue-800 hover:bg-blue-700",
+      primario:
+        "bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500",
+      secundario: "bg-blue-800/50 hover:bg-blue-700/50 backdrop-blur-sm",
       acento: "text-cyan-400",
       borde: "border-cyan-800",
       sombra: "shadow-2xl shadow-cyan-500/20",
       gradiente: "from-cyan-500 via-blue-500 to-indigo-500",
-      sidebar: "bg-blue-900/95 backdrop-blur-xl border-cyan-800",
-      header: "bg-blue-900/80 backdrop-blur-xl border-cyan-800",
-      card: "bg-blue-800/50 border-cyan-700 hover:border-cyan-500/50",
-      hover: "hover:bg-blue-800",
+      sidebar: "bg-blue-900/95 backdrop-blur-2xl border-cyan-800",
+      header: "bg-blue-900/90 backdrop-blur-2xl border-cyan-800",
+      card: "bg-blue-800/50 backdrop-blur-sm border-cyan-700 hover:border-cyan-500/50 hover:shadow-2xl hover:shadow-cyan-500/20",
+      hover: "hover:bg-gradient-to-r hover:from-blue-800/80 hover:to-cyan-900/30",
     },
   },
   purple: {
-    nombre: "Púrpura Real",
+    nombre: "Púrpura Real Elite",
     icono: Sparkles,
     colores: {
       fondo: "from-purple-950 via-fuchsia-950 to-pink-950",
       fondoSecundario: "bg-purple-900",
       texto: "text-white",
       textoSecundario: "text-purple-300",
-      primario: "bg-fuchsia-600 hover:bg-fuchsia-700",
-      secundario: "bg-purple-800 hover:bg-purple-700",
+      primario:
+        "bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-500 hover:to-purple-500",
+      secundario: "bg-purple-800/50 hover:bg-purple-700/50 backdrop-blur-sm",
       acento: "text-fuchsia-400",
       borde: "border-purple-800",
       sombra: "shadow-2xl shadow-fuchsia-500/20",
       gradiente: "from-fuchsia-500 via-purple-500 to-pink-500",
-      sidebar: "bg-purple-900/95 backdrop-blur-xl border-purple-800",
-      header: "bg-purple-900/80 backdrop-blur-xl border-purple-800",
-      card: "bg-purple-800/50 border-purple-700 hover:border-fuchsia-500/50",
-      hover: "hover:bg-purple-800",
+      sidebar: "bg-purple-900/95 backdrop-blur-2xl border-purple-800",
+      header: "bg-purple-900/90 backdrop-blur-2xl border-purple-800",
+      card: "bg-purple-800/50 backdrop-blur-sm border-purple-700 hover:border-fuchsia-500/50 hover:shadow-2xl hover:shadow-fuchsia-500/20",
+      hover:
+        "hover:bg-gradient-to-r hover:from-purple-800/80 hover:to-fuchsia-900/30",
     },
   },
   green: {
-    nombre: "Verde Médico",
+    nombre: "Verde Médico Pro",
     icono: HeartPulse,
     colores: {
       fondo: "from-emerald-950 via-teal-950 to-cyan-950",
       fondoSecundario: "bg-emerald-900",
       texto: "text-white",
       textoSecundario: "text-emerald-300",
-      primario: "bg-emerald-600 hover:bg-emerald-700",
-      secundario: "bg-teal-800 hover:bg-teal-700",
+      primario:
+        "bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500",
+      secundario: "bg-teal-800/50 hover:bg-teal-700/50 backdrop-blur-sm",
       acento: "text-emerald-400",
       borde: "border-emerald-800",
       sombra: "shadow-2xl shadow-emerald-500/20",
       gradiente: "from-emerald-500 via-teal-500 to-cyan-500",
-      sidebar: "bg-emerald-900/95 backdrop-blur-xl border-emerald-800",
-      header: "bg-emerald-900/80 backdrop-blur-xl border-emerald-800",
-      card: "bg-emerald-800/50 border-emerald-700 hover:border-emerald-500/50",
-      hover: "hover:bg-emerald-800",
+      sidebar: "bg-emerald-900/95 backdrop-blur-2xl border-emerald-800",
+      header: "bg-emerald-900/90 backdrop-blur-2xl border-emerald-800",
+      card: "bg-emerald-800/50 backdrop-blur-sm border-emerald-700 hover:border-emerald-500/50 hover:shadow-2xl hover:shadow-emerald-500/20",
+      hover:
+        "hover:bg-gradient-to-r hover:from-emerald-800/80 hover:to-teal-900/30",
     },
   },
 };
@@ -395,10 +357,10 @@ const TEMAS: Record<TemaColor, ConfiguracionTema> = {
 // COMPONENTE PRINCIPAL (EDITAR TAREA)
 // ========================================
 
-const roleParam = "secretaria";
-const roleLabel = "Secretaria";
+const roleParam = "tecnico";
+const roleLabel = "tecnico";
 
-export default function EditarTareaSecretariaPage() {
+export default function EditarTareatecnicoPage() {
   const pathname = usePathname();
   const router = useRouter();
   const params = useParams();
@@ -407,15 +369,13 @@ export default function EditarTareaSecretariaPage() {
 
   // Usuario y tema
   const [usuario, setUsuario] = useState<UsuarioSesion | null>(null);
-  const [temaActual, setTemaActual] = useState<TemaColor>("light");
+  const [temaActual, setTemaActual] = useState<TemaColor>("dark");
 
   // Loading
   const [loadingUsuario, setLoadingUsuario] = useState(true);
   const [loadingTarea, setLoadingTarea] = useState(true);
   const [loadingHistorial, setLoadingHistorial] = useState(true);
   const [guardando, setGuardando] = useState(false);
-
-  
 
   // Datos tarea
   const [tarea, setTarea] = useState<Tarea | null>(null);
@@ -447,39 +407,13 @@ export default function EditarTareaSecretariaPage() {
 
   const tema = useMemo(() => TEMAS[temaActual], [temaActual]);
 
-  // Sección activa
-  const seccionActiva = useMemo(() => {
-    if (pathname === "/secretaria") return "dashboard";
-    if (pathname.startsWith("/secretaria/tareas")) return "tareas";
-    if (pathname.startsWith("/secretaria/agenda")) return "agenda";
-    if (pathname.startsWith("/secretaria/confirmaciones")) return "confirmaciones";
-    if (pathname.startsWith("/secretaria/llamadas")) return "llamadas";
-    if (pathname.startsWith("/secretaria/pacientes")) return "pacientes";
-    if (pathname.startsWith("/secretaria/medicos")) return "medicos";
-    if (pathname.startsWith("/secretaria/recordatorios")) return "recordatorios";
-    if (pathname.startsWith("/secretaria/documentos")) return "documentos";
-    if (pathname.startsWith("/secretaria/mensajes")) return "mensajes";
-    if (pathname.startsWith("/secretaria/telemedicina")) return "telemedicina";
-    if (pathname.startsWith("/secretaria/reportes")) return "reportes";
-    if (pathname.startsWith("/secretaria/perfil")) return "perfil";
-    if (pathname.startsWith("/secretaria/configuracion")) return "configuracion";
-    return "";
-  }, [pathname]);
-
-  
-
-  // ========================================
-  // MENU DE NAVEGACIÓN
-  // ========================================
-
-
   // ========================================
   // EFECTOS
   // ========================================
 
   // Fondo global
   useEffect(() => {
-    document.body.className = `bg-gradient-to-br ${tema.colores.fondo} min-h-screen transition-all duration-500`;
+    document.body.className = `bg-gradient-to-br ${tema.colores.fondo} min-h-screen transition-all duration-700`;
   }, [tema]);
 
   // Cargar tema guardado
@@ -549,7 +483,6 @@ export default function EditarTareaSecretariaPage() {
               credentials: "include",
             }
           ),
-          // Ajusta esta ruta a tu API real de catálogos
           fetch(`/api/tareas/catalogos?rol=${roleParam}`, {
             method: "GET",
             headers: { "Content-Type": "application/json" },
@@ -602,13 +535,6 @@ export default function EditarTareaSecretariaPage() {
                 ? (dataCat.tipos as string[])
                 : []
             );
-        } else {
-          // Fallback: tipos desde tarea
-          setTiposDisponibles((prev) =>
-            prev.length || !tarea
-              ? prev
-              : [tarea.tipo || "secretaria"].filter(Boolean)
-          );
         }
 
         if (resHist && resHist.ok) {
@@ -704,7 +630,6 @@ export default function EditarTareaSecretariaPage() {
 
   const extraerFechaInput = (fecha: string | null): string | null => {
     if (!fecha) return null;
-    // Si ya viene yyyy-mm-dd lo dejamos
     if (/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return fecha;
     const d = new Date(fecha);
     if (Number.isNaN(d.getTime())) return null;
@@ -718,30 +643,30 @@ export default function EditarTareaSecretariaPage() {
     const isDark = ["dark", "blue", "purple", "green"].includes(temaActual);
     const map: Record<string, string> = {
       pendiente: isDark
-        ? "bg-yellow-500/20 text-yellow-300 border-yellow-500/40"
-        : "bg-yellow-100 text-yellow-800 border-yellow-200",
+        ? "bg-yellow-500/20 text-yellow-300 border-yellow-500/60 shadow-lg shadow-yellow-500/20"
+        : "bg-yellow-100 text-yellow-800 border-yellow-300 shadow-sm",
       en_progreso: isDark
-        ? "bg-sky-500/20 text-sky-300 border-sky-500/40"
-        : "bg-sky-100 text-sky-800 border-sky-200",
+        ? "bg-sky-500/20 text-sky-300 border-sky-500/60 shadow-lg shadow-sky-500/20 animate-pulse"
+        : "bg-sky-100 text-sky-800 border-sky-300 shadow-sm animate-pulse",
       en_revision: isDark
-        ? "bg-purple-500/20 text-purple-300 border-purple-500/40"
-        : "bg-purple-100 text-purple-800 border-purple-200",
+        ? "bg-purple-500/20 text-purple-300 border-purple-500/60 shadow-lg shadow-purple-500/20"
+        : "bg-purple-100 text-purple-800 border-purple-300 shadow-sm",
       completada: isDark
-        ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/40"
-        : "bg-emerald-100 text-emerald-800 border-emerald-200",
+        ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/60 shadow-lg shadow-emerald-500/20"
+        : "bg-emerald-100 text-emerald-800 border-emerald-300 shadow-sm",
       rechazada: isDark
-        ? "bg-red-500/20 text-red-300 border-red-500/40"
-        : "bg-red-100 text-red-800 border-red-200",
+        ? "bg-red-500/20 text-red-300 border-red-500/60 shadow-lg shadow-red-500/20"
+        : "bg-red-100 text-red-800 border-red-300 shadow-sm",
       cancelada: isDark
-        ? "bg-rose-500/20 text-rose-300 border-rose-500/40"
-        : "bg-rose-100 text-rose-800 border-rose-200",
+        ? "bg-rose-500/20 text-rose-300 border-rose-500/60 shadow-lg shadow-rose-500/20"
+        : "bg-rose-100 text-rose-800 border-rose-300 shadow-sm",
     };
 
     return (
       map[estado.toLowerCase()] ||
       (isDark
-        ? "bg-gray-500/20 text-gray-300 border-gray-500/40"
-        : "bg-gray-100 text-gray-800 border-gray-200")
+        ? "bg-gray-500/20 text-gray-300 border-gray-500/60"
+        : "bg-gray-100 text-gray-800 border-gray-300")
     );
   };
 
@@ -749,38 +674,28 @@ export default function EditarTareaSecretariaPage() {
     const isDark = ["dark", "blue", "purple", "green"].includes(temaActual);
     const map: Record<string, string> = {
       critica: isDark
-        ? "bg-red-600/30 text-red-200 border-red-500/60"
-        : "bg-red-100 text-red-800 border-red-300",
+        ? "bg-red-600/30 text-red-200 border-red-500/70 shadow-xl shadow-red-500/30 animate-pulse"
+        : "bg-red-100 text-red-800 border-red-400 shadow-md animate-pulse",
       urgente: isDark
-        ? "bg-orange-500/30 text-orange-200 border-orange-500/60"
-        : "bg-orange-100 text-orange-800 border-orange-300",
+        ? "bg-orange-500/30 text-orange-200 border-orange-500/70 shadow-lg shadow-orange-500/20"
+        : "bg-orange-100 text-orange-800 border-orange-400 shadow-sm",
       alta: isDark
-        ? "bg-amber-500/30 text-amber-200 border-amber-500/60"
-        : "bg-amber-100 text-amber-800 border-amber-300",
+        ? "bg-amber-500/30 text-amber-200 border-amber-500/70 shadow-lg shadow-amber-500/20"
+        : "bg-amber-100 text-amber-800 border-amber-400 shadow-sm",
       media: isDark
-        ? "bg-sky-500/30 text-sky-200 border-sky-500/60"
-        : "bg-sky-100 text-sky-800 border-sky-300",
+        ? "bg-sky-500/30 text-sky-200 border-sky-500/70 shadow-lg shadow-sky-500/20"
+        : "bg-sky-100 text-sky-800 border-sky-400 shadow-sm",
       baja: isDark
-        ? "bg-emerald-500/30 text-emerald-200 border-emerald-500/60"
-        : "bg-emerald-100 text-emerald-800 border-emerald-300",
+        ? "bg-emerald-500/30 text-emerald-200 border-emerald-500/70 shadow-lg shadow-emerald-500/20"
+        : "bg-emerald-100 text-emerald-800 border-emerald-400 shadow-sm",
     };
 
     return (
       map[prioridad.toLowerCase()] ||
       (isDark
-        ? "bg-gray-500/30 text-gray-200 border-gray-500/60"
-        : "bg-gray-100 text-gray-800 border-gray-300")
+        ? "bg-gray-500/30 text-gray-200 border-gray-500/70"
+        : "bg-gray-100 text-gray-800 border-gray-400")
     );
-  };
-
-  const obtenerIconoTendencia = (valor: number | undefined) => {
-    if (!valor || valor === 0) {
-      return <Activity className="w-4 h-4 text-gray-400" />;
-    }
-    if (valor > 0) {
-      return <ArrowUpRight className="w-4 h-4 text-green-500" />;
-    }
-    return <ArrowDownRight className="w-4 h-4 text-red-500" />;
   };
 
   const marcarNotificacionLeida = (idNotificacion: number) => {
@@ -792,9 +707,7 @@ export default function EditarTareaSecretariaPage() {
   };
 
   const estaDeshabilitado = (campo: keyof FormularioTarea) => {
-    // Si la tarea no se puede editar, todo deshabilitado
     if (tarea && tarea.puede_editar === false) return true;
-    // Ejemplo: podrías bloquear algunos campos según estado
     if (tarea && tarea.estado === "completada") {
       if (campo === "prioridad" || campo === "estado" || campo === "fecha_limite")
         return false;
@@ -958,8 +871,8 @@ export default function EditarTareaSecretariaPage() {
   };
 
   const volverADetalle = () => {
-    if (tarea) router.push(`/secretaria/tareas/${tarea.id_tarea}`);
-    else router.push("/secretaria/tareas");
+    if (tarea) router.push(`/tecnico/tareas/${tarea.id_tarea}`);
+    else router.push("/tecnico/tareas");
   };
 
   const volverALista = () => {
@@ -969,7 +882,7 @@ export default function EditarTareaSecretariaPage() {
       );
       if (!ok) return;
     }
-    router.push("/secretaria/tareas");
+    router.push("/tecnico/tareas");
   };
 
   // ========================================
@@ -979,24 +892,35 @@ export default function EditarTareaSecretariaPage() {
   if (loadingUsuario || !usuario) {
     return (
       <div
-        className={`min-h-screen flex items-center justify-center bg-gradient-to-br ${tema.colores.fondo}`}
+        className={`min-h-screen flex items-center justify-center bg-gradient-to-br ${tema.colores.fondo} relative overflow-hidden`}
       >
-        <div className="text-center">
+        {/* Efectos de fondo */}
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-0 left-1/4 w-96 h-96 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 rounded-full blur-3xl animate-pulse" />
+          <div
+            className="absolute bottom-0 right-1/4 w-96 h-96 bg-gradient-to-br from-pink-500/10 to-rose-500/10 rounded-full blur-3xl animate-pulse"
+            style={{ animationDelay: "1s" }}
+          />
+        </div>
+
+        <div className="text-center relative z-10">
           <div className="relative mb-8">
-            <div className="w-32 h-32 border-4 border-indigo-400 border-t-transparent rounded-full animate-spin" />
+            <div className="w-32 h-32 border-4 border-indigo-500/40 border-t-transparent rounded-full animate-spin" />
             <div
-              className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 bg-gradient-to-br ${tema.colores.gradiente} rounded-full flex items-center justify-center animate-pulse`}
+              className={`absolute inset-3 rounded-full bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center shadow-2xl`}
             >
-              <Edit className="w-10 h-10 text-white" />
+              <Edit className="w-12 h-12 text-white animate-pulse" />
             </div>
           </div>
-          <h2 className={`text-4xl font-black mb-4 ${tema.colores.texto}`}>
-            Preparando editor de tareas...
+          <h2
+            className={`text-5xl font-black mb-4 ${tema.colores.texto} bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 bg-clip-text text-transparent`}
+          >
+            Preparando Editor
           </h2>
           <p
             className={`text-lg font-semibold ${tema.colores.textoSecundario} animate-pulse`}
           >
-            Cargando datos de la tarea y tu sesión de secretaria
+            Cargando datos de la tarea...
           </p>
         </div>
       </div>
@@ -1009,23 +933,23 @@ export default function EditarTareaSecretariaPage() {
         className={`min-h-screen flex items-center justify-center bg-gradient-to-br ${tema.colores.fondo}`}
       >
         <div
-          className={`max-w-md mx-auto p-8 rounded-3xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} text-center`}
+          className={`max-w-md mx-auto p-10 rounded-3xl ${tema.colores.card} ${tema.colores.borde} border-2 ${tema.colores.sombra} text-center transform hover:scale-105 transition-all duration-300`}
         >
-          <div className="w-16 h-16 rounded-2xl bg-red-500/20 flex items-center justify-center mx-auto mb-4">
-            <AlertCircle className="w-8 h-8 text-red-400" />
+          <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-rose-500 to-red-500 flex items-center justify-center mx-auto mb-6 shadow-2xl">
+            <AlertCircle className="w-10 h-10 text-white" />
           </div>
-          <h2 className={`text-2xl font-black mb-2 ${tema.colores.texto}`}>
-            Tarea no válida
+          <h2 className={`text-3xl font-black mb-4 ${tema.colores.texto}`}>
+            Tarea No Válida
           </h2>
-          <p className={tema.colores.textoSecundario}>
+          <p className={`${tema.colores.textoSecundario} mb-8`}>
             No se pudo identificar el identificador de la tarea a editar.
           </p>
           <button
             onClick={volverALista}
-            className={`mt-6 inline-flex items-center gap-2 px-6 py-3 rounded-2xl font-bold ${tema.colores.primario} text-white ${tema.colores.sombra}`}
+            className={`inline-flex items-center gap-2 px-8 py-4 rounded-2xl font-bold ${tema.colores.primario} text-white ${tema.colores.sombra} hover:scale-105 transition-all duration-300`}
           >
-            <ArrowLeft className="w-4 h-4" />
-            Volver a mis tareas
+            <ArrowLeft className="w-5 h-5" />
+            Volver a Mis Tareas
           </button>
         </div>
       </div>
@@ -1033,13 +957,26 @@ export default function EditarTareaSecretariaPage() {
   }
 
   // ========================================
-  // RENDER PRINCIPAL
+  // RENDER PRINCIPAL ULTRA PREMIUM
   // ========================================
 
   return (
     <div
-      className={`min-h-screen transition-all duration-500 bg-gradient-to-br ${tema.colores.fondo}`}
+      className={`min-h-screen transition-all duration-700 bg-gradient-to-br ${tema.colores.fondo} relative overflow-hidden`}
     >
+      {/* Efectos de fondo animados */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 rounded-full blur-3xl animate-pulse" />
+        <div
+          className="absolute bottom-0 right-1/4 w-96 h-96 bg-gradient-to-br from-purple-500/10 to-pink-500/10 rounded-full blur-3xl animate-pulse"
+          style={{ animationDelay: "1s" }}
+        />
+        <div
+          className="absolute top-1/2 left-1/2 w-96 h-96 bg-gradient-to-br from-cyan-500/10 to-blue-500/10 rounded-full blur-3xl animate-pulse"
+          style={{ animationDelay: "2s" }}
+        />
+      </div>
+
       {/* SIDEBAR */}
       <SidebarTecnico
         usuario={usuario}
@@ -1049,43 +986,42 @@ export default function EditarTareaSecretariaPage() {
         estadisticas={estadisticas}
       />
 
-
-      {/* HEADER */}
+      {/* HEADER ULTRA PREMIUM */}
       <header
-        className={`fixed top-0 right-0 z-40 transition-all duration-300 ${
+        className={`fixed top-0 right-0 z-40 transition-all duration-500 ${
           sidebarAbierto ? "left-72" : "left-20"
-        } ${tema.colores.header} ${tema.colores.borde} border-b ${
+        } ${tema.colores.header} ${tema.colores.borde} border-b-2 ${
           tema.colores.sombra
         }`}
       >
-        <div className="flex items-center justify-between px-8 py-4">
-          <div className="flex items-center gap-3 flex-1 min-w-0">
+        <div className="flex items-center justify-between px-8 py-5">
+          <div className="flex items-center gap-4 flex-1 min-w-0">
             <button
               onClick={volverADetalle}
-              className={`hidden sm:inline-flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold ${tema.colores.secundario} ${tema.colores.texto}`}
+              className={`hidden sm:inline-flex items-center gap-2 px-4 py-2.5 rounded-2xl text-sm font-bold ${tema.colores.secundario} ${tema.colores.texto} shadow-lg hover:scale-105 transition-all duration-300`}
             >
               <ArrowLeft className="w-4 h-4" />
-              Volver al detalle
+              Volver
             </button>
             <div className="flex flex-col min-w-0">
               <div className="flex items-center gap-2">
                 <h2
-                  className={`text-xl md:text-2xl font-black truncate ${tema.colores.texto}`}
+                  className={`text-2xl md:text-3xl font-black truncate ${tema.colores.texto}`}
                 >
-                  {tarea ? tarea.titulo : "Editar tarea"}
+                  {tarea ? tarea.titulo : "Editar Tarea"}
                 </h2>
                 {tieneCambios && (
-                  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-500 border border-amber-500/40 animate-pulse">
+                  <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-black bg-amber-500/20 text-amber-300 border-2 border-amber-500/60 animate-pulse shadow-lg shadow-amber-500/20">
                     <AlertTriangle className="w-3 h-3" />
-                    Cambios sin guardar
+                    Cambios Sin Guardar
                   </span>
                 )}
               </div>
               <p
-                className={`text-xs md:text-sm ${tema.colores.textoSecundario}`}
+                className={`text-sm ${tema.colores.textoSecundario} flex items-center gap-2`}
               >
-                {obtenerSaludo()}, {usuario.nombre}. Estás editando una tarea
-                crítica para la gestión de tu centro.
+                <Edit className="w-4 h-4" />
+                {obtenerSaludo()}, {usuario.nombre}. Editando tarea #{tareaId}
               </p>
             </div>
           </div>
@@ -1094,31 +1030,36 @@ export default function EditarTareaSecretariaPage() {
             {/* Temas */}
             <div className="relative group">
               <button
-                className={`p-3 rounded-xl font-semibold transition-all duration-300 ${tema.colores.secundario} ${tema.colores.texto}`}
+                className={`p-3 rounded-2xl ${tema.colores.secundario} ${tema.colores.texto} transform hover:scale-110 transition-all duration-300 shadow-lg`}
               >
-                <Sparkles className="w-5 h-5" />
+                <Sparkles className="w-5 h-5 animate-pulse" />
               </button>
               <div
-                className={`absolute right-0 mt-2 w-64 rounded-2xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 p-4 space-y-2`}
+                className={`absolute right-0 mt-3 w-72 rounded-3xl ${tema.colores.card} ${tema.colores.borde} border-2 ${tema.colores.sombra} opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 p-5 space-y-2`}
               >
-                <p className={`text-sm font-bold mb-3 ${tema.colores.texto}`}>
-                  Seleccionar tema
-                </p>
+                <div className="flex items-center gap-2 mb-4">
+                  <Sparkles className="w-5 h-5 text-indigo-400" />
+                  <p className={`text-sm font-bold ${tema.colores.texto}`}>
+                    Temas Premium
+                  </p>
+                </div>
                 {Object.entries(TEMAS).map(([key, t]) => (
                   <button
                     key={key}
                     onClick={() => cambiarTema(key as TemaColor)}
-                    className={`w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl font-semibold transition-all duration-300 ${
+                    className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all duration-300 transform hover:scale-105 ${
                       temaActual === key
-                        ? `bg-gradient-to-r ${t.colores.gradiente} text-white`
+                        ? `bg-gradient-to-r ${t.colores.gradiente} text-white shadow-xl`
                         : `${tema.colores.hover} ${tema.colores.texto}`
                     }`}
                   >
-                    <div className="flex items-center gap-3">
+                    <span className="flex items-center gap-3">
                       <t.icono className="w-5 h-5" />
-                      <span>{t.nombre}</span>
-                    </div>
-                    {temaActual === key && <Check className="w-5 h-5" />}
+                      {t.nombre}
+                    </span>
+                    {temaActual === key && (
+                      <Check className="w-5 h-5 animate-bounce" />
+                    )}
                   </button>
                 ))}
               </div>
@@ -1128,119 +1069,43 @@ export default function EditarTareaSecretariaPage() {
             <div className="relative">
               <button
                 onClick={() => setNotificacionesAbiertas((v) => !v)}
-                className={`relative p-3 rounded-xl font-semibold transition-all duration-300 ${tema.colores.secundario} ${tema.colores.texto}`}
+                className={`relative p-3 rounded-2xl ${tema.colores.secundario} ${tema.colores.texto} transform hover:scale-110 transition-all duration-300 shadow-lg`}
               >
                 <Bell className="w-5 h-5" />
                 {notificaciones.filter((n) => !n.leida).length > 0 && (
-                  <span className="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center animate-pulse">
-                    {notificaciones.filter((n) => !n.leida).length > 9
-                      ? "9+"
-                      : notificaciones.filter((n) => !n.leida).length}
-                  </span>
+                  <>
+                    <span className="absolute -top-1 -right-1 w-6 h-6 bg-gradient-to-r from-rose-500 to-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center animate-ping" />
+                    <span className="absolute -top-1 -right-1 w-6 h-6 bg-gradient-to-r from-rose-500 to-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center shadow-xl">
+                      {notificaciones.filter((n) => !n.leida).length}
+                    </span>
+                  </>
                 )}
               </button>
-              {notificacionesAbiertas && (
-                <div
-                  className={`absolute right-0 mt-2 w-96 rounded-2xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} max-h-96 overflow-y-auto custom-scrollbar`}
-                >
-                  <div
-                    className={`p-4 border-b ${tema.colores.borde} sticky top-0 ${tema.colores.card} backdrop-blur-xl`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <h3
-                        className={`text-lg font-black ${tema.colores.texto}`}
-                      >
-                        Notificaciones
-                      </h3>
-                      <button
-                        className={`text-sm font-semibold ${tema.colores.acento} hover:underline`}
-                        onClick={() =>
-                          setNotificaciones((prev) =>
-                            prev.map((n) => ({ ...n, leida: true }))
-                          )
-                        }
-                      >
-                        Marcar todas leídas
-                      </button>
-                    </div>
-                  </div>
-
-                  {notificaciones.length === 0 ? (
-                    <div className="p-8 text-center">
-                      <BellOff
-                        className={`w-12 h-12 mx-auto mb-3 ${tema.colores.textoSecundario}`}
-                      />
-                      <p className={`text-sm ${tema.colores.textoSecundario}`}>
-                        No tienes notificaciones nuevas
-                      </p>
-                    </div>
-                  ) : (
-                    <div className={`divide-y ${tema.colores.borde}`}>
-                      {notificaciones.map((notif) => (
-                        <div
-                          key={notif.id_notificacion}
-                          className={`p-4 ${tema.colores.hover} cursor-pointer transition-all ${
-                            !notif.leida ? "bg-indigo-500/5" : ""
-                          }`}
-                          onClick={() =>
-                            marcarNotificacionLeida(notif.id_notificacion)
-                          }
-                        >
-                          <div className="flex items-start gap-3">
-                            <div
-                              className={`w-2 h-2 rounded-full mt-2 ${
-                                !notif.leida ? "bg-indigo-500" : "bg-gray-500"
-                              }`}
-                            />
-                            <div className="flex-1">
-                              <p
-                                className={`text-sm font-bold mb-1 ${tema.colores.texto}`}
-                              >
-                                {notif.titulo}
-                              </p>
-                              <p
-                                className={`text-xs mb-2 ${tema.colores.textoSecundario}`}
-                              >
-                                {notif.descripcion}
-                              </p>
-                              <p
-                                className={`text-xs font-medium ${tema.colores.textoSecundario}`}
-                              >
-                                {formatearFechaHora(notif.fecha_hora)}
-                              </p>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
             </div>
 
-            {/* Botón guardar */}
+            {/* Botón guardar destacado */}
             <button
               onClick={guardarTarea}
               disabled={!tieneCambios || guardando || !form}
-              className={`hidden sm:inline-flex items-center gap-2 px-4 py-3 rounded-xl font-bold text-sm ${
+              className={`hidden sm:inline-flex items-center gap-2 px-6 py-3 rounded-2xl font-bold text-sm ${
                 tieneCambios
-                  ? `${tema.colores.primario} text-white`
-                  : `${tema.colores.secundario} ${tema.colores.texto}`
-              } ${tema.colores.sombra} hover:scale-105 transition-all disabled:opacity-50 disabled:cursor-not-allowed`}
+                  ? `bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white shadow-2xl shadow-emerald-500/50`
+                  : `${tema.colores.secundario} ${tema.colores.texto} shadow-lg`
+              } hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed`}
             >
               {guardando ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
+                <Loader2 className="w-5 h-5 animate-spin" />
               ) : (
-                <Save className="w-4 h-4" />
+                <Save className="w-5 h-5" />
               )}
-              Guardar cambios
+              Guardar Cambios
             </button>
 
             {/* Perfil */}
             <div className="relative">
               <button
                 onClick={() => setPerfilAbierto((v) => !v)}
-                className={`flex items-center gap-3 px-4 py-2 rounded-xl transition-all duration-300 ${tema.colores.hover}`}
+                className={`flex items-center gap-3 px-4 py-2 rounded-2xl ${tema.colores.hover} transform hover:scale-105 transition-all duration-300 shadow-lg`}
               >
                 <div className="text-right hidden md:block">
                   <p className={`text-sm font-bold ${tema.colores.texto}`}>
@@ -1251,7 +1116,7 @@ export default function EditarTareaSecretariaPage() {
                   </p>
                 </div>
                 <div
-                  className={`w-10 h-10 rounded-xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center text-white font-bold shadow-lg`}
+                  className={`w-10 h-10 rounded-2xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center text-white font-bold shadow-xl ring-2 ring-white/20`}
                 >
                   {usuario.foto_perfil_url ? (
                     <Image
@@ -1259,25 +1124,27 @@ export default function EditarTareaSecretariaPage() {
                       alt={usuario.nombre}
                       width={40}
                       height={40}
-                      className="rounded-xl object-cover"
+                      className="rounded-2xl object-cover"
                     />
                   ) : (
                     `${usuario.nombre[0]}${usuario.apellido_paterno[0]}`
                   )}
                 </div>
                 <ChevronDown
-                  className={`w-4 h-4 ${tema.colores.texto} transition-transform ${
+                  className={`w-4 h-4 ${
+                    tema.colores.texto
+                  } transition-transform duration-300 ${
                     perfilAbierto ? "rotate-180" : ""
                   }`}
                 />
               </button>
               {perfilAbierto && (
                 <div
-                  className={`absolute right-0 mt-2 w-80 rounded-2xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} p-4`}
+                  className={`absolute right-0 mt-3 w-80 rounded-3xl ${tema.colores.card} ${tema.colores.borde} border-2 ${tema.colores.sombra} p-5 animate-fadeIn`}
                 >
-                  <div className="flex items-center gap-4 mb-4 pb-4 border-b border-gray-700/40">
+                  <div className="flex items-center gap-4 mb-4 pb-4 border-b-2 border-white/10">
                     <div
-                      className={`w-16 h-16 rounded-xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center text-white font-bold text-xl shadow-lg`}
+                      className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center text-white text-xl font-bold shadow-2xl`}
                     >
                       {usuario.foto_perfil_url ? (
                         <Image
@@ -1285,7 +1152,7 @@ export default function EditarTareaSecretariaPage() {
                           alt={usuario.nombre}
                           width={64}
                           height={64}
-                          className="rounded-xl object-cover"
+                          className="rounded-2xl object-cover"
                         />
                       ) : (
                         `${usuario.nombre[0]}${usuario.apellido_paterno[0]}`
@@ -1293,7 +1160,7 @@ export default function EditarTareaSecretariaPage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p
-                        className={`text-lg font-black ${tema.colores.texto}`}
+                        className={`text-lg font-black ${tema.colores.texto} truncate`}
                       >
                         {usuario.nombre} {usuario.apellido_paterno}
                       </p>
@@ -1303,7 +1170,7 @@ export default function EditarTareaSecretariaPage() {
                         {roleLabel}
                       </p>
                       <p
-                        className={`text-xs ${tema.colores.textoSecundario}`}
+                        className={`text-xs ${tema.colores.textoSecundario} truncate`}
                       >
                         {usuario.email}
                       </p>
@@ -1312,22 +1179,22 @@ export default function EditarTareaSecretariaPage() {
 
                   <div className="space-y-1">
                     <Link
-                      href={`/secretaria/perfil`}
-                      className={`flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all duration-300 ${tema.colores.hover} ${tema.colores.texto}`}
+                      href={`/tecnico/perfil`}
+                      className={`flex items-center gap-3 px-4 py-3 rounded-2xl font-semibold transition-all duration-300 ${tema.colores.hover} ${tema.colores.texto} transform hover:scale-105`}
                     >
                       <User className="w-5 h-5" />
                       <span>Mi Perfil</span>
                     </Link>
                     <Link
-                      href={`/secretaria/configuracion`}
-                      className={`flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all duration-300 ${tema.colores.hover} ${tema.colores.texto}`}
+                      href={`/tecnico/configuracion`}
+                      className={`flex items-center gap-3 px-4 py-3 rounded-2xl font-semibold transition-all duration-300 ${tema.colores.hover} ${tema.colores.texto} transform hover:scale-105`}
                     >
                       <Settings className="w-5 h-5" />
                       <span>Configuración</span>
                     </Link>
                     <button
                       onClick={cerrarSesion}
-                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all duration-300 ${tema.colores.hover} text-red-400 hover:text-red-300`}
+                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-2xl font-semibold transition-all duration-300 text-rose-400 hover:bg-rose-500/20 transform hover:scale-105`}
                     >
                       <LogOut className="w-5 h-5" />
                       <span>Cerrar Sesión</span>
@@ -1342,162 +1209,167 @@ export default function EditarTareaSecretariaPage() {
 
       {/* CONTENIDO PRINCIPAL */}
       <main
-        className={`transition-all duration-300 ${
+        className={`transition-all duration-500 ${
           sidebarAbierto ? "ml-72" : "ml-20"
-        } pt-24 p-8`}
+        } pt-28 p-8 relative z-10`}
       >
-        {/* Breadcrumb y acciones rápidas */}
-        <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div className="flex flex-col gap-2">
-            <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-wide">
-              <button
-                onClick={volverALista}
-                className={`inline-flex items-center gap-1 px-3 py-1 rounded-full ${tema.colores.secundario} ${tema.colores.texto}`}
-              >
-                <ArrowLeft className="w-3 h-3" />
-                Volver a tareas
-              </button>
-              <span className={tema.colores.textoSecundario}>·</span>
-              <span className={tema.colores.textoSecundario}>
-                Tarea #{tarea?.id_tarea ?? tareaId}
-              </span>
-              <span className={tema.colores.textoSecundario}>·</span>
-              <span className={tema.colores.textoSecundario}>Editar</span>
-            </div>
-            <h2
-              className={`text-3xl md:text-4xl font-black flex items-center gap-2 ${tema.colores.texto}`}
+        {/* Breadcrumb Ultra Premium */}
+        <div className="mb-8">
+          <div className="flex items-center gap-2 text-sm mb-4">
+            <Link
+              href="/tecnico"
+              className={`flex items-center gap-1 font-semibold ${tema.colores.textoSecundario} hover:${tema.colores.acento} transition-colors duration-200`}
             >
-              Editor inteligente de tareas
-              <Sparkles className="w-6 h-6 text-yellow-400" />
-            </h2>
-            <p className={tema.colores.textoSecundario}>
-              Ajusta título, prioridad, estado, fechas, centro, sucursal y
-              etiquetas sin perder el contexto clínico de la tarea.
-            </p>
+              <Home className="w-4 h-4" />
+              Dashboard
+            </Link>
+            <ChevronRight className="w-4 h-4" />
+            <Link
+              href="/tecnico/tareas"
+              className={`font-semibold ${tema.colores.textoSecundario} hover:${tema.colores.acento} transition-colors duration-200`}
+            >
+              Tareas
+            </Link>
+            <ChevronRight className="w-4 h-4" />
+            <span className={`font-bold ${tema.colores.texto}`}>
+              Editar #{tareaId}
+            </span>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              onClick={recargarTarea}
-              disabled={loadingTarea}
-              className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold ${tema.colores.secundario} ${tema.colores.texto} ${tema.colores.sombra} hover:scale-105 transition-all disabled:opacity-50`}
-            >
-              <RefreshCw
-                className={`w-4 h-4 ${
-                  loadingTarea ? "animate-spin" : ""
-                }`}
-              />
-              Recargar desde servidor
-            </button>
-            <button
-              onClick={guardarTarea}
-              disabled={!tieneCambios || guardando || !form}
-              className={`inline-flex items-center gap-2 px-5 py-3 rounded-xl font-bold text-sm ${
-                tieneCambios
-                  ? `${tema.colores.primario} text-white`
-                  : `${tema.colores.secundario} ${tema.colores.texto}`
-              } ${tema.colores.sombra} hover:scale-105 transition-all disabled:opacity-50`}
-            >
-              {guardando ? (
-                <Loader2 className="w-4 h-4 animate-spin" />
-              ) : (
-                <Save className="w-4 h-4" />
-              )}
-              Guardar cambios
-            </button>
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <h1
+                className={`text-5xl md:text-6xl font-black mb-2 ${tema.colores.texto} flex items-center gap-3`}
+              >
+                <span className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">
+                  Editor Inteligente
+                </span>
+                <Sparkles className="w-8 h-8 text-amber-400 animate-pulse" />
+              </h1>
+              <p
+                className={`text-lg font-semibold ${tema.colores.textoSecundario} flex items-center gap-2`}
+              >
+                <Edit className="w-5 h-5 text-indigo-400" />
+                Modificación avanzada con trazabilidad completa
+              </p>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <button
+                onClick={recargarTarea}
+                disabled={loadingTarea}
+                className={`flex items-center gap-2 px-5 py-3 rounded-2xl ${tema.colores.secundario} ${tema.colores.texto} font-bold text-sm shadow-lg hover:scale-105 transition-all duration-300 disabled:opacity-50`}
+              >
+                <RefreshCw
+                  className={`w-4 h-4 ${loadingTarea ? "animate-spin" : ""}`}
+                />
+                Recargar
+              </button>
+              <button
+                onClick={guardarTarea}
+                disabled={!tieneCambios || guardando || !form}
+                className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold text-sm ${
+                  tieneCambios
+                    ? "bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white shadow-2xl shadow-emerald-500/50"
+                    : `${tema.colores.secundario} ${tema.colores.texto} shadow-lg`
+                } hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed`}
+              >
+                {guardando ? (
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                ) : (
+                  <Save className="w-5 h-5" />
+                )}
+                Guardar Cambios
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Contenido: formulario + resumen/historial */}
-        <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 items-start">
+        {/* Contenido: formulario + sidebar */}
+        <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 items-start">
           {/* Columna principal: formulario */}
           <div className="xl:col-span-2 space-y-6">
-            {/* Contenedor con borde gradiente premium */}
-            <div className="relative rounded-3xl p-[1px] bg-gradient-to-r from-indigo-500 via-purple-500 to-emerald-500">
-              <div
-                className={`rounded-[1.4rem] p-6 md:p-7 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra}`}
-              >
-                {loadingTarea || !tarea || !form ? (
-                  <div className="space-y-4 animate-pulse">
-                    <div className="h-6 w-48 bg-gray-500/20 rounded" />
-                    <div className="h-10 w-full bg-gray-500/20 rounded" />
-                    <div className="h-24 w-full bg-gray-500/20 rounded" />
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="h-10 bg-gray-500/20 rounded" />
-                      <div className="h-10 bg-gray-500/20 rounded" />
+            {/* Formulario Ultra Premium */}
+            <div
+              className={`rounded-3xl p-8 ${tema.colores.card} ${tema.colores.borde} border-2 ${tema.colores.sombra} transform hover:shadow-2xl transition-all duration-300`}
+            >
+              {loadingTarea || !tarea || !form ? (
+                <div className="space-y-6 animate-pulse">
+                  <div className="h-6 w-48 bg-gray-500/20 rounded-xl" />
+                  <div className="h-12 w-full bg-gray-500/20 rounded-xl" />
+                  <div className="h-32 w-full bg-gray-500/20 rounded-xl" />
+                  <div className="grid grid-cols-3 gap-4">
+                    <div className="h-12 bg-gray-500/20 rounded-xl" />
+                    <div className="h-12 bg-gray-500/20 rounded-xl" />
+                    <div className="h-12 bg-gray-500/20 rounded-xl" />
+                  </div>
+                </div>
+              ) : (
+                <>
+                  {/* Encabezado del formulario */}
+                  <div className="flex items-center justify-between mb-8">
+                    <div className="flex items-center gap-4">
+                      <div className="relative">
+                        <div
+                          className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center shadow-2xl`}
+                        >
+                          <ClipboardList className="w-8 h-8 text-white" />
+                        </div>
+                        <div className="absolute -bottom-2 -right-2 w-8 h-8 rounded-xl bg-gradient-to-r from-amber-500 to-orange-500 flex items-center justify-center text-white shadow-xl">
+                          <Edit className="w-4 h-4" />
+                        </div>
+                      </div>
+                      <div>
+                        <h3
+                          className={`text-2xl font-black flex items-center gap-2 ${tema.colores.texto}`}
+                        >
+                          Datos de la Tarea
+                          {tarea.puede_editar === false && (
+                            <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-black bg-gray-500/20 text-gray-400 border-2 border-gray-500/40">
+                              <Lock className="w-3 h-3" />
+                              Solo Lectura
+                            </span>
+                          )}
+                        </h3>
+                        <p
+                          className={`text-sm font-semibold ${tema.colores.textoSecundario}`}
+                        >
+                          Todos los cambios quedan registrados para auditoría
+                        </p>
+                      </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="h-10 bg-gray-500/20 rounded" />
-                      <div className="h-10 bg-gray-500/20 rounded" />
+
+                    <div className="flex flex-col gap-2">
+                      <span
+                        className={`inline-flex items-center gap-2 px-4 py-2 rounded-2xl text-xs font-black border-2 ${obtenerColorEstado(
+                          form.estado
+                        )}`}
+                      >
+                        <Activity className="w-4 h-4" />
+                        {form.estado.replace("_", " ").toUpperCase()}
+                      </span>
+                      <span
+                        className={`inline-flex items-center gap-2 px-4 py-2 rounded-2xl text-xs font-black border-2 ${obtenerColorPrioridad(
+                          form.prioridad
+                        )}`}
+                      >
+                        <Flame className="w-4 h-4" />
+                        {form.prioridad.toUpperCase()}
+                      </span>
                     </div>
                   </div>
-                ) : (
-                  <>
-                    {/* Encabezado del formulario */}
-                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
-                      <div className="flex items-center gap-3">
-                        <div className="relative">
-                          <div
-                            className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center shadow-lg`}
-                          >
-                            <ClipboardList className="w-6 h-6 text-white" />
-                          </div>
-                          <div className="absolute -bottom-1 -right-1 w-6 h-6 rounded-xl bg-emerald-500 flex items-center justify-center text-white text-[10px] font-bold shadow-md">
-                            <Edit className="w-3 h-3" />
-                          </div>
-                        </div>
-                        <div>
-                          <h3
-                            className={`text-xl font-black flex items-center gap-2 ${tema.colores.texto}`}
-                          >
-                            Datos principales de la tarea
-                            {tarea.puede_editar === false && (
-                              <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-bold bg-gray-500/20 text-gray-400 border border-gray-500/40">
-                                <Lock className="w-3 h-3" />
-                                Solo lectura
-                              </span>
-                            )}
-                          </h3>
-                          <p
-                            className={`text-xs font-semibold ${tema.colores.textoSecundario}`}
-                          >
-                            Los cambios se registran en el historial interno
-                            para auditoría y trazabilidad clínica.
-                          </p>
-                        </div>
-                      </div>
 
-                      <div className="flex flex-col items-end gap-1 text-xs">
-                        <span
-                          className={`inline-flex items-center gap-2 px-3 py-1 rounded-full border ${obtenerColorEstado(
-                            form.estado
-                          )}`}
-                        >
-                          <Activity className="w-3 h-3" />
-                          Estado actual:{" "}
-                          <strong>{form.estado.toUpperCase()}</strong>
-                        </span>
-                        <span
-                          className={`inline-flex items-center gap-2 px-3 py-1 rounded-full border ${obtenerColorPrioridad(
-                            form.prioridad
-                          )}`}
-                        >
-                          <Flame className="w-3 h-3" />
-                          Prioridad:{" "}
-                          <strong>{form.prioridad.toUpperCase()}</strong>
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* Campos principales */}
-                    <div className="space-y-5">
-                      {/* Título */}
-                      <div className="space-y-1.5">
-                        <label
-                          className={`text-xs font-semibold uppercase tracking-wide ${tema.colores.textoSecundario}`}
-                        >
-                          Título de la tarea
-                        </label>
+                  {/* Campos principales ULTRA PREMIUM */}
+                  <div className="space-y-6">
+                    {/* Título */}
+                    <div className="space-y-2">
+                      <label
+                        className={`text-sm font-black uppercase tracking-wide ${tema.colores.textoSecundario} flex items-center gap-2`}
+                      >
+                        <Star className="w-4 h-4 text-amber-400" />
+                        Título de la Tarea *
+                      </label>
+                      <div className="relative group">
                         <input
                           type="text"
                           value={form.titulo}
@@ -1505,665 +1377,753 @@ export default function EditarTareaSecretariaPage() {
                           onChange={(e) =>
                             handleChange("titulo", e.target.value)
                           }
-                          placeholder="Ej: Confirmar asistencia de pacientes crónicos a control médico"
-                          className={`w-full px-4 py-3 rounded-xl text-sm ${
+                          placeholder="Ej: Confirmar asistencia de pacientes crónicos"
+                          className={`w-full px-5 py-4 rounded-2xl text-base font-semibold ${
                             tema.colores.card
-                          } ${tema.colores.borde} border ${
+                          } ${tema.colores.borde} border-2 ${
                             tema.colores.texto
-                          } focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all ${
+                          } placeholder:${tema.colores.textoSecundario} focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all duration-300 shadow-lg group-hover:shadow-xl ${
                             estaDeshabilitado("titulo")
                               ? "opacity-70 cursor-not-allowed"
                               : ""
                           }`}
                         />
+                        {!estaDeshabilitado("titulo") && (
+                          <div className="absolute right-4 top-1/2 -translate-y-1/2 opacity-0 group-focus-within:opacity-100 transition-opacity">
+                            <span className="text-xs text-emerald-400 font-bold">
+                              ✓ Editando
+                            </span>
+                          </div>
+                        )}
                       </div>
+                    </div>
 
-                      {/* Descripción */}
-                      <div className="space-y-1.5">
-                        <div className="flex items-center justify-between">
-                          <label
-                            className={`text-xs font-semibold uppercase tracking-wide ${tema.colores.textoSecundario}`}
-                          >
-                            Descripción detallada
-                          </label>
-                          <span
-                            className={`text-[11px] ${tema.colores.textoSecundario}`}
-                          >
-                            Explica brevemente el contexto clínico y operativo
-                          </span>
-                        </div>
+                    {/* Descripción */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <label
+                          className={`text-sm font-black uppercase tracking-wide ${tema.colores.textoSecundario} flex items-center gap-2`}
+                        >
+                          <FileText className="w-4 h-4 text-sky-400" />
+                          Descripción Detallada *
+                        </label>
+                        <span
+                          className={`text-xs ${tema.colores.textoSecundario}`}
+                        >
+                          {form.descripcion.length} caracteres
+                        </span>
+                      </div>
+                      <div className="relative group">
                         <textarea
-                          rows={4}
+                          rows={5}
                           value={form.descripcion}
                           disabled={estaDeshabilitado("descripcion")}
                           onChange={(e) =>
                             handleChange("descripcion", e.target.value)
                           }
-                          className={`w-full px-4 py-3 rounded-xl text-sm ${
+                          className={`w-full px-5 py-4 rounded-2xl text-sm ${
                             tema.colores.card
-                          } ${tema.colores.borde} border ${
+                          } ${tema.colores.borde} border-2 ${
                             tema.colores.texto
-                          } focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all resize-none ${
+                          } placeholder:${tema.colores.textoSecundario} focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all duration-300 resize-none shadow-lg group-hover:shadow-xl ${
                             estaDeshabilitado("descripcion")
                               ? "opacity-70 cursor-not-allowed"
                               : ""
                           }`}
-                          placeholder="Ej: Llamar a todos los pacientes con control de hipertensión programado esta semana y confirmar asistencia o reagendar en caso necesario."
+                          placeholder="Describe el contexto clínico y operativo de esta tarea. Incluye detalles importantes para su correcta ejecución..."
                         />
                       </div>
+                    </div>
 
-                      {/* Tipo, prioridad, estado */}
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="space-y-1.5">
-                          <label
-                            className={`text-xs font-semibold uppercase tracking-wide ${tema.colores.textoSecundario}`}
-                          >
-                            Tipo de tarea
-                          </label>
-                          <select
-                            value={form.tipo}
-                            disabled={estaDeshabilitado("tipo")}
-                            onChange={(e) =>
-                              handleChange("tipo", e.target.value)
-                            }
-                            className={`w-full px-3 py-2.5 rounded-xl text-sm ${
-                              tema.colores.card
-                            } ${tema.colores.borde} border ${
-                              tema.colores.texto
-                            } focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all ${
-                              estaDeshabilitado("tipo")
-                                ? "opacity-70 cursor-not-allowed"
-                                : ""
-                            }`}
-                          >
-                            {tiposDisponibles.length === 0 && (
-                              <option value={form.tipo}>{form.tipo}</option>
-                            )}
-                            {tiposDisponibles.map((t) => (
-                              <option key={t} value={t}>
-                                {t}
-                              </option>
-                            ))}
-                          </select>
-                        </div>
-
-                        <div className="space-y-1.5">
-                          <label
-                            className={`text-xs font-semibold uppercase tracking-wide ${tema.colores.textoSecundario}`}
-                          >
-                            Prioridad
-                          </label>
-                          <select
-                            value={form.prioridad}
-                            disabled={estaDeshabilitado("prioridad")}
-                            onChange={(e) =>
-                              handleChange(
-                                "prioridad",
-                                e.target.value as TareaPrioridad
-                              )
-                            }
-                            className={`w-full px-3 py-2.5 rounded-xl text-sm ${
-                              tema.colores.card
-                            } ${tema.colores.borde} border ${
-                              tema.colores.texto
-                            } focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all ${
-                              estaDeshabilitado("prioridad")
-                                ? "opacity-70 cursor-not-allowed"
-                                : ""
-                            }`}
-                          >
-                            <option value="critica">Crítica</option>
-                            <option value="urgente">Urgente</option>
-                            <option value="alta">Alta</option>
-                            <option value="media">Media</option>
-                            <option value="baja">Baja</option>
-                          </select>
-                        </div>
-
-                        <div className="space-y-1.5">
-                          <label
-                            className={`text-xs font-semibold uppercase tracking-wide ${tema.colores.textoSecundario}`}
-                          >
-                            Estado
-                          </label>
-                          <select
-                            value={form.estado}
-                            disabled={estaDeshabilitado("estado")}
-                            onChange={(e) =>
-                              handleChange(
-                                "estado",
-                                e.target.value as TareaEstado
-                              )
-                            }
-                            className={`w-full px-3 py-2.5 rounded-xl text-sm ${
-                              tema.colores.card
-                            } ${tema.colores.borde} border ${
-                              tema.colores.texto
-                            } focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all ${
-                              estaDeshabilitado("estado")
-                                ? "opacity-70 cursor-not-allowed"
-                                : ""
-                            }`}
-                          >
-                            <option value="pendiente">Pendiente</option>
-                            <option value="en_progreso">En progreso</option>
-                            <option value="en_revision">En revisión</option>
-                            <option value="completada">Completada</option>
-                            <option value="rechazada">Rechazada</option>
-                            <option value="cancelada">Cancelada</option>
-                          </select>
-                        </div>
-                      </div>
-
-                      {/* Centro / Sucursal / Fechas */}
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div className="space-y-4">
-                          <div className="space-y-1.5">
-                            <label
-                              className={`text-xs font-semibold uppercase tracking-wide ${tema.colores.textoSecundario}`}
-                            >
-                              Centro de salud asociado
-                            </label>
-                            <select
-                              value={form.id_centro ?? ""}
-                              disabled={estaDeshabilitado("id_centro")}
-                              onChange={(e) =>
-                                handleChange(
-                                  "id_centro",
-                                  e.target.value
-                                    ? Number(e.target.value)
-                                    : null
-                                )
-                              }
-                              className={`w-full px-3 py-2.5 rounded-xl text-sm ${
-                                tema.colores.card
-                              } ${tema.colores.borde} border ${
-                                tema.colores.texto
-                              } focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all ${
-                                estaDeshabilitado("id_centro")
-                                  ? "opacity-70 cursor-not-allowed"
-                                  : ""
-                              }`}
-                            >
-                              <option value="">
-                                {centroSeleccionado
-                                  ? centroSeleccionado.nombre
-                                  : "Sin centro / Administrativo"}
-                              </option>
-                              {centros.map((c) => (
-                                <option key={c.id_centro} value={c.id_centro}>
-                                  {c.nombre}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-
-                          <div className="space-y-1.5">
-                            <label
-                              className={`text-xs font-semibold uppercase tracking-wide ${tema.colores.textoSecundario}`}
-                            >
-                              Sucursal / Unidad
-                            </label>
-                            <select
-                              value={form.id_sucursal ?? ""}
-                              disabled={estaDeshabilitado("id_sucursal")}
-                              onChange={(e) =>
-                                handleChange(
-                                  "id_sucursal",
-                                  e.target.value
-                                    ? Number(e.target.value)
-                                    : null
-                                )
-                              }
-                              className={`w-full px-3 py-2.5 rounded-xl text-sm ${
-                                tema.colores.card
-                              } ${tema.colores.borde} border ${
-                                tema.colores.texto
-                              } focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all ${
-                                estaDeshabilitado("id_sucursal")
-                                  ? "opacity-70 cursor-not-allowed"
-                                  : ""
-                              }`}
-                            >
-                              <option value="">
-                                {tarea.sucursal?.nombre ?? "Sin sucursal"}
-                              </option>
-                              {sucursalesFiltradas.map((s) => (
-                                <option
-                                  key={s.id_sucursal}
-                                  value={s.id_sucursal}
-                                >
-                                  {s.nombre}
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                        </div>
-
-                        <div className="space-y-4">
-                          <div className="space-y-1.5">
-                            <label
-                              className={`text-xs font-semibold uppercase tracking-wide ${tema.colores.textoSecundario}`}
-                            >
-                              Fecha límite de la tarea
-                            </label>
-                            <div className="flex items-center gap-2">
-                              <input
-                                type="date"
-                                value={form.fecha_limite ?? ""}
-                                disabled={estaDeshabilitado("fecha_limite")}
-                                onChange={(e) =>
-                                  handleChange(
-                                    "fecha_limite",
-                                    e.target.value || null
-                                  )
-                                }
-                                className={`flex-1 px-3 py-2.5 rounded-xl text-sm ${
-                                  tema.colores.card
-                                } ${tema.colores.borde} border ${
-                                  tema.colores.texto
-                                } focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all ${
-                                  estaDeshabilitado("fecha_limite")
-                                    ? "opacity-70 cursor-not-allowed"
-                                    : ""
-                                }`}
-                              />
-                              {form.fecha_limite && (
-                                <button
-                                  type="button"
-                                  disabled={estaDeshabilitado("fecha_limite")}
-                                  onClick={() =>
-                                    handleChange("fecha_limite", null)
-                                  }
-                                  className={`p-2 rounded-xl ${tema.colores.secundario} ${tema.colores.texto} text-xs ${
-                                    estaDeshabilitado("fecha_limite")
-                                      ? "opacity-70 cursor-not-allowed"
-                                      : ""
-                                  }`}
-                                >
-                                  Limpiar
-                                </button>
-                              )}
-                            </div>
-                            <p
-                              className={`text-[11px] ${tema.colores.textoSecundario}`}
-                            >
-                              Si no se define fecha límite, la tarea se
-                              considerará abierta hasta su cierre manual.
-                            </p>
-                          </div>
-
-                          <div className="space-y-1.5 text-xs">
-                            <div className="flex justify-between">
-                              <span className={tema.colores.textoSecundario}>
-                                Creada el{" "}
-                                <strong>
-                                  {formatearFecha(tarea.fecha_creacion)}
-                                </strong>
-                              </span>
-                              <span
-                                className={`inline-flex items-center gap-1 px-2 py-1 rounded-full border ${tema.colores.borde} ${tema.colores.textoSecundario}`}
-                              >
-                                <Clock className="w-3 h-3" />
-                                Tarea #{tarea.id_tarea}
-                              </span>
-                            </div>
-                            <span className={tema.colores.textoSecundario}>
-                              Límite actual:{" "}
-                              <strong>
-                                {form.fecha_limite
-                                  ? formatearFecha(form.fecha_limite)
-                                  : "Sin fecha límite"}
-                              </strong>
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Tags */}
-                      <div className="space-y-1.5">
-                        <div className="flex items-center justify-between">
-                          <label
-                            className={`text-xs font-semibold uppercase tracking-wide ${tema.colores.textoSecundario}`}
-                          >
-                            Etiquetas inteligentes
-                          </label>
-                          <span
-                            className={`text-[11px] ${tema.colores.textoSecundario}`}
-                          >
-                            Usa etiquetas para agrupar tareas similares (ej:
-                            crónicos, llamadas, laboratorio)
-                          </span>
-                        </div>
-                        <div
-                          className={`flex flex-wrap items-center gap-2 px-3 py-2 rounded-xl ${tema.colores.card} ${tema.colores.borde} border`}
+                    {/* Tipo, Prioridad, Estado */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="space-y-2">
+                        <label
+                          className={`text-sm font-black uppercase tracking-wide ${tema.colores.textoSecundario} flex items-center gap-2`}
                         >
-                          {form.tags.map((tag) => (
-                            <span
-                              key={tag}
-                              className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-[11px] bg-indigo-500/10 border border-indigo-500/40 text-indigo-300"
-                            >
-                              #{tag}
-                              <button
-                                type="button"
-                                onClick={() => eliminarTag(tag)}
-                                className="p-0.5 rounded-full hover:bg-indigo-500/40"
-                              >
-                                <X className="w-3 h-3" />
-                              </button>
-                            </span>
+                          <Layers className="w-4 h-4 text-purple-400" />
+                          Tipo
+                        </label>
+                        <select
+                          value={form.tipo}
+                          disabled={estaDeshabilitado("tipo")}
+                          onChange={(e) =>
+                            handleChange("tipo", e.target.value)
+                          }
+                          className={`w-full px-4 py-3 rounded-2xl text-sm font-bold ${
+                            tema.colores.card
+                          } ${tema.colores.borde} border-2 ${
+                            tema.colores.texto
+                          } focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all duration-300 cursor-pointer shadow-lg hover:shadow-xl ${
+                            estaDeshabilitado("tipo")
+                              ? "opacity-70 cursor-not-allowed"
+                              : ""
+                          }`}
+                        >
+                          {tiposDisponibles.length === 0 && (
+                            <option value={form.tipo}>{form.tipo}</option>
+                          )}
+                          {tiposDisponibles.map((t) => (
+                            <option key={t} value={t}>
+                              {t}
+                            </option>
                           ))}
-                          <input
-                            type="text"
-                            value={nuevoTag}
-                            disabled={estaDeshabilitado("descripcion")}
-                            onChange={(e) => setNuevoTag(e.target.value)}
-                            onKeyDown={handleTagsKeyDown}
-                            placeholder={
-                              form.tags.length === 0
-                                ? "Escribe y presiona Enter para agregar..."
-                                : "Agregar nueva etiqueta..."
-                            }
-                            className={`flex-1 min-w-[120px] bg-transparent outline-none border-none text-xs ${tema.colores.texto} placeholder:${tema.colores.textoSecundario} ${
-                              estaDeshabilitado("descripcion")
-                                ? "opacity-70 cursor-not-allowed"
-                                : ""
-                            }`}
-                          />
-                        </div>
+                        </select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label
+                          className={`text-sm font-black uppercase tracking-wide ${tema.colores.textoSecundario} flex items-center gap-2`}
+                        >
+                          <Flame className="w-4 h-4 text-orange-400" />
+                          Prioridad
+                        </label>
+                        <select
+                          value={form.prioridad}
+                          disabled={estaDeshabilitado("prioridad")}
+                          onChange={(e) =>
+                            handleChange(
+                              "prioridad",
+                              e.target.value as TareaPrioridad
+                            )
+                          }
+                          className={`w-full px-4 py-3 rounded-2xl text-sm font-bold ${
+                            tema.colores.card
+                          } ${tema.colores.borde} border-2 ${
+                            tema.colores.texto
+                          } focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all duration-300 cursor-pointer shadow-lg hover:shadow-xl ${
+                            estaDeshabilitado("prioridad")
+                              ? "opacity-70 cursor-not-allowed"
+                              : ""
+                          }`}
+                        >
+                          <option value="critica">🔴 Crítica</option>
+                          <option value="urgente">🟠 Urgente</option>
+                          <option value="alta">🟡 Alta</option>
+                          <option value="media">🔵 Media</option>
+                          <option value="baja">🟢 Baja</option>
+                        </select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label
+                          className={`text-sm font-black uppercase tracking-wide ${tema.colores.textoSecundario} flex items-center gap-2`}
+                        >
+                          <Activity className="w-4 h-4 text-emerald-400" />
+                          Estado
+                        </label>
+                        <select
+                          value={form.estado}
+                          disabled={estaDeshabilitado("estado")}
+                          onChange={(e) =>
+                            handleChange(
+                              "estado",
+                              e.target.value as TareaEstado
+                            )
+                          }
+                          className={`w-full px-4 py-3 rounded-2xl text-sm font-bold ${
+                            tema.colores.card
+                          } ${tema.colores.borde} border-2 ${
+                            tema.colores.texto
+                          } focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all duration-300 cursor-pointer shadow-lg hover:shadow-xl ${
+                            estaDeshabilitado("estado")
+                              ? "opacity-70 cursor-not-allowed"
+                              : ""
+                          }`}
+                        >
+                          <option value="pendiente">⏳ Pendiente</option>
+                          <option value="en_progreso">🔄 En Progreso</option>
+                          <option value="en_revision">👁 En Revisión</option>
+                          <option value="completada">✅ Completada</option>
+                          <option value="rechazada">❌ Rechazada</option>
+                          <option value="cancelada">🚫 Cancelada</option>
+                        </select>
                       </div>
                     </div>
-                  </>
-                )}
-              </div>
+
+                    {/* Centro / Sucursal */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="space-y-2">
+                        <label
+                          className={`text-sm font-black uppercase tracking-wide ${tema.colores.textoSecundario} flex items-center gap-2`}
+                        >
+                          <Building2 className="w-4 h-4 text-sky-400" />
+                          Centro de Salud
+                        </label>
+                        <select
+                          value={form.id_centro ?? ""}
+                          disabled={estaDeshabilitado("id_centro")}
+                          onChange={(e) => {
+                            handleChange(
+                              "id_centro",
+                              e.target.value ? Number(e.target.value) : null
+                            );
+                            handleChange("id_sucursal", null);
+                          }}
+                          className={`w-full px-4 py-3 rounded-2xl text-sm font-bold ${
+                            tema.colores.card
+                          } ${tema.colores.borde} border-2 ${
+                            tema.colores.texto
+                          } focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all duration-300 cursor-pointer shadow-lg hover:shadow-xl ${
+                            estaDeshabilitado("id_centro")
+                              ? "opacity-70 cursor-not-allowed"
+                              : ""
+                          }`}
+                        >
+                          <option value="">Sin centro / Administrativo</option>
+                          {centros.map((c) => (
+                            <option key={c.id_centro} value={c.id_centro}>
+                              {c.nombre}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="space-y-2">
+                        <label
+                          className={`text-sm font-black uppercase tracking-wide ${tema.colores.textoSecundario} flex items-center gap-2`}
+                        >
+                          <MapPin className="w-4 h-4 text-teal-400" />
+                          Sucursal / Unidad
+                        </label>
+                        <select
+                          value={form.id_sucursal ?? ""}
+                          disabled={
+                            estaDeshabilitado("id_sucursal") || !form.id_centro
+                          }
+                          onChange={(e) =>
+                            handleChange(
+                              "id_sucursal",
+                              e.target.value ? Number(e.target.value) : null
+                            )
+                          }
+                          className={`w-full px-4 py-3 rounded-2xl text-sm font-bold ${
+                            tema.colores.card
+                          } ${tema.colores.borde} border-2 ${
+                            tema.colores.texto
+                          } focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all duration-300 cursor-pointer shadow-lg hover:shadow-xl ${
+                            estaDeshabilitado("id_sucursal") || !form.id_centro
+                              ? "opacity-70 cursor-not-allowed"
+                              : ""
+                          }`}
+                        >
+                          <option value="">Sin sucursal específica</option>
+                          {sucursalesFiltradas.map((s) => (
+                            <option key={s.id_sucursal} value={s.id_sucursal}>
+                              {s.nombre}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Fecha Límite */}
+                    <div className="space-y-2">
+                      <label
+                        className={`text-sm font-black uppercase tracking-wide ${tema.colores.textoSecundario} flex items-center gap-2`}
+                      >
+                        <Calendar className="w-4 h-4 text-rose-400" />
+                        Fecha Límite
+                      </label>
+                      <div className="flex items-center gap-3">
+                        <input
+                          type="date"
+                          value={form.fecha_limite ?? ""}
+                          disabled={estaDeshabilitado("fecha_limite")}
+                          onChange={(e) =>
+                            handleChange(
+                              "fecha_limite",
+                              e.target.value || null
+                            )
+                          }
+                          className={`flex-1 px-4 py-3 rounded-2xl text-sm font-bold ${
+                            tema.colores.card
+                          } ${tema.colores.borde} border-2 ${
+                            tema.colores.texto
+                          } focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all duration-300 shadow-lg hover:shadow-xl ${
+                            estaDeshabilitado("fecha_limite")
+                              ? "opacity-70 cursor-not-allowed"
+                              : ""
+                          }`}
+                        />
+                        {form.fecha_limite && !estaDeshabilitado("fecha_limite") && (
+                          <button
+                            type="button"
+                            onClick={() => handleChange("fecha_limite", null)}
+                            className={`px-4 py-3 rounded-2xl text-sm font-bold ${tema.colores.secundario} ${tema.colores.texto} hover:scale-105 transition-all duration-300 shadow-lg`}
+                          >
+                            <X className="w-4 h-4" />
+                          </button>
+                        )}
+                      </div>
+                      <p
+                        className={`text-xs ${tema.colores.textoSecundario} flex items-center gap-1`}
+                      >
+                        <Lightbulb className="w-3 h-3" />
+                        {form.fecha_limite
+                          ? `Límite: ${formatearFecha(form.fecha_limite)}`
+                          : "Sin fecha límite definida"}
+                      </p>
+                    </div>
+
+                    {/* Tags Ultra Premium */}
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <label
+                          className={`text-sm font-black uppercase tracking-wide ${tema.colores.textoSecundario} flex items-center gap-2`}
+                        >
+                          <Target className="w-4 h-4 text-indigo-400" />
+                          Etiquetas Inteligentes
+                        </label>
+                        <span
+                          className={`text-xs ${tema.colores.textoSecundario}`}
+                        >
+                          {form.tags.length} etiquetas
+                        </span>
+                      </div>
+                      <div
+                        className={`flex flex-wrap items-center gap-2 px-4 py-3 rounded-2xl ${tema.colores.card} ${tema.colores.borde} border-2 min-h-[56px] shadow-lg hover:shadow-xl transition-all duration-300`}
+                      >
+                        {form.tags.map((tag) => (
+                          <span
+                            key={tag}
+                            className="inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-black bg-gradient-to-r from-indigo-500/20 to-purple-500/20 border-2 border-indigo-500/40 text-indigo-300 shadow-lg transform hover:scale-110 transition-all duration-200"
+                          >
+                            <span className="text-indigo-400">#</span>
+                            {tag}
+                            <button
+                              type="button"
+                              onClick={() => eliminarTag(tag)}
+                              className="p-1 rounded-lg hover:bg-rose-500/30 transition-all duration-200"
+                            >
+                              <X className="w-3 h-3 text-rose-400" />
+                            </button>
+                          </span>
+                        ))}
+                        <input
+                          type="text"
+                          value={nuevoTag}
+                          disabled={estaDeshabilitado("descripcion")}
+                          onChange={(e) => setNuevoTag(e.target.value)}
+                          onKeyDown={handleTagsKeyDown}
+                          placeholder={
+                            form.tags.length === 0
+                              ? "Escribe y presiona Enter..."
+                              : "Agregar etiqueta..."
+                          }
+                          className={`flex-1 min-w-[180px] bg-transparent outline-none border-none text-sm font-semibold ${tema.colores.texto} placeholder:${tema.colores.textoSecundario} ${
+                            estaDeshabilitado("descripcion")
+                              ? "opacity-70 cursor-not-allowed"
+                              : ""
+                          }`}
+                        />
+                      </div>
+                      <p
+                        className={`text-xs ${tema.colores.textoSecundario} flex items-center gap-1`}
+                      >
+                        <Sparkles className="w-3 h-3" />
+                        Usa etiquetas como: crónicos, llamadas, urgente,
+                        laboratorio, etc.
+                      </p>
+                    </div>
+                  </div>
+                </>
+              )}
             </div>
 
-            {/* Pie formulario: acciones rápidas */}
+            {/* Panel de Información Adicional */}
             {tarea && (
               <div
-                className={`rounded-2xl p-4 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} flex flex-col md:flex-row md:items-center md:justify-between gap-4`}
+                className={`rounded-3xl p-6 ${tema.colores.card} ${tema.colores.borde} border-2 ${tema.colores.sombra} transform hover:shadow-2xl transition-all duration-300`}
               >
-                <div className="flex items-center gap-3">
-                  <ShieldCheck className="w-6 h-6 text-emerald-400" />
-                  <div className="text-xs">
-                    <p className={tema.colores.texto}>
-                      Todos los cambios quedan registrados en el historial de la
-                      tarea para garantizar trazabilidad y seguridad clínica.
-                    </p>
-                    <p className={tema.colores.textoSecundario}>
-                      Creador:{" "}
-                      <strong>{tarea.creador.nombre_completo}</strong> ·
-                      Responsable:{" "}
-                      <strong>{tarea.responsable.nombre_completo}</strong>
+                <div className="flex items-center gap-3 mb-6">
+                  <div
+                    className={`w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center shadow-xl`}
+                  >
+                    <ShieldCheck className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className={`text-xl font-black ${tema.colores.texto}`}>
+                      Información de Trazabilidad
+                    </h3>
+                    <p
+                      className={`text-xs font-semibold ${tema.colores.textoSecundario}`}
+                    >
+                      Registro completo para auditoría clínica
                     </p>
                   </div>
                 </div>
-                <div className="flex flex-wrap items-center gap-2">
-                  <button
-                    onClick={volverADetalle}
-                    className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold ${tema.colores.secundario} ${tema.colores.texto}`}
-                  >
-                    <Eye className="w-3 h-3" />
-                    Ver detalle
-                  </button>
-                  <button
-                    onClick={guardarTarea}
-                    disabled={!tieneCambios || guardando || !form}
-                    className={`inline-flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold ${
-                      tieneCambios
-                        ? `${tema.colores.primario} text-white`
-                        : `${tema.colores.secundario} ${tema.colores.texto}`
-                    } ${tema.colores.sombra} disabled:opacity-50`}
-                  >
-                    {guardando ? (
-                      <Loader2 className="w-3 h-3 animate-spin" />
-                    ) : (
-                      <Save className="w-3 h-3" />
-                    )}
-                    Guardar ahora
-                  </button>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="flex items-center gap-3 p-4 rounded-2xl bg-white/5 border border-white/10">
+                    <User className="w-5 h-5 text-indigo-400" />
+                    <div>
+                      <p className={`text-xs ${tema.colores.textoSecundario}`}>
+                        Creador
+                      </p>
+                      <p className={`text-sm font-bold ${tema.colores.texto}`}>
+                        {tarea.creador.nombre_completo}
+                      </p>
+                      <p className={`text-xs ${tema.colores.textoSecundario}`}>
+                        {tarea.creador.rol}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 p-4 rounded-2xl bg-white/5 border border-white/10">
+                    <UserCheck className="w-5 h-5 text-emerald-400" />
+                    <div>
+                      <p className={`text-xs ${tema.colores.textoSecundario}`}>
+                        Responsable
+                      </p>
+                      <p className={`text-sm font-bold ${tema.colores.texto}`}>
+                        {tarea.responsable.nombre_completo}
+                      </p>
+                      <p className={`text-xs ${tema.colores.textoSecundario}`}>
+                        {tarea.responsable.rol}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 p-4 rounded-2xl bg-white/5 border border-white/10">
+                    <Clock className="w-5 h-5 text-sky-400" />
+                    <div>
+                      <p className={`text-xs ${tema.colores.textoSecundario}`}>
+                        Fecha de Creación
+                      </p>
+                      <p className={`text-sm font-bold ${tema.colores.texto}`}>
+                        {formatearFecha(tarea.fecha_creacion)}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3 p-4 rounded-2xl bg-white/5 border border-white/10">
+                    <Calendar className="w-5 h-5 text-rose-400" />
+                    <div>
+                      <p className={`text-xs ${tema.colores.textoSecundario}`}>
+                        Fecha Límite
+                      </p>
+                      <p className={`text-sm font-bold ${tema.colores.texto}`}>
+                        {form?.fecha_limite
+                          ? formatearFecha(form.fecha_limite)
+                          : "Sin límite"}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-6 pt-6 border-t-2 border-white/10">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <TrendingUp className="w-5 h-5 text-emerald-400" />
+                      <span className={`text-sm font-bold ${tema.colores.texto}`}>
+                        Progreso Estimado
+                      </span>
+                    </div>
+                    <span className="text-sm font-black text-emerald-400">
+                      {form?.estado === "completada"
+                        ? "100%"
+                        : form?.estado === "en_revision"
+                        ? "75%"
+                        : form?.estado === "en_progreso"
+                        ? "50%"
+                        : "20%"}
+                    </span>
+                  </div>
+                  <div className="h-3 w-full rounded-full bg-black/20 overflow-hidden mt-3">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-emerald-400 via-indigo-500 to-purple-500 transition-all duration-1000 shadow-lg"
+                      style={{
+                        width:
+                          form?.estado === "completada"
+                            ? "100%"
+                            : form?.estado === "en_revision"
+                            ? "75%"
+                            : form?.estado === "en_progreso"
+                            ? "50%"
+                            : "20%",
+                      }}
+                    />
+                  </div>
                 </div>
               </div>
             )}
+
+            {/* Botones de Acción Inferior */}
+            <div className="flex items-center justify-between gap-4">
+              <button
+                onClick={volverALista}
+                className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold text-sm ${tema.colores.secundario} ${tema.colores.texto} shadow-lg hover:scale-105 transition-all duration-300`}
+              >
+                <ArrowLeft className="w-5 h-5" />
+                Cancelar y Volver
+              </button>
+
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={volverADetalle}
+                  className={`flex items-center gap-2 px-6 py-3 rounded-2xl font-bold text-sm ${tema.colores.secundario} ${tema.colores.texto} shadow-lg hover:scale-105 transition-all duration-300`}
+                >
+                  <Eye className="w-5 h-5" />
+                  Ver Detalle
+                </button>
+                <button
+                  onClick={guardarTarea}
+                  disabled={!tieneCambios || guardando || !form}
+                  className={`flex items-center gap-2 px-8 py-3 rounded-2xl font-bold text-sm ${
+                    tieneCambios
+                      ? "bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white shadow-2xl shadow-emerald-500/50"
+                      : `${tema.colores.secundario} ${tema.colores.texto} shadow-lg`
+                  } hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed`}
+                >
+                  {guardando ? (
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <Save className="w-5 h-5" />
+                  )}
+                  Guardar Cambios
+                </button>
+              </div>
+            </div>
           </div>
 
-          {/* Columna lateral: resumen y línea de tiempo */}
+          {/* Columna lateral: resumen y historial */}
           <div className="space-y-6">
-            {/* Resumen premium */}
+            {/* Resumen Premium */}
             <div
-              className={`rounded-2xl p-5 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra}`}
+              className={`rounded-3xl p-6 ${tema.colores.card} ${tema.colores.borde} border-2 ${tema.colores.sombra} transform hover:shadow-2xl transition-all duration-300 sticky top-28`}
             >
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-500 flex items-center justify-center">
-                    <PieChart className="w-5 h-5 text-white" />
+                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-xl">
+                    <PieChart className="w-6 h-6 text-white" />
                   </div>
                   <div>
                     <h3
-                      className={`text-sm font-black ${tema.colores.texto}`}
+                      className={`text-lg font-black ${tema.colores.texto}`}
                     >
-                      Resumen de la tarea
+                      Resumen Ejecutivo
                     </h3>
-                    <p className={`text-[11px] ${tema.colores.textoSecundario}`}>
-                      Vista rápida del impacto de esta tarea
+                    <p
+                      className={`text-xs font-semibold ${tema.colores.textoSecundario}`}
+                    >
+                      Vista rápida de la tarea
                     </p>
                   </div>
                 </div>
                 {tieneCambios && (
-                  <span className="px-3 py-1 rounded-full text-[10px] font-bold bg-amber-500/10 text-amber-400 border border-amber-500/40">
-                    Editando...
+                  <span className="px-3 py-1.5 rounded-full text-xs font-black bg-amber-500/20 text-amber-300 border-2 border-amber-500/60 animate-pulse shadow-lg">
+                    Editando
                   </span>
                 )}
               </div>
 
-              {tarea ? (
-                <div className="space-y-4 text-xs">
-                  <div className="flex items-center justify-between">
-                    <span className={tema.colores.textoSecundario}>
-                      Estado actual
+              {tarea && form ? (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between p-3 rounded-2xl bg-white/5">
+                    <span className={`text-xs font-bold ${tema.colores.textoSecundario}`}>
+                      Estado
                     </span>
                     <span
-                      className={`inline-flex items-center gap-1 px-3 py-1 rounded-full border ${obtenerColorEstado(
-                        form?.estado ?? tarea.estado
+                      className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-black border-2 ${obtenerColorEstado(
+                        form.estado
                       )}`}
                     >
-                      {form?.estado === "completada" ? (
+                      {form.estado === "completada" ? (
                         <CheckCircle2 className="w-3 h-3" />
-                      ) : form?.estado === "pendiente" ? (
+                      ) : form.estado === "pendiente" ? (
                         <Clock className="w-3 h-3" />
                       ) : (
                         <Activity className="w-3 h-3" />
                       )}
-                      {(form?.estado ?? tarea.estado)
-                        .replace("_", " ")
-                        .toUpperCase()}
+                      {form.estado.replace("_", " ").toUpperCase()}
                     </span>
                   </div>
 
-                  <div className="flex items-center justify-between">
-                    <span className={tema.colores.textoSecundario}>
+                  <div className="flex items-center justify-between p-3 rounded-2xl bg-white/5">
+                    <span className={`text-xs font-bold ${tema.colores.textoSecundario}`}>
                       Prioridad
                     </span>
                     <span
-                      className={`inline-flex items-center gap-1 px-3 py-1 rounded-full border ${obtenerColorPrioridad(
-                        form?.prioridad ?? tarea.prioridad
+                      className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-xl text-xs font-black border-2 ${obtenerColorPrioridad(
+                        form.prioridad
                       )}`}
                     >
                       <Flame className="w-3 h-3" />
-                      {(form?.prioridad ?? tarea.prioridad).toUpperCase()}
+                      {form.prioridad.toUpperCase()}
                     </span>
                   </div>
 
-                  <div className="flex items-center justify-between">
-                    <span className={tema.colores.textoSecundario}>Centro</span>
-                    <span className={`text-[11px] ${tema.colores.texto}`}>
-                      {centroSeleccionado?.nombre ??
-                        tarea.centro?.nombre ??
-                        "Sin centro"}
+                  <div className="flex items-center justify-between p-3 rounded-2xl bg-white/5">
+                    <span className={`text-xs font-bold ${tema.colores.textoSecundario}`}>
+                      Tipo
+                    </span>
+                    <span className={`text-xs font-black ${tema.colores.texto}`}>
+                      {form.tipo}
                     </span>
                   </div>
 
-                  <div className="flex items-center justify-between">
-                    <span className={tema.colores.textoSecundario}>
+                  <div className="flex items-center justify-between p-3 rounded-2xl bg-white/5">
+                    <span className={`text-xs font-bold ${tema.colores.textoSecundario}`}>
+                      Centro
+                    </span>
+                    <span className={`text-xs font-black ${tema.colores.texto} truncate max-w-[150px]`}>
+                      {centroSeleccionado?.nombre ?? "Sin centro"}
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-between p-3 rounded-2xl bg-white/5">
+                    <span className={`text-xs font-bold ${tema.colores.textoSecundario}`}>
                       Sucursal
                     </span>
-                    <span className={`text-[11px] ${tema.colores.texto}`}>
+                    <span className={`text-xs font-black ${tema.colores.texto} truncate max-w-[150px]`}>
                       {sucursalesFiltradas.find(
-                        (s) => s.id_sucursal === (form?.id_sucursal ?? -1)
-                      )?.nombre ??
-                        tarea.sucursal?.nombre ??
-                        "Sin sucursal"}
+                        (s) => s.id_sucursal === form.id_sucursal
+                      )?.nombre ?? "Sin sucursal"}
                     </span>
                   </div>
 
-                  <div className="flex items-center justify-between">
-                    <span className={tema.colores.textoSecundario}>
-                      Creador
-                    </span>
-                    <span className={`text-[11px] ${tema.colores.texto}`}>
-                      {tarea.creador.nombre_completo}
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <span className={tema.colores.textoSecundario}>
-                      Responsable
-                    </span>
-                    <span className={`text-[11px] ${tema.colores.texto}`}>
-                      {tarea.responsable.nombre_completo}
-                    </span>
-                  </div>
-
-                  <div className="pt-3 border-t border-dashed border-white/10 space-y-2">
-                    <p className={tema.colores.textoSecundario}>
-                      Avance estimado
-                    </p>
-                    <div className="h-2 w-full rounded-full bg-black/10 overflow-hidden">
+                  <div className="pt-4 border-t-2 border-white/10">
+                    <div className="flex items-center justify-between mb-3">
+                      <span className={`text-sm font-bold ${tema.colores.texto}`}>
+                        Progreso Visual
+                      </span>
+                      <span className="text-sm font-black bg-gradient-to-r from-emerald-500 to-green-500 bg-clip-text text-transparent">
+                        {form.estado === "completada"
+                          ? "100%"
+                          : form.estado === "en_revision"
+                          ? "75%"
+                          : form.estado === "en_progreso"
+                          ? "50%"
+                          : "20%"}
+                      </span>
+                    </div>
+                    <div className="h-3 w-full rounded-full bg-black/20 overflow-hidden">
                       <div
-                        className="h-full rounded-full bg-gradient-to-r from-emerald-400 via-indigo-500 to-purple-500"
+                        className="h-full rounded-full bg-gradient-to-r from-emerald-400 via-indigo-500 to-purple-500 transition-all duration-1000 shadow-lg"
                         style={{
                           width:
-                            form?.estado === "completada"
+                            form.estado === "completada"
                               ? "100%"
-                              : form?.estado === "en_revision"
+                              : form.estado === "en_revision"
                               ? "75%"
-                              : form?.estado === "en_progreso"
+                              : form.estado === "en_progreso"
                               ? "50%"
                               : "20%",
                         }}
                       />
                     </div>
-                    <p className="text-[11px] text-right text-emerald-300">
-                      {form?.estado === "completada"
-                        ? "100% · Tarea finalizada"
-                        : form?.estado === "en_revision"
-                        ? "75% · En revisión"
-                        : form?.estado === "en_progreso"
-                        ? "50% · En ejecución"
-                        : "20% · Planificación inicial"}
+                    <p className="text-xs text-emerald-300 mt-2 text-right font-semibold">
+                      {form.estado === "completada"
+                        ? "✓ Tarea Finalizada"
+                        : form.estado === "en_revision"
+                        ? "👁 En Revisión"
+                        : form.estado === "en_progreso"
+                        ? "🔄 En Ejecución"
+                        : "⏳ Planificación"}
                     </p>
                   </div>
                 </div>
               ) : (
-                <div className="h-24 flex items-center justify-center text-xs text-gray-400">
-                  Cargando resumen...
+                <div className="h-32 flex items-center justify-center">
+                  <Loader2 className="w-8 h-8 animate-spin text-indigo-400" />
                 </div>
               )}
             </div>
 
-            {/* Línea de tiempo / historial */}
+            {/* Historial Ultra Premium */}
             <div
-              className={`rounded-2xl p-5 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} max-h-[520px] overflow-hidden flex flex-col`}
+              className={`rounded-3xl p-6 ${tema.colores.card} ${tema.colores.borde} border-2 ${tema.colores.sombra} max-h-[600px] overflow-hidden flex flex-col transform hover:shadow-2xl transition-all duration-300`}
             >
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-500 flex items-center justify-center">
-                    <Clock className="w-5 h-5 text-white" />
+                  <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-sky-500 to-blue-500 flex items-center justify-center shadow-xl">
+                    <Clock className="w-6 h-6 text-white" />
                   </div>
                   <div>
                     <h3
-                      className={`text-sm font-black ${tema.colores.texto}`}
+                      className={`text-lg font-black ${tema.colores.texto}`}
                     >
-                      Historial de cambios
+                      Línea de Tiempo
                     </h3>
                     <p
-                      className={`text-[11px] ${tema.colores.textoSecundario}`}
+                      className={`text-xs font-semibold ${tema.colores.textoSecundario}`}
                     >
-                      Cada cambio queda registrado con fecha, usuario y acción
+                      {historial.length} eventos registrados
                     </p>
                   </div>
                 </div>
                 <button
                   onClick={() =>
                     tarea &&
-                    router.push(`/secretaria/tareas/${tarea.id_tarea}/historial`)
+                    router.push(`/tecnico/tareas/${tarea.id_tarea}/historial`)
                   }
-                  className={`text-[11px] font-semibold ${tema.colores.acento} hover:underline inline-flex items-center gap-1`}
+                  className={`text-xs font-bold ${tema.colores.acento} hover:underline inline-flex items-center gap-1`}
                 >
-                  Ver historial completo
+                  Ver Completo
                   <ArrowUpRight className="w-3 h-3" />
                 </button>
               </div>
 
-              <div className="flex-1 overflow-y-auto custom-scrollbar pr-1">
+              <div className="flex-1 overflow-y-auto custom-scrollbar-premium pr-2">
                 {loadingHistorial ? (
-                  <div className="space-y-3 animate-pulse">
-                    {Array.from({ length: 4 }).map((_, i) => (
+                  <div className="space-y-4 animate-pulse">
+                    {Array.from({ length: 5 }).map((_, i) => (
                       <div key={i} className="flex gap-3">
-                        <div className="w-6 flex justify-center">
-                          <div className="w-2 h-2 rounded-full bg-gray-500/40 mt-2" />
+                        <div className="w-8 flex justify-center">
+                          <div className="w-3 h-3 rounded-full bg-gray-500/40 mt-2" />
                         </div>
-                        <div className="flex-1 space-y-1">
-                          <div className="h-3 w-40 bg-gray-500/20 rounded" />
-                          <div className="h-3 w-24 bg-gray-500/20 rounded" />
+                        <div className="flex-1 space-y-2">
+                          <div className="h-4 w-40 bg-gray-500/20 rounded-xl" />
+                          <div className="h-3 w-32 bg-gray-500/20 rounded-xl" />
                         </div>
                       </div>
                     ))}
                   </div>
                 ) : historial && historial.length > 0 ? (
-                  <div className="relative pl-3">
-                    <div className="absolute left-[6px] top-1 bottom-1 w-px bg-gradient-to-b from-indigo-500/60 via-purple-500/60 to-emerald-500/40" />
-                    <div className="space-y-4">
+                  <div className="relative pl-4">
+                    <div className="absolute left-[11px] top-2 bottom-2 w-0.5 bg-gradient-to-b from-indigo-500/60 via-purple-500/60 to-emerald-500/40" />
+                    <div className="space-y-5">
                       {historial.map((ev, idx) => (
-                        <div key={ev.id_evento ?? idx} className="flex gap-3">
-                          <div className="w-4 flex justify-center">
-                            <div className="w-3 h-3 rounded-full bg-indigo-400 shadow ring-2 ring-indigo-500/40 mt-1" />
+                        <div key={ev.id_evento ?? idx} className="flex gap-4 group">
+                          <div className="w-6 flex justify-center">
+                            <div className="w-4 h-4 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 shadow-lg ring-4 ring-indigo-500/20 mt-1 group-hover:scale-125 transition-transform duration-300" />
                           </div>
-                          <div className="flex-1 space-y-0.5">
+                          <div className="flex-1 space-y-1">
                             <div className="flex items-center justify-between gap-2">
                               <p
-                                className={`text-xs font-bold ${tema.colores.texto}`}
+                                className={`text-sm font-black ${tema.colores.texto}`}
                               >
                                 {ev.accion}
                               </p>
                               <span
-                                className={`text-[10px] ${tema.colores.textoSecundario}`}
+                                className={`text-xs ${tema.colores.textoSecundario}`}
                               >
                                 {formatearFechaHora(ev.fecha_hora)}
                               </span>
                             </div>
                             {ev.detalle && (
                               <p
-                                className={`text-[11px] ${tema.colores.textoSecundario}`}
+                                className={`text-xs ${tema.colores.textoSecundario}`}
                               >
                                 {ev.detalle}
                               </p>
                             )}
-                            <div className="flex flex-wrap items-center gap-2 text-[10px] mt-1">
+                            <div className="flex flex-wrap items-center gap-2 mt-2">
                               {ev.usuario && (
-                                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-white/5 border border-white/10">
+                                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-bold bg-white/5 border border-white/20">
                                   <User className="w-3 h-3" />
                                   {ev.usuario.nombre_completo}
                                 </span>
                               )}
                               {ev.estado_anterior && (
-                                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-amber-500/10 border border-amber-500/40 text-amber-200">
+                                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-bold bg-rose-500/10 border border-rose-500/40 text-rose-300">
                                   <ArrowDownRight className="w-3 h-3" />
                                   {ev.estado_anterior.replace("_", " ")}
                                 </span>
                               )}
                               {ev.estado_nuevo && (
-                                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/40 text-emerald-200">
+                                <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-bold bg-emerald-500/10 border border-emerald-500/40 text-emerald-300">
                                   <ArrowUpRight className="w-3 h-3" />
                                   {ev.estado_nuevo.replace("_", " ")}
                                 </span>
@@ -2175,12 +2135,12 @@ export default function EditarTareaSecretariaPage() {
                     </div>
                   </div>
                 ) : (
-                  <div className="py-8 text-center text-xs">
+                  <div className="py-12 text-center">
                     <ClipboardCheck
-                      className={`w-8 h-8 mx-auto mb-2 ${tema.colores.textoSecundario}`}
+                      className={`w-12 h-12 mx-auto mb-3 ${tema.colores.textoSecundario}`}
                     />
-                    <p className={tema.colores.textoSecundario}>
-                      Aún no hay movimientos registrados para esta tarea.
+                    <p className={`text-sm ${tema.colores.textoSecundario}`}>
+                      Sin movimientos registrados
                     </p>
                   </div>
                 )}
@@ -2188,61 +2148,55 @@ export default function EditarTareaSecretariaPage() {
             </div>
           </div>
         </div>
+      </main>
 
-        {/* Footer */}
-        <footer
-          className={`transition-all duration-300 mt-10 rounded-2xl ${tema.colores.card} ${tema.colores.borde} border py-4 px-6 flex flex-col sm:flex-row items-center justify-between gap-3`}
-        >
-          <div className="flex items-center gap-2">
-            <p
-              className={`text-xs sm:text-sm font-semibold ${tema.colores.textoSecundario}`}
+      {/* FOOTER ULTRA PREMIUM */}
+      <footer
+        className={`transition-all duration-500 ${
+          sidebarAbierto ? "ml-72" : "ml-20"
+        } ${tema.colores.card} ${tema.colores.borde} border-t-2 py-8 mt-12 relative z-10`}
+      >
+        <div className="max-w-[1920px] mx-auto px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div
+              className={`w-10 h-10 rounded-xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center shadow-xl`}
             >
-              © 2025 AnyssaMed · Editor de Tareas INFOGES (Secretaría).
-            </p>
-            <span
-              className={`px-3 py-1 rounded-full text-[10px] font-bold bg-gradient-to-r ${tema.colores.gradiente} text-white`}
-            >
-              v1.0.0 ULTRA PREMIUM
-            </span>
+              <Edit className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <p className={`text-sm font-bold ${tema.colores.texto}`}>
+                © 2025 AnyssaMed
+              </p>
+              <p className={`text-xs ${tema.colores.textoSecundario}`}>
+                Editor Ultra Premium de Tareas · Secretaría INFOGES
+              </p>
+            </div>
           </div>
-          <div className="flex items-center gap-4 text-xs sm:text-sm">
+          <div className="flex items-center gap-6">
             <Link
               href="/ayuda"
-              className={`font-bold transition-colors ${tema.colores.textoSecundario} hover:${tema.colores.acento}`}
+              className={`text-sm font-bold transition-colors ${tema.colores.textoSecundario} hover:${tema.colores.acento}`}
             >
               Ayuda
             </Link>
             <Link
               href="/privacidad"
-              className={`font-bold transition-colors ${tema.colores.textoSecundario} hover:${tema.colores.acento}`}
+              className={`text-sm font-bold transition-colors ${tema.colores.textoSecundario} hover:${tema.colores.acento}`}
             >
               Privacidad
             </Link>
             <button
               onClick={cerrarSesion}
-              className="font-bold text-red-400 hover:text-red-300 transition-colors"
+              className="text-sm font-bold text-rose-400 hover:text-rose-300 transition-colors"
             >
               Cerrar Sesión
             </button>
           </div>
-        </footer>
-      </main>
+        </div>
+      </footer>
 
-      {/* ESTILOS GLOBALES */}
+      {/* ESTILOS GLOBALES ULTRA PREMIUM */}
       <style jsx global>{`
-        @keyframes wave {
-          0%,
-          100% {
-            transform: rotate(0deg);
-          }
-          25% {
-            transform: rotate(20deg);
-          }
-          75% {
-            transform: rotate(-20deg);
-          }
-        }
-
         @keyframes fadeIn {
           from {
             opacity: 0;
@@ -2263,49 +2217,141 @@ export default function EditarTareaSecretariaPage() {
           }
         }
 
-        .animate-wave {
-          animation: wave 1s ease-in-out infinite;
+        @keyframes gradient {
+          0%,
+          100% {
+            background-position: 0% 50%;
+          }
+          50% {
+            background-position: 100% 50%;
+          }
+        }
+
+        @keyframes shine {
+          0% {
+            transform: translateX(-100%);
+          }
+          100% {
+            transform: translateX(100%);
+          }
         }
 
         .animate-fadeIn {
-          animation: fadeIn 0.2s ease-out;
+          animation: fadeIn 0.3s ease-out;
         }
 
         .animate-scaleIn {
           animation: scaleIn 0.3s ease-out;
         }
 
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 8px;
-          height: 8px;
+        .animate-gradient {
+          background-size: 200% 200%;
+          animation: gradient 3s ease infinite;
         }
 
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: ${["dark", "blue", "purple", "green"].includes(
-            temaActual
-          )
-            ? "rgba(31, 41, 55, 0.5)"
-            : "rgba(243, 244, 246, 0.5)"};
+        /* Efecto de brillo en inputs al enfocar */
+        input:focus,
+        textarea:focus,
+        select:focus {
+          position: relative;
+        }
+
+        input:focus::after,
+        textarea:focus::after,
+        select:focus::after {
+          content: "";
+          position: absolute;
+          top: 0;
+          left: -100%;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(99, 102, 241, 0.3),
+            transparent
+          );
+          animation: shine 2s infinite;
+        }
+
+        /* Scrollbar personalizado premium */
+        .custom-scrollbar-premium::-webkit-scrollbar {
+          width: 10px;
+          height: 10px;
+        }
+
+        .custom-scrollbar-premium::-webkit-scrollbar-track {
+          background: rgba(0, 0, 0, 0.1);
           border-radius: 10px;
         }
 
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: ${["dark", "blue", "purple", "green"].includes(
-            temaActual
-          )
-            ? "rgba(99, 102, 241, 0.5)"
-            : "rgba(99, 102, 241, 0.7)"};
+        .custom-scrollbar-premium::-webkit-scrollbar-thumb {
+          background: linear-gradient(
+            135deg,
+            rgba(99, 102, 241, 0.8),
+            rgba(168, 85, 247, 0.8)
+          );
           border-radius: 10px;
+          border: 2px solid transparent;
+          background-clip: padding-box;
         }
 
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: ${["dark", "blue", "purple", "green"].includes(
-            temaActual
-          )
-            ? "rgba(99, 102, 241, 0.7)"
-            : "rgba(99, 102, 241, 0.9)"};
+        .custom-scrollbar-premium::-webkit-scrollbar-thumb:hover {
+          background: linear-gradient(
+            135deg,
+            rgba(99, 102, 241, 1),
+            rgba(168, 85, 247, 1)
+          );
+        }
+
+        /* Transiciones suaves globales */
+        * {
+          transition-property: background-color, border-color, color, fill,
+            stroke, opacity, box-shadow, transform;
+          transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Efecto de brillo en hover para cards */
+        .group:hover .shadow-2xl {
+          box-shadow: 0 25px 50px -12px rgba(99, 102, 241, 0.25);
+        }
+
+        /* Animación de guardado exitoso */
+        @keyframes success-pulse {
+          0%,
+          100% {
+            transform: scale(1);
+            opacity: 1;
+          }
+          50% {
+            transform: scale(1.1);
+            opacity: 0.8;
+          }
+        }
+
+        .save-success {
+          animation: success-pulse 0.5s ease-in-out;
+        }
+
+        /* Efecto de escritura en inputs */
+        input:not(:placeholder-shown),
+        textarea:not(:placeholder-shown) {
+          border-color: rgba(99, 102, 241, 0.5);
+        }
+
+        /* Hover mejorado para botones */
+        button:not(:disabled):hover {
+          filter: brightness(1.1);
+        }
+
+        /* Efecto de foco mejorado */
+        input:focus,
+        textarea:focus,
+        select:focus {
+          transform: translateY(-1px);
         }
       `}</style>
     </div>
   );
 }
+

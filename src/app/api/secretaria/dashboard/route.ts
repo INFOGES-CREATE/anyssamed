@@ -83,7 +83,7 @@ interface TareasPendientes {
   fecha_creacion: string;
   url_accion?: string;
 
-  // Campos extra (opcionales, por si los quieres usar en el futuro)
+  // Campos extra
   centro?: string | null;
   sucursal?: string | null;
   creador?: string | null;
@@ -161,7 +161,7 @@ interface CentroMedicoInfo {
   telefono: string | null;
   email: string | null;
   logo_url: string | null;
-  plan: "basico" | "profesional" | "premium" | "empresarial";
+  plan: "basico" | "profesional" | "enterprise";
 }
 
 // ========================================
@@ -259,7 +259,7 @@ async function obtenerCentroMedico(
         cm.nombre,
         cm.ciudad,
         cm.region,
-        cm.telefono,
+        cm.telefono_principal AS telefono,
         cm.email_contacto AS email,
         cm.logo_url,
         cm.plan
@@ -324,12 +324,12 @@ async function obtenerEstadisticas(
          AND fecha_hora_inicio > NOW()`,
         [idCentro]
       ),
-      // Pacientes nuevos del mes
+      // Pacientes nuevos del mes (según fecha_registro)
       pool.query<RowDataPacket[]>(
         `SELECT COUNT(DISTINCT p.id_paciente) as total 
          FROM pacientes p
          INNER JOIN citas c ON p.id_paciente = c.id_paciente
-         WHERE c.id_centro = ? AND p.fecha_creacion >= ?`,
+         WHERE c.id_centro = ? AND p.fecha_registro >= ?`,
         [idCentro, inicioMes]
       ),
       // Total pacientes activos
@@ -338,10 +338,13 @@ async function obtenerEstadisticas(
          FROM pacientes WHERE estado = 'activo'`,
         []
       ),
-      // Llamadas realizadas del mes
+      // Llamadas realizadas del mes (registro_llamadas + secretarias)
       pool.query<RowDataPacket[]>(
-        `SELECT COUNT(*) as total FROM registro_llamadas 
-         WHERE id_secretaria = ? AND DATE(fecha_hora) >= ?`,
+        `SELECT COUNT(*) as total 
+         FROM registro_llamadas rl
+         INNER JOIN secretarias s ON s.id_usuario = rl.id_usuario
+         WHERE s.id_secretaria = ?
+           AND DATE(rl.fecha_llamada) >= ?`,
         [idSecretaria, inicioMes]
       ),
       // Recordatorios enviados del mes
@@ -350,10 +353,10 @@ async function obtenerEstadisticas(
          WHERE id_centro = ? AND DATE(fecha_envio) >= ? AND estado = 'enviado'`,
         [idCentro, inicioMes]
       ),
-      // Documentos procesados del mes
+      // Documentos procesados del mes (documentos_pacientes)
       pool.query<RowDataPacket[]>(
         `SELECT COUNT(*) as total FROM documentos_pacientes 
-         WHERE id_centro = ? AND DATE(fecha_carga) >= ? AND estado = 'procesado'`,
+         WHERE id_centro = ? AND DATE(fecha_subida) >= ? AND estado = 'procesado'`,
         [idCentro, inicioMes]
       ),
       // Tareas pendientes (USANDO TUS TABLAS REALES)
@@ -372,21 +375,28 @@ async function obtenerEstadisticas(
       // Mensajes sin leer
       pool.query<RowDataPacket[]>(
         `SELECT COUNT(*) as total FROM mensajes_chat 
-         WHERE id_destinatario = (SELECT id_usuario FROM secretarias WHERE id_secretaria = ?) 
+         WHERE id_usuario_receptor = (SELECT id_usuario FROM secretarias WHERE id_secretaria = ?) 
          AND leido = 0`,
         [idSecretaria]
       ),
-      // Reportes generados del mes
+      // Reportes generados del mes (usando logs_sistema, modulo='reportes')
       pool.query<RowDataPacket[]>(
-        `SELECT COUNT(*) as total FROM reportes_sistema 
-         WHERE id_centro = ? AND DATE(fecha_generacion) >= ? AND estado = 'completado'`,
+        `SELECT COUNT(*) as total
+         FROM logs_sistema l
+         INNER JOIN usuarios u ON u.id_usuario = l.id_usuario
+         WHERE u.id_centro_principal = ?
+           AND DATE(l.fecha_hora) >= ?
+           AND l.modulo = 'reportes'
+           AND l.exitoso = 1`,
         [idCentro, inicioMes]
       ),
-      // Tiempo promedio de atención (en minutos)
+      // Tiempo promedio de atención (en minutos) usando diferencia entre fecha_llamada y fecha_registro
       pool.query<RowDataPacket[]>(
-        `SELECT COALESCE(AVG(TIMESTAMPDIFF(MINUTE, fecha_inicio, fecha_fin)), 0) as promedio 
-         FROM registro_llamadas 
-         WHERE id_secretaria = ? AND DATE(fecha_hora) >= ? AND fecha_fin IS NOT NULL`,
+        `SELECT COALESCE(AVG(TIMESTAMPDIFF(MINUTE, rl.fecha_llamada, rl.fecha_registro)), 0) as promedio 
+         FROM registro_llamadas rl
+         INNER JOIN secretarias s ON s.id_usuario = rl.id_usuario
+         WHERE s.id_secretaria = ?
+           AND DATE(rl.fecha_llamada) >= ?`,
         [idSecretaria, inicioMes]
       ),
       // Satisfacción de pacientes (promedio de calificaciones)
@@ -448,13 +458,17 @@ async function obtenerCitasProximas(idCentro: number): Promise<CitaProxima[]> {
         TIMESTAMPDIFF(YEAR, p.fecha_nacimiento, CURDATE()) as edad,
         p.foto_url,
         p.telefono,
-        m.id_medico,
-        CONCAT(m.nombre, ' ', m.apellido_paterno) as medico_nombre,
-        m.especialidad_principal,
+        m.id_profesional as id_medico,
+        CONCAT(u_medico.nombre, ' ', u_medico.apellido_paterno) as medico_nombre,
+        COALESCE(e.nombre, 'General') as especialidad,
         COALESCE(s.nombre, 'Consultorio Principal') as sala
       FROM citas c
       INNER JOIN pacientes p ON c.id_paciente = p.id_paciente
-      INNER JOIN medicos m ON c.id_medico = m.id_medico
+      INNER JOIN profesionales_salud m ON c.id_profesional = m.id_profesional
+      INNER JOIN usuarios u_medico ON u_medico.id_usuario = m.id_usuario
+      LEFT JOIN profesionales_especialidades pe 
+        ON pe.id_profesional = m.id_profesional AND pe.es_principal = 1
+      LEFT JOIN especialidades e ON e.id_especialidad = pe.id_especialidad
       LEFT JOIN salas s ON c.id_sala = s.id_sala
       WHERE c.id_centro = ?
         AND DATE(c.fecha_hora_inicio) = ?
@@ -482,7 +496,7 @@ async function obtenerCitasProximas(idCentro: number): Promise<CitaProxima[]> {
       medico: {
         id_medico: row.id_medico,
         nombre_completo: row.medico_nombre,
-        especialidad: row.especialidad_principal,
+        especialidad: row.especialidad,
       },
       motivo: row.motivo,
       sala: row.sala,
@@ -639,13 +653,13 @@ async function obtenerAlertasUrgentes(
         dp.id_documento,
         CONCAT(p.nombre, ' ', p.apellido_paterno) as nombre_completo,
         dp.tipo_documento,
-        dp.fecha_carga
+        dp.fecha_subida
       FROM documentos_pacientes dp
       INNER JOIN pacientes p ON dp.id_paciente = p.id_paciente
       WHERE dp.id_centro = ?
         AND dp.estado = 'pendiente'
-        AND dp.fecha_carga < DATE_SUB(NOW(), INTERVAL 24 HOUR)
-      ORDER BY dp.fecha_carga ASC
+        AND dp.fecha_subida < DATE_SUB(NOW(), INTERVAL 24 HOUR)
+      ORDER BY dp.fecha_subida ASC
       LIMIT 5
       `,
       [idCentro]
@@ -657,7 +671,7 @@ async function obtenerAlertasUrgentes(
         tipo: "alta",
         titulo: "📄 Documento Pendiente",
         descripcion: `${doc.nombre_completo}: ${doc.tipo_documento} requiere procesamiento`,
-        fecha_hora: doc.fecha_carga,
+        fecha_hora: doc.fecha_subida,
         leida: false,
         accion_requerida: "Procesar documento",
         url_accion: `/secretaria/documentos/${doc.id_documento}`,
@@ -696,7 +710,7 @@ async function obtenerAlertasUrgentes(
       });
     }
 
-    // 4. Tareas vencidas (USANDO TUS TABLAS REALES)
+    // 4. Tareas vencidas
     const [tareasVencidas] = await pool.query<RowDataPacket[]>(
       `
       SELECT 
@@ -737,7 +751,7 @@ async function obtenerAlertasUrgentes(
       });
     }
 
-    // Ordenar por prioridad
+    // Ordenar por prioridad y fecha
     const ordenTipo: Record<AlertaUrgente["tipo"], number> = {
       critica: 1,
       alta: 2,
@@ -780,7 +794,7 @@ async function obtenerPacientesRecientes(
         p.email,
         p.estado,
         c.fecha_hora_inicio as ultima_cita,
-        CONCAT(m.nombre, ' ', m.apellido_paterno) as medico_asignado,
+        CONCAT(u_medico.nombre, ' ', u_medico.apellido_paterno) as medico_asignado,
         (
           SELECT MIN(fecha_hora_inicio)
           FROM citas
@@ -791,7 +805,8 @@ async function obtenerPacientesRecientes(
         ) as proxima_cita
       FROM pacientes p
       INNER JOIN citas c ON p.id_paciente = c.id_paciente
-      INNER JOIN medicos m ON c.id_medico = m.id_medico
+      INNER JOIN profesionales_salud m ON c.id_profesional = m.id_profesional
+      INNER JOIN usuarios u_medico ON u_medico.id_usuario = m.id_usuario
       WHERE c.id_centro = ?
         AND c.fecha_hora_inicio >= DATE_SUB(NOW(), INTERVAL 30 DAY)
       GROUP BY p.id_paciente
@@ -844,44 +859,58 @@ async function obtenerMetricasRendimiento(
       .split("T")[0];
 
     const queries = [
+      // Llamadas mes actual
       pool.query<RowDataPacket[]>(
-        `SELECT COUNT(*) as total FROM registro_llamadas 
-         WHERE id_secretaria = ? AND DATE(fecha_hora) >= ?`,
+        `SELECT COUNT(*) as total 
+         FROM registro_llamadas rl
+         INNER JOIN secretarias s ON s.id_usuario = rl.id_usuario
+         WHERE s.id_secretaria = ?
+           AND DATE(rl.fecha_llamada) >= ?`,
         [idSecretaria, inicioMesActual]
       ),
+      // Llamadas mes anterior
       pool.query<RowDataPacket[]>(
-        `SELECT COUNT(*) as total FROM registro_llamadas 
-         WHERE id_secretaria = ? AND DATE(fecha_hora) BETWEEN ? AND ?`,
+        `SELECT COUNT(*) as total 
+         FROM registro_llamadas rl
+         INNER JOIN secretarias s ON s.id_usuario = rl.id_usuario
+         WHERE s.id_secretaria = ?
+           AND DATE(rl.fecha_llamada) BETWEEN ? AND ?`,
         [idSecretaria, inicioMesAnterior, finMesAnterior]
       ),
+      // Citas confirmadas mes actual
       pool.query<RowDataPacket[]>(
         `SELECT COUNT(*) as total FROM citas 
          WHERE id_centro = ? AND DATE(fecha_hora_inicio) >= ? 
          AND confirmado_por_paciente = 1`,
         [idCentro, inicioMesActual]
       ),
+      // Citas confirmadas mes anterior
       pool.query<RowDataPacket[]>(
         `SELECT COUNT(*) as total FROM citas 
          WHERE id_centro = ? AND DATE(fecha_hora_inicio) BETWEEN ? AND ? 
          AND confirmado_por_paciente = 1`,
         [idCentro, inicioMesAnterior, finMesAnterior]
       ),
+      // Documentos procesados mes actual
       pool.query<RowDataPacket[]>(
         `SELECT COUNT(*) as total FROM documentos_pacientes 
-         WHERE id_centro = ? AND DATE(fecha_carga) >= ? AND estado = 'procesado'`,
+         WHERE id_centro = ? AND DATE(fecha_subida) >= ? AND estado = 'procesado'`,
         [idCentro, inicioMesActual]
       ),
+      // Documentos procesados mes anterior
       pool.query<RowDataPacket[]>(
         `SELECT COUNT(*) as total FROM documentos_pacientes 
-         WHERE id_centro = ? AND DATE(fecha_carga) BETWEEN ? AND ? AND estado = 'procesado'`,
+         WHERE id_centro = ? AND DATE(fecha_subida) BETWEEN ? AND ? AND estado = 'procesado'`,
         [idCentro, inicioMesAnterior, finMesAnterior]
       ),
+      // Satisfacción mes actual
       pool.query<RowDataPacket[]>(
         `SELECT COALESCE(AVG(calificacion), 0) as promedio 
          FROM valoraciones_atencion_secretaria 
          WHERE id_secretaria = ? AND DATE(fecha_valoracion) >= ?`,
         [idSecretaria, inicioMesActual]
       ),
+      // Satisfacción mes anterior
       pool.query<RowDataPacket[]>(
         `SELECT COALESCE(AVG(calificacion), 0) as promedio 
          FROM valoraciones_atencion_secretaria 
@@ -901,7 +930,8 @@ async function obtenerMetricasRendimiento(
       color: string,
       descripcion: string
     ): MetricaRendimiento => {
-      const cambio = anterior > 0 ? ((actual - anterior) / anterior) * 100 : 0;
+      const cambio =
+        anterior > 0 ? ((actual - anterior) / anterior) * 100 : 0;
       const tendencia: "up" | "down" | "neutral" =
         cambio > 5 ? "up" : cambio < -5 ? "down" : "neutral";
 

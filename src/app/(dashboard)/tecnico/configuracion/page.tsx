@@ -1,12 +1,8 @@
-//src\app\(dashboard)\tecnico\configuracion\page.tsx
-
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
 import SidebarTecnico from "@/components/tecnico/SidebarTecnico";
-
 
 import Image from "next/image";
 import {
@@ -348,7 +344,7 @@ const TIPOS_TICKET_DEF: {
 ];
 
 // ========================================
-// TEMAS
+// TEMAS (texto siempre negro / gris oscuro)
 // ========================================
 
 const TEMAS: Record<TemaColor, ConfiguracionTema> = {
@@ -358,98 +354,98 @@ const TEMAS: Record<TemaColor, ConfiguracionTema> = {
     colores: {
       fondo: "from-slate-50 via-blue-50 to-indigo-50",
       fondoSecundario: "bg-white",
-      texto: "text-gray-900",
-      textoSecundario: "text-gray-600",
-      primario: "bg-indigo-600 hover:bg-indigo-700",
-      secundario: "bg-gray-200 hover:bg-gray-300",
+      texto: "text-black",
+      textoSecundario: "text-gray-700",
+      primario: "bg-indigo-100 hover:bg-indigo-200 border border-indigo-300",
+      secundario: "bg-gray-100 hover:bg-gray-200 border border-gray-300",
       acento: "text-indigo-600",
       borde: "border-gray-200",
-      sombra: "shadow-xl shadow-indigo-100/50",
+      sombra: "shadow-lg shadow-indigo-100/70",
       gradiente: "from-indigo-500 via-purple-500 to-pink-500",
       sidebar: "bg-white/95 backdrop-blur-xl border-gray-200",
-      header: "bg-white/80 backdrop-blur-xl border-gray-200",
+      header: "bg-white/90 backdrop-blur-xl border-gray-200",
       card: "bg-white border-gray-200 hover:border-indigo-300",
       hover: "hover:bg-gray-50",
     },
   },
   dark: {
-    nombre: "Oscuro",
+    nombre: "Oscuro suave",
     icono: Moon,
     colores: {
-      fondo: "from-slate-950 via-indigo-950 to-purple-950",
-      fondoSecundario: "bg-gray-900",
-      texto: "text-white",
-      textoSecundario: "text-gray-400",
-      primario: "bg-indigo-600 hover:bg-indigo-700",
-      secundario: "bg-gray-800 hover:bg-gray-700",
-      acento: "text-indigo-400",
-      borde: "border-gray-800",
-      sombra: "shadow-2xl shadow-indigo-500/20",
+      fondo: "from-slate-100 via-indigo-100 to-purple-100",
+      fondoSecundario: "bg-white",
+      texto: "text-black",
+      textoSecundario: "text-gray-700",
+      primario: "bg-indigo-100 hover:bg-indigo-200 border border-indigo-300",
+      secundario: "bg-gray-100 hover:bg-gray-200 border border-gray-300",
+      acento: "text-indigo-600",
+      borde: "border-gray-200",
+      sombra: "shadow-lg shadow-indigo-200/70",
       gradiente: "from-indigo-500 via-purple-500 to-pink-500",
-      sidebar: "bg-gray-900/95 backdrop-blur-xl border-gray-800",
-      header: "bg-gray-900/80 backdrop-blur-xl border-gray-800",
-      card: "bg-gray-800/50 border-gray-700 hover:border-indigo-500/50",
-      hover: "hover:bg-gray-800",
+      sidebar: "bg-white/95 backdrop-blur-xl border-gray-200",
+      header: "bg-white/90 backdrop-blur-xl border-gray-200",
+      card: "bg-white border-gray-200 hover:border-indigo-300",
+      hover: "hover:bg-gray-50",
     },
   },
   blue: {
     nombre: "Azul Técnico",
     icono: Wifi,
     colores: {
-      fondo: "from-blue-950 via-cyan-950 to-teal-950",
-      fondoSecundario: "bg-blue-900",
-      texto: "text-white",
-      textoSecundario: "text-cyan-300",
-      primario: "bg-cyan-600 hover:bg-cyan-700",
-      secundario: "bg-blue-800 hover:bg-blue-700",
-      acento: "text-cyan-400",
-      borde: "border-cyan-800",
-      sombra: "shadow-2xl shadow-cyan-500/20",
+      fondo: "from-blue-50 via-cyan-50 to-teal-50",
+      fondoSecundario: "bg-white",
+      texto: "text-black",
+      textoSecundario: "text-gray-700",
+      primario: "bg-cyan-100 hover:bg-cyan-200 border border-cyan-300",
+      secundario: "bg-blue-50 hover:bg-blue-100 border border-blue-200",
+      acento: "text-cyan-700",
+      borde: "border-blue-200",
+      sombra: "shadow-lg shadow-cyan-100/80",
       gradiente: "from-cyan-500 via-blue-500 to-indigo-500",
-      sidebar: "bg-blue-900/95 backdrop-blur-xl border-cyan-800",
-      header: "bg-blue-900/80 backdrop-blur-xl border-cyan-800",
-      card: "bg-blue-800/50 border-cyan-700 hover:border-cyan-500/50",
-      hover: "hover:bg-blue-800",
+      sidebar: "bg-white/95 backdrop-blur-xl border-blue-200",
+      header: "bg-white/90 backdrop-blur-xl border-blue-200",
+      card: "bg-white border-blue-100 hover:border-cyan-300",
+      hover: "hover:bg-blue-50",
     },
   },
   purple: {
     nombre: "Púrpura Industrial",
     icono: Sparkles,
     colores: {
-      fondo: "from-purple-950 via-fuchsia-950 to-pink-950",
-      fondoSecundario: "bg-purple-900",
-      texto: "text-white",
-      textoSecundario: "text-purple-300",
-      primario: "bg-fuchsia-600 hover:bg-fuchsia-700",
-      secundario: "bg-purple-800 hover:bg-purple-700",
-      acento: "text-fuchsia-400",
-      borde: "border-purple-800",
-      sombra: "shadow-2xl shadow-fuchsia-500/20",
+      fondo: "from-purple-50 via-fuchsia-50 to-pink-50",
+      fondoSecundario: "bg-white",
+      texto: "text-black",
+      textoSecundario: "text-gray-700",
+      primario: "bg-fuchsia-100 hover:bg-fuchsia-200 border border-fuchsia-300",
+      secundario: "bg-purple-50 hover:bg-purple-100 border border-purple-200",
+      acento: "text-fuchsia-700",
+      borde: "border-purple-200",
+      sombra: "shadow-lg shadow-fuchsia-100/80",
       gradiente: "from-fuchsia-500 via-purple-500 to-pink-500",
-      sidebar: "bg-purple-900/95 backdrop-blur-xl border-purple-800",
-      header: "bg-purple-900/80 backdrop-blur-xl border-purple-800",
-      card: "bg-purple-800/50 border-purple-700 hover:border-fuchsia-500/50",
-      hover: "hover:bg-purple-800",
+      sidebar: "bg-white/95 backdrop-blur-xl border-purple-200",
+      header: "bg-white/90 backdrop-blur-xl border-purple-200",
+      card: "bg-white border-purple-100 hover:border-fuchsia-300",
+      hover: "hover:bg-purple-50",
     },
   },
   green: {
     nombre: "Verde Operacional",
     icono: HeartPulse,
     colores: {
-      fondo: "from-emerald-950 via-teal-950 to-cyan-950",
-      fondoSecundario: "bg-emerald-900",
-      texto: "text-white",
-      textoSecundario: "text-emerald-300",
-      primario: "bg-emerald-600 hover:bg-emerald-700",
-      secundario: "bg-teal-800 hover:bg-teal-700",
-      acento: "text-emerald-400",
-      borde: "border-emerald-800",
-      sombra: "shadow-2xl shadow-emerald-500/20",
+      fondo: "from-emerald-50 via-teal-50 to-cyan-50",
+      fondoSecundario: "bg-white",
+      texto: "text-black",
+      textoSecundario: "text-gray-700",
+      primario: "bg-emerald-100 hover:bg-emerald-200 border border-emerald-300",
+      secundario: "bg-teal-50 hover:bg-teal-100 border border-teal-200",
+      acento: "text-emerald-700",
+      borde: "border-emerald-200",
+      sombra: "shadow-lg shadow-emerald-100/80",
       gradiente: "from-emerald-500 via-teal-500 to-cyan-500",
-      sidebar: "bg-emerald-900/95 backdrop-blur-xl border-emerald-800",
-      header: "bg-emerald-900/80 backdrop-blur-xl border-emerald-800",
-      card: "bg-emerald-800/50 border-emerald-700 hover:border-emerald-500/50",
-      hover: "hover:bg-emerald-800",
+      sidebar: "bg-white/95 backdrop-blur-xl border-emerald-200",
+      header: "bg-white/90 backdrop-blur-xl border-emerald-200",
+      card: "bg-white border-emerald-100 hover:border-emerald-300",
+      hover: "hover:bg-emerald-50",
     },
   },
 };
@@ -530,18 +526,17 @@ function formatearFechaSoloDia(fecha: string) {
   }).format(date);
 }
 
-const seccionActiva = "tickets";
-
 // ========================================
 // PAGE COMPONENT
 // ========================================
 
 export default function ConfiguracionCentroTecnicoPage() {
-    
   const [usuario, setUsuario] = useState<UsuarioSesion | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const [estadisticas, setEstadisticas] = useState<EstadisticasTecnico | null>(null);
+  const [estadisticas, setEstadisticas] = useState<EstadisticasTecnico | null>(
+    null
+  );
   const [alertas, setAlertas] = useState<AlertaTecnico[]>([]);
 
   const [temaActual, setTemaActual] = useState<TemaColor>("blue");
@@ -564,7 +559,6 @@ export default function ConfiguracionCentroTecnicoPage() {
   const [mensajeConfig, setMensajeConfig] = useState<string | null>(null);
   const [errorConfig, setErrorConfig] = useState<string | null>(null);
 
-
   const tema = useMemo(() => TEMAS[temaActual], [temaActual]);
   const seccionActiva = "configuracion";
 
@@ -585,12 +579,14 @@ export default function ConfiguracionCentroTecnicoPage() {
       };
     }
 
-    const canalesActivos = Object.values(configCentro.canales).filter(Boolean).length;
-    const tiposActivos = Object.values(configCentro.tipos_activos).filter(Boolean)
+    const canalesActivos = Object.values(configCentro.canales).filter(Boolean)
       .length;
-    const notificacionesActivas = Object.values(configCentro.notificaciones).filter(
+    const tiposActivos = Object.values(configCentro.tipos_activos).filter(
       Boolean
     ).length;
+    const notificacionesActivas = Object.values(
+      configCentro.notificaciones
+    ).filter(Boolean).length;
 
     return {
       canalesActivos,
@@ -601,10 +597,6 @@ export default function ConfiguracionCentroTecnicoPage() {
       notificacionesActivas,
     };
   }, [configCentro]);
-
-  // MENÚ
-  
-   
 
   // ========================================
   // EFECTOS
@@ -644,7 +636,7 @@ export default function ConfiguracionCentroTecnicoPage() {
   }, [mensajeConfig, errorConfig]);
 
   // ========================================
-  // CARGA DE DATOS
+  // CARGA DE DATOS (DINÁMICOS)
   // ========================================
 
   const cargarDatosUsuario = async () => {
@@ -1027,10 +1019,10 @@ export default function ConfiguracionCentroTecnicoPage() {
 
   const obtenerColorDisponibilidad = () => {
     if (disponibilidad === "disponible")
-      return "bg-green-500/20 text-green-300 border-green-400/40";
+      return "bg-green-50 text-green-700 border-green-300";
     if (disponibilidad === "ocupado")
-      return "bg-yellow-500/20 text-yellow-200 border-yellow-400/40";
-    return "bg-red-500/20 text-red-200 border-red-400/40";
+      return "bg-yellow-50 text-yellow-700 border-yellow-300";
+    return "bg-red-50 text-red-700 border-red-300";
   };
 
   // ========================================
@@ -1044,7 +1036,7 @@ export default function ConfiguracionCentroTecnicoPage() {
       >
         <div className="text-center">
           <div className="relative mb-8">
-            <div className="w-32 h-32 border-4 border-indigo-400 border-t-transparent rounded-full animate-spin"></div>
+            <div className="w-32 h-32 border-4 border-indigo-200 border-t-transparent rounded-full animate-spin"></div>
             <div
               className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-20 h-20 bg-gradient-to-br ${tema.colores.gradiente} rounded-full flex items-center justify-center animate-pulse`}
             >
@@ -1055,7 +1047,7 @@ export default function ConfiguracionCentroTecnicoPage() {
             Cargando Configuración del Centro
           </h2>
           <p
-            className={`text-lg font-semibold ${tema.colores.textoSecundario} animate-pulse`}
+            className={`text-lg font-semibold ${tema.colores.textoSecundario}`}
           >
             Preparando los parámetros de tickets y canalización para tu centro...
           </p>
@@ -1085,7 +1077,7 @@ export default function ConfiguracionCentroTecnicoPage() {
           </p>
           <Link
             href="/login"
-            className={`inline-flex items-center gap-3 px-8 py-4 ${tema.colores.primario} text-white rounded-2xl font-bold text-lg transition-all duration-300 hover:scale-105 ${tema.colores.sombra}`}
+            className={`inline-flex items-center gap-3 px-8 py-4 ${tema.colores.primario} rounded-2xl font-bold text-lg transition-all duration-300 hover:scale-105 ${tema.colores.sombra} text-black`}
           >
             <LogOut className="w-5 h-5" />
             Ir al Login
@@ -1112,7 +1104,6 @@ export default function ConfiguracionCentroTecnicoPage() {
         estadisticas={estadisticas}
       />
 
-
       {/* HEADER */}
       <header
         className={`fixed top-0 right-0 z-40 transition-all duration-300 ${
@@ -1131,14 +1122,14 @@ export default function ConfiguracionCentroTecnicoPage() {
                 placeholder="Buscar opciones dentro de la configuración del centro..."
                 value={busqueda}
                 onChange={(e) => setBusqueda(e.target.value)}
-                className={`w-full pl-12 pr-4 py-3 rounded-xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto} placeholder:${tema.colores.textoSecundario} focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all duration-300`}
+                className={`w-full pl-12 pr-4 py-3 rounded-xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto} placeholder:${tema.colores.textoSecundario} focus:outline-none focus:ring-2 focus:ring-indigo-400/70 transition-all duration-300`}
               />
               {busqueda && (
                 <button
                   onClick={() => setBusqueda("")}
                   className={`absolute right-4 top-1/2 transform -translate-y-1/2 p-1 rounded-lg ${tema.colores.hover}`}
                 >
-                  <X className="w-4 h-4" />
+                  <X className="w-4 h-4 text-gray-600" />
                 </button>
               )}
             </div>
@@ -1151,7 +1142,7 @@ export default function ConfiguracionCentroTecnicoPage() {
               <button
                 className={`p-3 rounded-xl font-semibold transition-all duration-300 ${tema.colores.secundario} ${tema.colores.texto}`}
               >
-                <Sparkles className="w-5 h-5" />
+                <Sparkles className="w-5 h-5 text-gray-700" />
               </button>
 
               <div
@@ -1166,15 +1157,17 @@ export default function ConfiguracionCentroTecnicoPage() {
                     onClick={() => cambiarTema(key as TemaColor)}
                     className={`w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl font-semibold transition-all duration-300 ${
                       temaActual === key
-                        ? `bg-gradient-to-r ${t.colores.gradiente} text-white`
+                        ? "border-2 border-indigo-500 bg-white text-black"
                         : `${tema.colores.hover} ${tema.colores.texto}`
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      <t.icono className="w-5 h-5" />
+                      <t.icono className="w-5 h-5 text-gray-700" />
                       <span>{t.nombre}</span>
                     </div>
-                    {temaActual === key && <Check className="w-5 h-5" />}
+                    {temaActual === key && (
+                      <Check className="w-5 h-5 text-indigo-600" />
+                    )}
                   </button>
                 ))}
               </div>
@@ -1183,10 +1176,12 @@ export default function ConfiguracionCentroTecnicoPage() {
             {/* Alertas */}
             <div className="relative">
               <button
-                onClick={() => setNotificacionesAbiertas(!notificacionesAbiertas)}
+                onClick={() =>
+                  setNotificacionesAbiertas(!notificacionesAbiertas)
+                }
                 className={`relative p-3 rounded-xl font-semibold transition-all duration-300 ${tema.colores.secundario} ${tema.colores.texto}`}
               >
-                <AlertCircle className="w-5 h-5" />
+                <AlertCircle className="w-5 h-5 text-gray-700" />
                 {alertas.filter((a) => !a.leida).length > 0 && (
                   <span className="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center animate-pulse">
                     {alertas.filter((a) => !a.leida).length > 9
@@ -1212,12 +1207,8 @@ export default function ConfiguracionCentroTecnicoPage() {
 
                   {alertas.length === 0 ? (
                     <div className="p-8 text-center">
-                      <BellOff
-                        className={`w-12 h-12 mx-auto mb-3 ${tema.colores.textoSecundario}`}
-                      />
-                      <p
-                        className={`text-sm ${tema.colores.textoSecundario}`}
-                      >
+                      <BellOff className="w-12 h-12 mx-auto mb-3 text-gray-500" />
+                      <p className={`text-sm ${tema.colores.textoSecundario}`}>
                         No tienes alertas activas
                       </p>
                     </div>
@@ -1227,24 +1218,23 @@ export default function ConfiguracionCentroTecnicoPage() {
                         <div
                           key={alerta.id_alerta}
                           className={`p-4 ${tema.colores.hover} transition-colors cursor-pointer ${
-                            !alerta.leida ? "bg-indigo-500/5" : ""
+                            !alerta.leida ? "bg-indigo-50" : ""
                           }`}
                         >
                           <div className="flex items-start gap-3">
-                            <div
-                              className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0`}
-                            >
+                            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0">
                               <div
-                                className={`w-8 h-8 rounded-xl flex items-center justify-center ${alerta.prioridad === "critica"
-                                  ? "bg-red-500/20 border border-red-400/40"
-                                  : alerta.prioridad === "alta"
-                                  ? "bg-orange-500/20 border border-orange-400/40"
-                                  : alerta.prioridad === "media"
-                                  ? "bg-yellow-500/20 border border-yellow-400/40"
-                                  : "bg-emerald-500/20 border border-emerald-400/40"
+                                className={`w-8 h-8 rounded-xl flex items-center justify-center ${
+                                  alerta.prioridad === "critica"
+                                    ? "bg-red-50 border border-red-200"
+                                    : alerta.prioridad === "alta"
+                                    ? "bg-orange-50 border border-orange-200"
+                                    : alerta.prioridad === "media"
+                                    ? "bg-yellow-50 border border-yellow-200"
+                                    : "bg-emerald-50 border border-emerald-200"
                                 }`}
                               >
-                                <AlertCircleIcon className="w-5 h-5" />
+                                <AlertCircleIcon className="w-5 h-5 text-gray-700" />
                               </div>
                             </div>
                             <div className="flex-1 min-w-0">
@@ -1278,11 +1268,10 @@ export default function ConfiguracionCentroTecnicoPage() {
             {/* Disponibilidad */}
             <div className="hidden lg:flex items-center gap-2">
               <span
-  className={`px-3 py-2 rounded-xl text-xs font-semibold border ${obtenerColorDisponibilidad()}`}
->
-  Estado: {disponibilidad?.toUpperCase() ?? "NO DEFINIDO"}
-</span>
-
+                className={`px-3 py-2 rounded-xl text-xs font-semibold border ${obtenerColorDisponibilidad()}`}
+              >
+                Estado: {disponibilidad?.toUpperCase() ?? "NO DEFINIDO"}
+              </span>
             </div>
 
             {/* Perfil */}
@@ -1325,7 +1314,7 @@ export default function ConfiguracionCentroTecnicoPage() {
                 <div
                   className={`absolute right-0 mt-2 w-80 rounded-2xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} p-4 z-50`}
                 >
-                  <div className="flex items-center gap-4 mb-4 pb-4 border-b border-gray-700/50">
+                  <div className="flex items-center gap-4 mb-4 pb-4 border-b border-gray-200">
                     <div
                       className={`w-16 h-16 rounded-xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center text-white font-bold text-xl shadow-lg`}
                     >
@@ -1355,7 +1344,8 @@ export default function ConfiguracionCentroTecnicoPage() {
                       <p
                         className={`text-xs font-medium ${tema.colores.textoSecundario}`}
                       >
-                        {usuario.tecnico?.centro?.nombre ?? "Sin centro asignado"}
+                        {usuario.tecnico?.centro?.nombre ??
+                          "Sin centro asignado"}
                       </p>
                     </div>
                   </div>
@@ -1365,26 +1355,26 @@ export default function ConfiguracionCentroTecnicoPage() {
                       href="/tecnico/perfil"
                       className={`flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all duration-300 ${tema.colores.hover} ${tema.colores.texto}`}
                     >
-                      <User className="w-5 h-5" />
+                      <User className="w-5 h-5 text-gray-700" />
                       <span>Mi Perfil</span>
                     </Link>
                     <Link
                       href="/tecnico/configuracion"
                       className={`flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all duration-300 ${tema.colores.hover} ${tema.colores.texto}`}
                     >
-                      <Settings className="w-5 h-5" />
+                      <Settings className="w-5 h-5 text-gray-700" />
                       <span>Configuración del Centro</span>
                     </Link>
                     <Link
                       href="/tecnico/ayuda"
                       className={`flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all duration-300 ${tema.colores.hover} ${tema.colores.texto}`}
                     >
-                      <Lightbulb className="w-5 h-5" />
+                      <Lightbulb className="w-5 h-5 text-gray-700" />
                       <span>Ayuda</span>
                     </Link>
                     <button
                       onClick={cerrarSesion}
-                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all duration-300 ${tema.colores.hover} text-red-500 hover:text-red-400`}
+                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all duration-300 ${tema.colores.hover} text-red-600 hover:text-red-700`}
                     >
                       <LogOut className="w-5 h-5" />
                       <span>Cerrar Sesión</span>
@@ -1420,18 +1410,18 @@ export default function ConfiguracionCentroTecnicoPage() {
             </p>
             <div className="mt-3 flex flex-wrap items-center gap-2 text-xs md:text-sm">
               <span
-                className={`inline-flex items-center gap-2 px-3 py-1 rounded-full border ${tema.colores.borde} ${tema.colores.textoSecundario} bg-black/10`}
+                className={`inline-flex items-center gap-2 px-3 py-1 rounded-full border ${tema.colores.borde} ${tema.colores.textoSecundario} bg-white/70`}
               >
-                <Building2 className="w-3 h-3" />
+                <Building2 className="w-3 h-3 text-gray-700" />
                 Centro actual:
                 <span className={tema.colores.texto}>
                   {usuario.tecnico?.centro?.nombre ?? "Sin centro asignado"}
                 </span>
               </span>
               <span
-                className={`inline-flex items-center gap-2 px-3 py-1 rounded-full border ${tema.colores.borde} ${tema.colores.textoSecundario} bg-black/10`}
+                className={`inline-flex items-center gap-2 px-3 py-1 rounded-full border ${tema.colores.borde} ${tema.colores.textoSecundario} bg-white/70`}
               >
-                <MapPinIcon className="w-3 h-3" />
+                <MapPinIcon className="w-3 h-3 text-gray-700" />
                 {usuario.tecnico?.centro?.ciudad ?? "Sin ciudad"},{" "}
                 {usuario.tecnico?.centro?.region ?? "Sin región"}
               </span>
@@ -1446,16 +1436,18 @@ export default function ConfiguracionCentroTecnicoPage() {
                 disabled={loadingConfig}
               >
                 <RefreshCw
-                  className={`w-4 h-4 ${loadingConfig ? "animate-spin" : ""}`}
+                  className={`w-4 h-4 ${
+                    loadingConfig ? "animate-spin" : ""
+                  } text-gray-700`}
                 />
                 Recargar configuración
               </button>
               <button
                 onClick={guardarConfiguracionCentro}
-                className={`flex items-center gap-2 px-5 py-3 ${tema.colores.primario} text-white rounded-xl font-bold text-sm transition-all duration-300 hover:scale-105 ${tema.colores.sombra} disabled:opacity-60 disabled:cursor-not-allowed`}
+                className={`flex items-center gap-2 px-5 py-3 ${tema.colores.primario} rounded-xl font-bold text-sm transition-all duration-300 hover:scale-105 ${tema.colores.sombra} disabled:opacity-60 disabled:cursor-not-allowed text-black`}
                 disabled={!hayCambios || guardandoConfig}
               >
-                <Save className="w-4 h-4" />
+                <Save className="w-4 h-4 text-gray-700" />
                 {guardandoConfig
                   ? "Guardando cambios..."
                   : "Guardar configuración del centro"}
@@ -1476,8 +1468,8 @@ export default function ConfiguracionCentroTecnicoPage() {
                 </p>
               )}
               {hayCambios && (
-                <p className="text-amber-400 flex items-center gap-1">
-                  <AlertTriangle className="w-3 h-3" />
+                <p className="text-xs text-black flex items-center gap-1">
+                  <AlertTriangle className="w-3 h-3 text-amber-500" />
                   Hay cambios sin guardar.
                 </p>
               )}
@@ -1490,26 +1482,22 @@ export default function ConfiguracionCentroTecnicoPage() {
           <div
             className={`mb-6 rounded-2xl px-4 py-3 flex items-center gap-3 ${
               mensajeConfig
-                ? "bg-emerald-500/10 border border-emerald-500/40"
-                : "bg-red-500/10 border border-red-500/40"
+                ? "bg-emerald-50 border border-emerald-200"
+                : "bg-red-50 border border-red-200"
             }`}
           >
             {mensajeConfig ? (
-              <CheckCircle2 className="w-5 h-5 text-emerald-400" />
+              <CheckCircle2 className="w-5 h-5 text-emerald-600" />
             ) : (
-              <AlertCircle className="w-5 h-5 text-red-400" />
+              <AlertCircle className="w-5 h-5 text-red-600" />
             )}
-            <p
-              className={`text-sm ${
-                mensajeConfig ? "text-emerald-100" : "text-red-100"
-              }`}
-            >
+            <p className="text-sm text-black">
               {mensajeConfig || errorConfig}
             </p>
           </div>
         )}
 
-        {/* Resumen rápido del centro */}
+        {/* Resumen rápido del centro (datos dinámicos) */}
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-6 mb-8">
           <ResumenCard
             tema={tema}
@@ -1565,7 +1553,7 @@ export default function ConfiguracionCentroTecnicoPage() {
         {loadingConfig || !configCentro ? (
           <div className="flex items-center justify-center py-20">
             <div className="text-center">
-              <Loader2 className="w-16 h-16 animate-spin text-indigo-500 mx-auto mb-4" />
+              <Loader2 className="w-16 h-16 animate-spin text-indigo-400 mx-auto mb-4" />
               <p
                 className={`text-lg font-semibold ${tema.colores.textoSecundario}`}
               >
@@ -1630,7 +1618,7 @@ export default function ConfiguracionCentroTecnicoPage() {
                     </div>
                   </label>
 
-                  <div className="border-t border-dashed border-gray-600/40 pt-4 mt-3 space-y-3">
+                  <div className="border-t border-dashed border-gray-200 pt-4 mt-3 space-y-3">
                     <label className="flex items-start gap-3 cursor-pointer">
                       <input
                         type="checkbox"
@@ -1689,8 +1677,7 @@ export default function ConfiguracionCentroTecnicoPage() {
                         >
                           El centro podrá, en el futuro, recibir incidencias o
                           solicitudes de pacientes (por ejemplo sobre equipos,
-                          accesos, etc.). Aún no conecta con el módulo de interacción
-                          directa.
+                          accesos, etc.).
                         </p>
                       </div>
                     </label>
@@ -1753,7 +1740,7 @@ export default function ConfiguracionCentroTecnicoPage() {
                         <p
                           className={`text-sm font-semibold ${tema.colores.texto} flex items-center gap-2`}
                         >
-                          <canal.icon className="w-4 h-4" />
+                          <canal.icon className="w-4 h-4 text-gray-700" />
                           {canal.label}
                         </p>
                         <p
@@ -1821,7 +1808,7 @@ export default function ConfiguracionCentroTecnicoPage() {
                         <p
                           className={`text-sm font-semibold ${tema.colores.texto} flex items-center gap-2`}
                         >
-                          <tipo.icon className="w-4 h-4" />
+                          <tipo.icon className="w-4 h-4 text-gray-700" />
                           {tipo.label}
                         </p>
                         <p
@@ -1867,14 +1854,13 @@ export default function ConfiguracionCentroTecnicoPage() {
                 <div className="space-y-3 text-xs">
                   {(
                     [
-                      { key: "critica", label: "Crítica", color: "text-red-400" },
-                      { key: "alta", label: "Alta", color: "text-orange-400" },
-                      { key: "media", label: "Media", color: "text-yellow-300" },
-                      { key: "baja", label: "Baja", color: "text-emerald-300" },
+                      { key: "critica", label: "Crítica" },
+                      { key: "alta", label: "Alta" },
+                      { key: "media", label: "Media" },
+                      { key: "baja", label: "Baja" },
                     ] as {
                       key: keyof ConfigCentroTickets["sla_minutos"];
                       label: string;
-                      color: string;
                     }[]
                   ).map((sla) => (
                     <div
@@ -1885,16 +1871,16 @@ export default function ConfiguracionCentroTecnicoPage() {
                         <span
                           className={`w-2 h-2 rounded-full ${
                             sla.key === "critica"
-                              ? "bg-red-400"
+                              ? "bg-red-500"
                               : sla.key === "alta"
-                              ? "bg-orange-400"
+                              ? "bg-orange-500"
                               : sla.key === "media"
-                              ? "bg-yellow-300"
-                              : "bg-emerald-300"
+                              ? "bg-yellow-400"
+                              : "bg-emerald-500"
                           }`}
                         />
                         <span
-                          className={`font-semibold ${tema.colores.texto} ${sla.color}`}
+                          className={`font-semibold ${tema.colores.texto}`}
                         >
                           {sla.label}
                         </span>
@@ -1992,7 +1978,9 @@ export default function ConfiguracionCentroTecnicoPage() {
                     <input
                       type="checkbox"
                       className="mt-1 w-4 h-4 accent-red-500"
-                      checked={configCentro.notificaciones.alerta_ticket_critico}
+                      checked={
+                        configCentro.notificaciones.alerta_ticket_critico
+                      }
                       onChange={(e) =>
                         setConfigCentro((prev) =>
                           prev
@@ -2085,8 +2073,7 @@ export default function ConfiguracionCentroTecnicoPage() {
                         className={`text-xs ${tema.colores.textoSecundario}`}
                       >
                         Solo afecta a este centro, para dar visibilidad al equipo
-                        comunal de mantención, sin activar aún canales de atención
-                        directa.
+                        comunal de mantención.
                       </p>
                     </div>
                   </label>
@@ -2170,11 +2157,13 @@ export default function ConfiguracionCentroTecnicoPage() {
                         onChange={(e) => actualizarMaxTickets(e.target.value)}
                         className={`w-20 px-2 py-1 rounded-lg text-right ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto}`}
                       />
-                      <span className={tema.colores.textoSecundario}>tickets</span>
+                      <span className={tema.colores.textoSecundario}>
+                        tickets
+                      </span>
                     </div>
                   </div>
 
-                  <div className="border-t border-dashed border-gray-600/40 pt-4 mt-3 space-y-3">
+                  <div className="border-t border-dashed border-gray-200 pt-4 mt-3 space-y-3">
                     <p
                       className={`text-xs font-semibold ${tema.colores.textoSecundario}`}
                     >
@@ -2238,7 +2227,9 @@ export default function ConfiguracionCentroTecnicoPage() {
                       <input
                         type="checkbox"
                         className="mt-1 w-4 h-4 accent-indigo-500"
-                        checked={configCentro.horario_operacion.permite_fuera_horario}
+                        checked={
+                          configCentro.horario_operacion.permite_fuera_horario
+                        }
                         onChange={(e) =>
                           setConfigCentro((prev) =>
                             prev
@@ -2263,8 +2254,7 @@ export default function ConfiguracionCentroTecnicoPage() {
                           className={`text-xs ${tema.colores.textoSecundario}`}
                         >
                           Permite que se creen tickets fuera del horario, pero se
-                          contabilizan para el siguiente día hábil del centro. Aún no
-                          abre canales de atención directa con otras áreas.
+                          contabilizan para el siguiente día hábil del centro.
                         </p>
                       </div>
                     </label>
@@ -2284,8 +2274,7 @@ export default function ConfiguracionCentroTecnicoPage() {
                     configuración del módulo de tickets en tu centro
                   </span>
                   . No modifica la configuración general comunal ni los flujos de
-                  interacción directa con el sistema o con el centro (eso se activará
-                  más adelante).
+                  interacción directa con el sistema o con el centro.
                 </p>
               </div>
               <div className="flex flex-wrap items-center gap-3">
@@ -2304,10 +2293,10 @@ export default function ConfiguracionCentroTecnicoPage() {
                 </button>
                 <button
                   onClick={guardarConfiguracionCentro}
-                  className={`flex items-center gap-2 px-5 py-2 rounded-xl text-xs md:text-sm font-bold ${tema.colores.primario} text-white ${tema.colores.sombra} disabled:opacity-60 disabled:cursor-not-allowed`}
+                  className={`flex items-center gap-2 px-5 py-2 rounded-xl text-xs md:text-sm font-bold ${tema.colores.primario} ${tema.colores.sombra} disabled:opacity-60 disabled:cursor-not-allowed text-black`}
                   disabled={!hayCambios || guardandoConfig}
                 >
-                  <Save className="w-4 h-4" />
+                  <Save className="w-4 h-4 text-gray-700" />
                   {guardandoConfig ? "Guardando..." : "Guardar ahora"}
                 </button>
               </div>
@@ -2324,9 +2313,7 @@ export default function ConfiguracionCentroTecnicoPage() {
               <p className={tema.colores.textoSecundario}>
                 © 2025 AnyssaMed / INFOGES – Configuración de Centro.
               </p>
-              <span
-                className={`px-3 py-1 rounded-full text-[10px] font-bold bg-gradient-to-r ${tema.colores.gradiente} text-white`}
-              >
+              <span className="px-3 py-1 rounded-full text-[10px] font-bold bg-white border border-gray-300 text-black">
                 Módulo Tickets · Centro
               </span>
             </div>
@@ -2351,7 +2338,7 @@ export default function ConfiguracionCentroTecnicoPage() {
               </Link>
               <button
                 onClick={cerrarSesion}
-                className={`text-xs md:text-sm font-bold transition-colors ${tema.colores.textoSecundario} hover:text-red-400 flex items-center gap-1`}
+                className={`text-xs md:text-sm font-bold transition-colors ${tema.colores.textoSecundario} hover:text-red-600 flex items-center gap-1`}
               >
                 <LogOut className="w-4 h-4" />
                 Cerrar Sesión
@@ -2458,7 +2445,7 @@ export default function ConfiguracionCentroTecnicoPage() {
           input,
           select,
           textarea {
-            color-scheme: dark;
+            color-scheme: light;
           }
         }
       `}</style>
@@ -2506,9 +2493,9 @@ function ResumenCard({
       </div>
       <div className="mt-2">
         <span
-          className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-semibold ${tema.colores.hover}`}
+          className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-semibold ${tema.colores.hover} text-black`}
         >
-          <ZapIcon className="w-3 h-3" />
+          <ZapIcon className="w-3 h-3 text-gray-700" />
           {chip}
         </span>
       </div>

@@ -1,10 +1,9 @@
-// src/app/(dashboard)/tecnico/equipos/page.tsx
+// src/app/(dashboard)/tecnico/equipos/mantenimiento/page.tsx
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
 import SidebarTecnico from "@/components/tecnico/SidebarTecnico";
-
-import { usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -13,49 +12,43 @@ import {
   AlertCircle,
   AlertTriangle,
   AlertOctagon,
-  BarChart3,
+  ArrowLeft,
   Bell,
-  BellOff,
-  Building2,
   Calendar,
   CalendarClock,
+  CalendarCheck,
   Check,
   CheckCircle2,
   ChevronDown,
   ChevronRight,
-  ClipboardList,
   Clock,
+  ClipboardList,
   Cpu,
-  Database,
   Download,
   FileSpreadsheet,
   FileText,
+  Filter,
   HardDrive,
-  Home,
-  Lightbulb,
-  LineChart,
+  History,
   Loader2,
   LogOut,
-  Mail,
-  MapPin,
-  MessageSquare,
   Moon,
-  PieChart,
-  Printer,
+  Plus,
   RefreshCw,
   Search,
   Settings,
-  Shield,
   Sparkles,
   Sun,
   Target,
+  Tool,
+  TrendingUp,
   User,
   Wrench,
   X,
-  AlertTriangleIcon,
   Zap,
-  TrendingUp,
   Eye,
+  Edit,
+  Trash2,
 } from "lucide-react";
 
 // ================================
@@ -124,39 +117,52 @@ interface UsuarioSesion {
   };
 }
 
-type EstadoEquipo =
-  | "operativo"
-  | "en_mantenimiento"
-  | "fuera_servicio"
-  | "critico";
+type EstadoMantenimiento =
+  | "programado"
+  | "en_progreso"
+  | "completado"
+  | "cancelado"
+  | "vencido";
 
-type CriticidadEquipo = "baja" | "media" | "alta" | "critica";
+type TipoMantenimiento = "preventivo" | "correctivo" | "predictivo" | "calibracion";
 
-interface EquipoTecnico {
+type PrioridadMantenimiento = "baja" | "media" | "alta" | "critica";
+
+interface MantenimientoEquipo {
+  id_mantenimiento: number;
   id_equipo: number;
-  codigo_interno: string;
-  nombre: string;
-  tipo_equipo: string;
-  marca: string;
-  modelo: string;
-  numero_serie: string;
-  centro: string;
-  sucursal: string | null;
-  ubicacion: string;
-  estado: EstadoEquipo;
-  criticidad: CriticidadEquipo;
-  ultima_mantencion: string | null;
-  proxima_mantencion: string | null;
-  responsable: string;
-  telefono_responsable: string | null;
-  riesgo_clinico: "bajo" | "medio" | "alto" | "critico";
-  horas_uso_diario_promedio: number;
-  tickets_abiertos: number;
+  equipo: {
+    codigo_interno: string;
+    nombre: string;
+    tipo_equipo: string;
+    marca: string;
+    modelo: string;
+    centro: string;
+    sucursal: string | null;
+    ubicacion: string;
+  };
+  tipo_mantenimiento: TipoMantenimiento;
+  estado: EstadoMantenimiento;
+  prioridad: PrioridadMantenimiento;
+  fecha_programada: string;
+  fecha_inicio: string | null;
+  fecha_finalizacion: string | null;
+  duracion_estimada_horas: number;
+  duracion_real_horas: number | null;
+  id_tecnico_asignado: number;
+  tecnico_asignado: string;
+  descripcion: string;
+  observaciones: string | null;
+  checklist_completado: boolean;
+  requiere_repuestos: boolean;
+  costo_estimado: number | null;
+  costo_real: number | null;
+  proximo_mantenimiento: string | null;
 }
 
-interface ApiEquiposResponse {
+interface ApiMantenimientosResponse {
   success: boolean;
-  equipos?: EquipoTecnico[];
+  mantenimientos?: MantenimientoEquipo[];
   error?: string;
 }
 
@@ -189,7 +195,8 @@ const TEMAS: Record<TemaColor, ConfiguracionTema> = {
       fondoSecundario: "bg-white",
       texto: "text-gray-900",
       textoSecundario: "text-gray-600",
-      primario: "bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700",
+      primario:
+        "bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700",
       secundario: "bg-gray-100 hover:bg-gray-200",
       acento: "text-indigo-600",
       borde: "border-gray-200",
@@ -209,7 +216,8 @@ const TEMAS: Record<TemaColor, ConfiguracionTema> = {
       fondoSecundario: "bg-gray-900",
       texto: "text-white",
       textoSecundario: "text-gray-400",
-      primario: "bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500",
+      primario:
+        "bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500",
       secundario: "bg-gray-800/50 hover:bg-gray-700/50 backdrop-blur-sm",
       acento: "text-indigo-400",
       borde: "border-gray-800",
@@ -229,7 +237,8 @@ const TEMAS: Record<TemaColor, ConfiguracionTema> = {
       fondoSecundario: "bg-blue-900",
       texto: "text-white",
       textoSecundario: "text-cyan-300",
-      primario: "bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500",
+      primario:
+        "bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500",
       secundario: "bg-blue-800/50 hover:bg-blue-700/50 backdrop-blur-sm",
       acento: "text-cyan-400",
       borde: "border-cyan-800",
@@ -249,7 +258,8 @@ const TEMAS: Record<TemaColor, ConfiguracionTema> = {
       fondoSecundario: "bg-purple-900",
       texto: "text-white",
       textoSecundario: "text-purple-300",
-      primario: "bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-500 hover:to-purple-500",
+      primario:
+        "bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-500 hover:to-purple-500",
       secundario: "bg-purple-800/50 hover:bg-purple-700/50 backdrop-blur-sm",
       acento: "text-fuchsia-400",
       borde: "border-purple-800",
@@ -258,7 +268,8 @@ const TEMAS: Record<TemaColor, ConfiguracionTema> = {
       sidebar: "bg-purple-900/95 backdrop-blur-2xl border-purple-800",
       header: "bg-purple-900/90 backdrop-blur-2xl border-purple-800",
       card: "bg-purple-800/50 backdrop-blur-sm border-purple-700 hover:border-fuchsia-500/50 hover:shadow-2xl hover:shadow-fuchsia-500/20",
-      hover: "hover:bg-gradient-to-r hover:from-purple-800/80 hover:to-fuchsia-900/30",
+      hover:
+        "hover:bg-gradient-to-r hover:from-purple-800/80 hover:to-fuchsia-900/30",
     },
   },
   green: {
@@ -269,7 +280,8 @@ const TEMAS: Record<TemaColor, ConfiguracionTema> = {
       fondoSecundario: "bg-emerald-900",
       texto: "text-white",
       textoSecundario: "text-emerald-300",
-      primario: "bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500",
+      primario:
+        "bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500",
       secundario: "bg-teal-800/50 hover:bg-teal-700/50 backdrop-blur-sm",
       acento: "text-emerald-400",
       borde: "border-emerald-800",
@@ -278,113 +290,25 @@ const TEMAS: Record<TemaColor, ConfiguracionTema> = {
       sidebar: "bg-emerald-900/95 backdrop-blur-2xl border-emerald-800",
       header: "bg-emerald-900/90 backdrop-blur-2xl border-emerald-800",
       card: "bg-emerald-800/50 backdrop-blur-sm border-emerald-700 hover:border-emerald-500/50 hover:shadow-2xl hover:shadow-emerald-500/20",
-      hover: "hover:bg-gradient-to-r hover:from-emerald-800/80 hover:to-teal-900/30",
+      hover:
+        "hover:bg-gradient-to-r hover:from-emerald-800/80 hover:to-teal-900/30",
     },
   },
 };
 
 // ================================
-// DATOS DE EJEMPLO (FALLBACK)
-// ================================
-
-const EQUIPOS_EJEMPLO: EquipoTecnico[] = [
-  {
-    id_equipo: 1,
-    codigo_interno: "EQ-CT-001",
-    nombre: "Monitor Multiparámetro",
-    tipo_equipo: "Monitor biomédico",
-    marca: "Philips",
-    modelo: "IntelliVue MX450",
-    numero_serie: "SN-123456",
-    centro: "CESFAM COLÓN",
-    sucursal: "BOX 01",
-    ubicacion: "Urgencias - Box 1",
-    estado: "operativo",
-    criticidad: "alta",
-    ultima_mantencion: "2025-10-01",
-    proxima_mantencion: "2026-01-10",
-    responsable: "Téc. Biomédico Juan Pérez",
-    telefono_responsable: "+56 9 1234 5678",
-    riesgo_clinico: "alto",
-    horas_uso_diario_promedio: 18,
-    tickets_abiertos: 1,
-  },
-  {
-    id_equipo: 2,
-    codigo_interno: "EQ-CT-002",
-    nombre: "Electrocardiógrafo",
-    tipo_equipo: "Diagnóstico",
-    marca: "GE",
-    modelo: "MAC 2000",
-    numero_serie: "SN-654321",
-    centro: "CESFAM CURICÓ CENTRO",
-    sucursal: "BOX 02",
-    ubicacion: "Consulta Médica - Box 2",
-    estado: "en_mantenimiento",
-    criticidad: "alta",
-    ultima_mantencion: "2025-09-15",
-    proxima_mantencion: "2025-12-01",
-    responsable: "Téc. Soporte Ana López",
-    telefono_responsable: "+56 9 9876 5432",
-    riesgo_clinico: "medio",
-    horas_uso_diario_promedio: 10,
-    tickets_abiertos: 2,
-  },
-  {
-    id_equipo: 3,
-    codigo_interno: "EQ-CT-003",
-    nombre: "Servidor de Aplicaciones",
-    tipo_equipo: "Servidor",
-    marca: "Dell",
-    modelo: "PowerEdge R740",
-    numero_serie: "SRV-998877",
-    centro: "CURICÓ TOTAL COMUNAL",
-    sucursal: null,
-    ubicacion: "Sala de Servidores",
-    estado: "operativo",
-    criticidad: "critica",
-    ultima_mantencion: "2025-08-20",
-    proxima_mantencion: "2025-12-20",
-    responsable: "Téc. Infraestructura Pedro Díaz",
-    telefono_responsable: "+56 9 2222 3333",
-    riesgo_clinico: "critico",
-    horas_uso_diario_promedio: 24,
-    tickets_abiertos: 0,
-  },
-  {
-    id_equipo: 4,
-    codigo_interno: "EQ-CT-004",
-    nombre: "Impresora de Etiquetas",
-    tipo_equipo: "Impresora",
-    marca: "Zebra",
-    modelo: "ZD420",
-    numero_serie: "PRN-111222",
-    centro: "CESFAM BETTY MUÑOZ",
-    sucursal: "Recepción",
-    ubicacion: "Admisión",
-    estado: "fuera_servicio",
-    criticidad: "media",
-    ultima_mantencion: "2025-05-10",
-    proxima_mantencion: "2025-11-10",
-    responsable: "Téc. Soporte Carlos Ruiz",
-    telefono_responsable: "+56 9 4444 5555",
-    riesgo_clinico: "bajo",
-    horas_uso_diario_promedio: 6,
-    tickets_abiertos: 3,
-  },
-];
-
-// ================================
 // COMPONENTE PRINCIPAL
 // ================================
 
-export default function EquiposTecnicoPage() {
-  const pathname = usePathname();
+export default function MantenimientoEquiposPage() {
+  const router = useRouter();
 
   const [usuario, setUsuario] = useState<UsuarioSesion | null>(null);
   const [loadingSesion, setLoadingSesion] = useState(true);
-  const [loadingEquipos, setLoadingEquipos] = useState(true);
-  const [errorEquipos, setErrorEquipos] = useState<string | null>(null);
+  const [loadingMantenimientos, setLoadingMantenimientos] = useState(true);
+  const [errorMantenimientos, setErrorMantenimientos] = useState<string | null>(
+    null
+  );
 
   const [temaActual, setTemaActual] = useState<TemaColor>("dark");
   const tema = useMemo(() => TEMAS[temaActual], [temaActual]);
@@ -397,19 +321,19 @@ export default function EquiposTecnicoPage() {
     "disponible" | "ocupado" | "fuera_servicio"
   >("disponible");
 
-  const [equipos, setEquipos] = useState<EquipoTecnico[]>([]);
+  const [mantenimientos, setMantenimientos] = useState<MantenimientoEquipo[]>([]);
   const [busqueda, setBusqueda] = useState("");
-  const [filtroCentro, setFiltroCentro] = useState<string>("todos");
-  const [filtroEstado, setFiltroEstado] = useState<EstadoEquipo | "todos">(
+  const [filtroEstado, setFiltroEstado] = useState<EstadoMantenimiento | "todos">(
     "todos"
   );
-  const [filtroCriticidad, setFiltroCriticidad] = useState<
-    CriticidadEquipo | "todos"
+  const [filtroTipo, setFiltroTipo] = useState<TipoMantenimiento | "todos">("todos");
+  const [filtroPrioridad, setFiltroPrioridad] = useState<
+    PrioridadMantenimiento | "todos"
   >("todos");
-  const [soloCriticos, setSoloCriticos] = useState(false);
+  const [soloVencidos, setSoloVencidos] = useState(false);
 
-  const [equipoSeleccionado, setEquipoSeleccionado] =
-    useState<EquipoTecnico | null>(null);
+  const [mantenimientoSeleccionado, setMantenimientoSeleccionado] =
+    useState<MantenimientoEquipo | null>(null);
 
   const [estadisticas, setEstadisticas] = useState<EstadisticasTecnico | null>(
     null
@@ -504,49 +428,49 @@ export default function EquiposTecnicoPage() {
   }, []);
 
   // ================================
-  // EFECTO: CARGAR EQUIPOS
+  // EFECTO: CARGAR MANTENIMIENTOS
   // ================================
 
-  const cargarEquipos = async () => {
+  const cargarMantenimientos = async () => {
     try {
-      setLoadingEquipos(true);
-      setErrorEquipos(null);
+      setLoadingMantenimientos(true);
+      setErrorMantenimientos(null);
 
-      const res = await fetch("/api/tecnico/equipos", {
+      const res = await fetch("/api/tecnico/mantenimientos", {
         method: "GET",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
       });
 
-      let data: ApiEquiposResponse;
+      let data: ApiMantenimientosResponse;
       try {
-        data = (await res.json()) as ApiEquiposResponse;
+        data = (await res.json()) as ApiMantenimientosResponse;
       } catch {
         data = { success: false, error: "Respuesta inválida" };
       }
 
-      if (!res.ok || !data.success || !data.equipos) {
-        console.warn("Usando datos de ejemplo de equipos.");
-        setEquipos(EQUIPOS_EJEMPLO);
-        if (data.error) setErrorEquipos(data.error);
+      if (!res.ok || !data.success || !data.mantenimientos) {
+        console.warn("No se pudieron cargar mantenimientos desde la API.");
+        setMantenimientos([]);
+        if (data.error) setErrorMantenimientos(data.error);
         return;
       }
 
-      setEquipos(data.equipos);
+      setMantenimientos(data.mantenimientos);
     } catch (err) {
-      console.error("Error al cargar equipos:", err);
-      setEquipos(EQUIPOS_EJEMPLO);
-      setErrorEquipos(
-        "No se pudo cargar el inventario real. Mostrando ejemplo."
+      console.error("Error al cargar mantenimientos:", err);
+      setMantenimientos([]);
+      setErrorMantenimientos(
+        "No se pudo cargar el historial de mantenimientos."
       );
     } finally {
-      setLoadingEquipos(false);
+      setLoadingMantenimientos(false);
     }
   };
 
   useEffect(() => {
     if (usuario?.tecnico?.id_tecnico) {
-      cargarEquipos();
+      cargarMantenimientos();
     }
   }, [usuario]);
 
@@ -618,6 +542,17 @@ export default function EquiposTecnicoPage() {
   // ================================
 
   const formatearFecha = (fecha: string | null) => {
+    if (!fecha) return "Sin fecha";
+    const d = new Date(fecha);
+    if (isNaN(d.getTime())) return "Sin fecha";
+    return new Intl.DateTimeFormat("es-CL", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    }).format(d);
+  };
+
+  const formatearFechaHora = (fecha: string | null) => {
     if (!fecha) return "Sin registro";
     const d = new Date(fecha);
     if (isNaN(d.getTime())) return "Sin registro";
@@ -625,6 +560,8 @@ export default function EquiposTecnicoPage() {
       day: "2-digit",
       month: "short",
       year: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
     }).format(d);
   };
 
@@ -638,49 +575,76 @@ export default function EquiposTecnicoPage() {
     return diffDias;
   };
 
-  const obtenerBadgeEstado = (estado: EstadoEquipo) => {
+  const obtenerBadgeEstado = (estado: EstadoMantenimiento) => {
     const isDark = ["dark", "blue", "purple", "green"].includes(temaActual);
 
     switch (estado) {
-      case "operativo":
+      case "programado":
+        return isDark
+          ? "bg-sky-500/20 text-sky-300 border border-sky-500/60 shadow-lg shadow-sky-500/20"
+          : "bg-sky-50 text-sky-700 border border-sky-300 shadow-sm";
+      case "en_progreso":
+        return isDark
+          ? "bg-amber-500/20 text-amber-300 border border-amber-500/60 shadow-lg shadow-amber-500/20 animate-pulse"
+          : "bg-amber-50 text-amber-700 border border-amber-300 shadow-sm animate-pulse";
+      case "completado":
         return isDark
           ? "bg-emerald-500/20 text-emerald-300 border border-emerald-500/60 shadow-lg shadow-emerald-500/20"
           : "bg-emerald-50 text-emerald-700 border border-emerald-300 shadow-sm";
-      case "en_mantenimiento":
-        return isDark
-          ? "bg-amber-500/20 text-amber-300 border border-amber-500/60 shadow-lg shadow-amber-500/20"
-          : "bg-amber-50 text-amber-700 border border-amber-300 shadow-sm";
-      case "fuera_servicio":
+      case "cancelado":
         return isDark
           ? "bg-slate-500/20 text-slate-300 border border-slate-500/60 shadow-lg shadow-slate-500/20"
           : "bg-slate-50 text-slate-700 border border-slate-300 shadow-sm";
-      case "critico":
+      case "vencido":
         return isDark
           ? "bg-rose-500/20 text-rose-300 border border-rose-500/60 shadow-lg shadow-rose-500/20 animate-pulse"
           : "bg-rose-50 text-rose-700 border border-rose-300 shadow-sm animate-pulse";
     }
   };
 
-  const obtenerBadgeCriticidad = (criticidad: CriticidadEquipo) => {
+  const obtenerBadgeTipo = (tipo: TipoMantenimiento) => {
     const isDark = ["dark", "blue", "purple", "green"].includes(temaActual);
 
-    switch (criticidad) {
+    switch (tipo) {
+      case "preventivo":
+        return isDark
+          ? "bg-blue-500/15 text-blue-300 border border-blue-500/50 shadow-md shadow-blue-500/10"
+          : "bg-blue-50 text-blue-700 border border-blue-200 shadow-sm";
+      case "correctivo":
+        return isDark
+          ? "bg-orange-500/15 text-orange-300 border border-orange-500/50 shadow-md shadow-orange-500/10"
+          : "bg-orange-50 text-orange-700 border border-orange-200 shadow-sm";
+      case "predictivo":
+        return isDark
+          ? "bg-purple-500/15 text-purple-300 border border-purple-500/50 shadow-md shadow-purple-500/10"
+          : "bg-purple-50 text-purple-700 border border-purple-200 shadow-sm";
+      case "calibracion":
+        return isDark
+          ? "bg-cyan-500/15 text-cyan-300 border border-cyan-500/50 shadow-md shadow-cyan-500/10"
+          : "bg-cyan-50 text-cyan-700 border border-cyan-200 shadow-sm";
+    }
+  };
+
+  const obtenerBadgePrioridad = (prioridad: PrioridadMantenimiento) => {
+    const isDark = ["dark", "blue", "purple", "green"].includes(temaActual);
+
+    switch (prioridad) {
       case "baja":
         return isDark
-          ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/50 shadow-md shadow-emerald-500/10"
-          : "bg-emerald-50 text-emerald-700 border border-emerald-200 shadow-sm";
+          ? "bg-emerald-500/15 text-emerald-300 border border-emerald-500/50"
+          : "bg-emerald-50 text-emerald-700 border border-emerald-200";
       case "media":
         return isDark
-          ? "bg-sky-500/15 text-sky-300 border border-sky-500/50 shadow-md shadow-sky-500/10"
-          : "bg-sky-50 text-sky-700 border border-sky-200 shadow-sm";
+          ? "bg-sky-500/15 text-sky-300 border border-sky-500/50"
+          : "bg-sky-50 text-sky-700 border border-sky-200";
       case "alta":
         return isDark
-          ? "bg-amber-500/15 text-amber-300 border border-amber-500/50 shadow-md shadow-amber-500/10"
-          : "bg-amber-50 text-amber-700 border border-amber-200 shadow-sm";
+          ? "bg-amber-500/15 text-amber-300 border border-amber-500/50"
+          : "bg-amber-50 text-amber-700 border border-amber-200";
       case "critica":
         return isDark
-          ? "bg-red-500/15 text-red-300 border border-red-500/50 shadow-md shadow-red-500/10"
-          : "bg-red-50 text-red-700 border border-red-200 shadow-sm";
+          ? "bg-red-500/15 text-red-300 border border-red-500/50 animate-pulse"
+          : "bg-red-50 text-red-700 border border-red-200 animate-pulse";
     }
   };
 
@@ -688,83 +652,73 @@ export default function EquiposTecnicoPage() {
   // FILTROS Y KPIs
   // ================================
 
-  const centrosDisponibles = useMemo(() => {
-    const nombres = Array.from(new Set(equipos.map((e) => e.centro))).sort();
-    return nombres;
-  }, [equipos]);
-
-  const equiposFiltrados = useMemo(() => {
-    let lista = [...equipos];
+  const mantenimientosFiltrados = useMemo(() => {
+    let lista = [...mantenimientos];
 
     if (busqueda.trim()) {
       const q = busqueda.toLowerCase();
       lista = lista.filter(
-        (e) =>
-          e.nombre.toLowerCase().includes(q) ||
-          e.codigo_interno.toLowerCase().includes(q) ||
-          e.tipo_equipo.toLowerCase().includes(q) ||
-          e.centro.toLowerCase().includes(q) ||
-          (e.sucursal ?? "").toLowerCase().includes(q)
+        (m) =>
+          m.equipo.nombre.toLowerCase().includes(q) ||
+          m.equipo.codigo_interno.toLowerCase().includes(q) ||
+          m.equipo.centro.toLowerCase().includes(q) ||
+          m.tecnico_asignado.toLowerCase().includes(q) ||
+          m.descripcion.toLowerCase().includes(q)
       );
-    }
-
-    if (filtroCentro !== "todos") {
-      lista = lista.filter((e) => e.centro === filtroCentro);
     }
 
     if (filtroEstado !== "todos") {
-      lista = lista.filter((e) => e.estado === filtroEstado);
+      lista = lista.filter((m) => m.estado === filtroEstado);
     }
 
-    if (filtroCriticidad !== "todos") {
-      lista = lista.filter((e) => e.criticidad === filtroCriticidad);
+    if (filtroTipo !== "todos") {
+      lista = lista.filter((m) => m.tipo_mantenimiento === filtroTipo);
     }
 
-    if (soloCriticos) {
-      lista = lista.filter(
-        (e) =>
-          e.estado === "critico" ||
-          e.criticidad === "alta" ||
-          e.criticidad === "critica"
-      );
+    if (filtroPrioridad !== "todos") {
+      lista = lista.filter((m) => m.prioridad === filtroPrioridad);
+    }
+
+    if (soloVencidos) {
+      lista = lista.filter((m) => m.estado === "vencido");
     }
 
     return lista;
   }, [
-    equipos,
+    mantenimientos,
     busqueda,
-    filtroCentro,
     filtroEstado,
-    filtroCriticidad,
-    soloCriticos,
+    filtroTipo,
+    filtroPrioridad,
+    soloVencidos,
   ]);
 
   const kpis = useMemo(() => {
-    const total = equipos.length;
-    const operativos = equipos.filter((e) => e.estado === "operativo").length;
-    const mantenimiento = equipos.filter(
-      (e) => e.estado === "en_mantenimiento"
+    const total = mantenimientos.length;
+    const programados = mantenimientos.filter(
+      (m) => m.estado === "programado"
     ).length;
-    const criticos = equipos.filter(
-      (e) =>
-        e.estado === "critico" ||
-        e.criticidad === "alta" ||
-        e.criticidad === "critica"
+    const enProgreso = mantenimientos.filter(
+      (m) => m.estado === "en_progreso"
     ).length;
-
-    const proximos = equipos.filter((e) => {
-      const d = diasHasta(e.proxima_mantencion);
-      return d !== null && d <= 30;
+    const completados = mantenimientos.filter(
+      (m) => m.estado === "completado"
+    ).length;
+    const vencidos = mantenimientos.filter((m) => m.estado === "vencido").length;
+    const proximos = mantenimientos.filter((m) => {
+      const d = diasHasta(m.fecha_programada);
+      return d !== null && d >= 0 && d <= 7;
     }).length;
 
     return {
       total,
-      operativos,
-      mantenimiento,
-      criticos,
+      programados,
+      enProgreso,
+      completados,
+      vencidos,
       proximos,
     };
-  }, [equipos]);
+  }, [mantenimientos]);
 
   // ================================
   // ESTADOS DE CARGA
@@ -781,13 +735,13 @@ export default function EquiposTecnicoPage() {
             <div
               className={`absolute inset-3 rounded-full bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center shadow-2xl`}
             >
-              <Cpu className="w-12 h-12 text-white animate-pulse" />
+              <Wrench className="w-12 h-12 text-white animate-pulse" />
             </div>
           </div>
           <h2
             className={`text-4xl font-black mb-3 ${tema.colores.texto} animate-pulse`}
           >
-            Cargando módulo de equipos
+            Cargando Mantenimientos
           </h2>
           <p className={`text-sm ${tema.colores.textoSecundario}`}>
             Verificando tu sesión de técnico...
@@ -877,7 +831,7 @@ export default function EquiposTecnicoPage() {
                 type="text"
                 value={busqueda}
                 onChange={(e) => setBusqueda(e.target.value)}
-                placeholder="Buscar equipo, código, tipo o centro..."
+                placeholder="Buscar por equipo, código, técnico o descripción..."
                 className={`w-full pl-12 pr-12 py-3.5 rounded-2xl ${tema.colores.card} ${tema.colores.borde} border-2 text-sm ${tema.colores.texto} placeholder:${tema.colores.textoSecundario} focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all duration-300 shadow-lg`}
               />
               {busqueda && (
@@ -891,7 +845,7 @@ export default function EquiposTecnicoPage() {
               {busqueda && (
                 <div className="absolute left-0 right-0 top-full mt-2 p-2 rounded-xl bg-indigo-500/10 backdrop-blur-sm border border-indigo-500/30">
                   <p className="text-xs text-indigo-300">
-                    🔍 {equiposFiltrados.length} resultados encontrados
+                    🔍 {mantenimientosFiltrados.length} resultados encontrados
                   </p>
                 </div>
               )}
@@ -912,9 +866,7 @@ export default function EquiposTecnicoPage() {
               >
                 <div className="flex items-center gap-2 mb-4">
                   <Sparkles className="w-5 h-5 text-indigo-400" />
-                  <p
-                    className={`text-sm font-bold ${tema.colores.texto}`}
-                  >
+                  <p className={`text-sm font-bold ${tema.colores.texto}`}>
                     Temas Premium
                   </p>
                 </div>
@@ -949,8 +901,14 @@ export default function EquiposTecnicoPage() {
                 className={`relative p-3 rounded-2xl ${tema.colores.secundario} ${tema.colores.texto} transform hover:scale-110 transition-all duration-300 shadow-lg hover:shadow-xl`}
               >
                 <Bell className="w-5 h-5" />
-                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-gradient-to-r from-rose-500 to-pink-500 border-2 border-white animate-ping" />
-                <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-gradient-to-r from-rose-500 to-pink-500 border-2 border-white" />
+                {kpis.vencidos > 0 && (
+                  <>
+                    <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-gradient-to-r from-rose-500 to-pink-500 border-2 border-white animate-ping" />
+                    <span className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-gradient-to-r from-rose-500 to-pink-500 border-2 border-white flex items-center justify-center text-[8px] font-bold">
+                      {kpis.vencidos}
+                    </span>
+                  </>
+                )}
               </button>
               {notificacionesAbiertas && (
                 <div
@@ -959,41 +917,48 @@ export default function EquiposTecnicoPage() {
                   <div className="flex items-center justify-between mb-4">
                     <div className="flex items-center gap-2">
                       <Bell className="w-5 h-5 text-indigo-400" />
-                      <p
-                        className={`text-sm font-bold ${tema.colores.texto}`}
-                      >
-                        Notificaciones
+                      <p className={`text-sm font-bold ${tema.colores.texto}`}>
+                        Alertas de Mantenimiento
                       </p>
                     </div>
-                    <span className="px-2 py-1 rounded-full bg-rose-500/20 text-rose-300 text-xs font-bold">
-                      3 nuevas
-                    </span>
+                    {kpis.vencidos > 0 && (
+                      <span className="px-2 py-1 rounded-full bg-rose-500/20 text-rose-300 text-xs font-bold">
+                        {kpis.vencidos} vencidos
+                      </span>
+                    )}
                   </div>
                   <div className="space-y-2">
-                    <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 transition-all duration-200 cursor-pointer">
-                      <p className="text-xs font-semibold text-amber-300">
-                        ⚠️ Mantención vencida
-                      </p>
-                      <p className="text-xs text-gray-400 mt-1">
-                        Electrocardiógrafo GE - 5 días de retraso
-                      </p>
-                    </div>
-                    <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 hover:bg-rose-500/20 transition-all duration-200 cursor-pointer">
-                      <p className="text-xs font-semibold text-rose-300">
-                        🚨 Equipo crítico
-                      </p>
-                      <p className="text-xs text-gray-400 mt-1">
-                        Servidor Dell - Requiere atención inmediata
-                      </p>
-                    </div>
-                    <div className="p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/30 hover:bg-indigo-500/20 transition-all duration-200 cursor-pointer">
-                      <p className="text-xs font-semibold text-indigo-300">
-                        📋 Nuevo ticket asignado
-                      </p>
-                      <p className="text-xs text-gray-400 mt-1">
-                        Impresora Zebra - Problema de conectividad
-                      </p>
-                    </div>
+                    {kpis.vencidos > 0 && (
+                      <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/30 hover:bg-rose-500/20 transition-all duration-200 cursor-pointer">
+                        <p className="text-xs font-semibold text-rose-300">
+                          🚨 Mantenimientos Vencidos
+                        </p>
+                        <p className="text-xs text-gray-400 mt-1">
+                          {kpis.vencidos} mantenimientos requieren atención
+                          inmediata
+                        </p>
+                      </div>
+                    )}
+                    {kpis.proximos > 0 && (
+                      <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/20 transition-all duration-200 cursor-pointer">
+                        <p className="text-xs font-semibold text-amber-300">
+                          ⏰ Próximos 7 días
+                        </p>
+                        <p className="text-xs text-gray-400 mt-1">
+                          {kpis.proximos} mantenimientos programados
+                        </p>
+                      </div>
+                    )}
+                    {kpis.enProgreso > 0 && (
+                      <div className="p-3 rounded-xl bg-indigo-500/10 border border-indigo-500/30 hover:bg-indigo-500/20 transition-all duration-200 cursor-pointer">
+                        <p className="text-xs font-semibold text-indigo-300">
+                          ⚙️ En Progreso
+                        </p>
+                        <p className="text-xs text-gray-400 mt-1">
+                          {kpis.enProgreso} mantenimientos activos
+                        </p>
+                      </div>
+                    )}
                   </div>
                 </div>
               )}
@@ -1043,9 +1008,7 @@ export default function EquiposTecnicoPage() {
                   <p className={`text-sm font-bold ${tema.colores.texto}`}>
                     {usuario.nombre} {usuario.apellido_paterno}
                   </p>
-                  <p
-                    className={`text-[10px] ${tema.colores.textoSecundario}`}
-                  >
+                  <p className={`text-[10px] ${tema.colores.textoSecundario}`}>
                     Técnico {usuario.tecnico?.tipo_tecnico}
                   </p>
                 </div>
@@ -1159,15 +1122,22 @@ export default function EquiposTecnicoPage() {
                   Dashboard Técnico
                 </Link>
                 <ChevronRight className="w-3 h-3" />
-                <span className={`font-bold ${tema.colores.texto}`}>
+                <Link
+                  href="/tecnico/equipos"
+                  className={`font-semibold ${tema.colores.textoSecundario} hover:${tema.colores.acento} transition-colors duration-200`}
+                >
                   Equipos
+                </Link>
+                <ChevronRight className="w-3 h-3" />
+                <span className={`font-bold ${tema.colores.texto}`}>
+                  Mantenimientos
                 </span>
               </div>
               <h1
                 className={`text-4xl md:text-5xl font-black flex items-center gap-4 ${tema.colores.texto} mb-2`}
               >
                 <span className="bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">
-                  Gestión de Equipos
+                  Gestión de Mantenimientos
                 </span>
                 <span className="inline-flex items-center justify-center px-4 py-1.5 rounded-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-xs font-bold uppercase tracking-wider shadow-xl shadow-indigo-500/50 animate-pulse">
                   ✨ Premium
@@ -1176,62 +1146,59 @@ export default function EquiposTecnicoPage() {
               <p
                 className={`text-sm md:text-base mt-2 ${tema.colores.textoSecundario} max-w-3xl`}
               >
-                Control total de inventario biomédico, informático y
-                operacional, con foco en equipos críticos y mantenciones
-                preventivas.
+                Control completo de mantenimientos preventivos, correctivos y
+                predictivos con seguimiento en tiempo real y alertas automáticas.
               </p>
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
+              <Link
+                href="/tecnico/equipos"
+                className={`flex items-center gap-2 px-4 py-3 rounded-2xl text-sm font-bold ${tema.colores.secundario} ${tema.colores.texto} transform hover:scale-105 transition-all duration-300 shadow-lg`}
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Volver a Equipos
+              </Link>
               <button
-                onClick={cargarEquipos}
+                onClick={cargarMantenimientos}
                 className={`flex items-center gap-2 px-5 py-3 rounded-2xl text-sm font-bold ${tema.colores.primario} text-white ${tema.colores.sombra} transform hover:scale-105 transition-all duration-300`}
               >
                 <RefreshCw
                   className={`w-4 h-4 ${
-                    loadingEquipos ? "animate-spin" : ""
+                    loadingMantenimientos ? "animate-spin" : ""
                   }`}
                 />
                 Actualizar
               </button>
+              <Link
+                href="/tecnico/mantenimiento/programar"
+                className={`flex items-center gap-2 px-5 py-3 rounded-2xl text-sm font-bold ${tema.colores.primario} text-white ${tema.colores.sombra} transform hover:scale-105 transition-all duration-300`}
+              >
+                <Plus className="w-4 h-4" />
+                Nuevo Mantenimiento
+              </Link>
               <button
                 onClick={() =>
-                  window.open("/api/tecnico/equipos/export-excel", "_blank")
+                  window.open("/api/tecnico/mantenimientos/export-excel", "_blank")
                 }
                 className={`flex items-center gap-2 px-4 py-3 rounded-2xl text-sm font-bold ${tema.colores.secundario} ${tema.colores.texto} transform hover:scale-105 transition-all duration-300 shadow-lg`}
               >
                 <FileSpreadsheet className="w-4 h-4" />
                 Excel
               </button>
-              <button
-                onClick={() =>
-                  window.open("/api/tecnico/equipos/export-pdf", "_blank")
-                }
-                className={`flex items-center gap-2 px-4 py-3 rounded-2xl text-sm font-bold ${tema.colores.secundario} ${tema.colores.texto} transform hover:scale-105 transition-all duration-300 shadow-lg`}
-              >
-                <Download className="w-4 h-4" />
-                PDF
-              </button>
-              <button
-                onClick={() => window.print()}
-                className={`flex items-center gap-2 px-4 py-3 rounded-2xl text-sm font-bold ${tema.colores.secundario} ${tema.colores.texto} transform hover:scale-105 transition-all duration-300 shadow-lg`}
-              >
-                <Printer className="w-4 h-4" />
-                Imprimir
-              </button>
             </div>
           </div>
 
-          {errorEquipos && (
+          {errorMantenimientos && (
             <div className="mt-3 flex items-center gap-3 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-sm text-amber-300 animate-fadeIn">
-              <AlertTriangleIcon className="w-5 h-5 animate-pulse" />
-              <span className="font-semibold">{errorEquipos}</span>
+              <AlertTriangle className="w-5 h-5 animate-pulse" />
+              <span className="font-semibold">{errorMantenimientos}</span>
             </div>
           )}
         </div>
 
         {/* KPIs Premium con animaciones */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-5 mb-8">
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-6 gap-5 mb-8">
           <div
             className={`rounded-3xl p-6 ${tema.colores.card} ${tema.colores.borde} border-2 ${tema.colores.sombra} transform hover:scale-105 hover:-translate-y-1 transition-all duration-300 group`}
           >
@@ -1239,10 +1206,10 @@ export default function EquiposTecnicoPage() {
               <p
                 className={`text-xs font-bold uppercase tracking-wider ${tema.colores.textoSecundario}`}
               >
-                Equipos totales
+                Total
               </p>
               <div className="p-2 rounded-xl bg-indigo-500/20 group-hover:bg-indigo-500/30 transition-all duration-300">
-                <Cpu className="w-5 h-5 text-indigo-400 group-hover:rotate-12 transition-transform duration-300" />
+                <ClipboardList className="w-5 h-5 text-indigo-400 group-hover:rotate-12 transition-transform duration-300" />
               </div>
             </div>
             <p
@@ -1250,19 +1217,9 @@ export default function EquiposTecnicoPage() {
             >
               {kpis.total}
             </p>
-            <div className="flex items-center gap-2">
-              <div className="flex-1 h-2 rounded-full bg-black/10 overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-emerald-500 to-green-500 rounded-full transition-all duration-1000"
-                  style={{
-                    width: `${(kpis.operativos / kpis.total) * 100}%`,
-                  }}
-                />
-              </div>
-              <span className="text-xs font-bold text-emerald-400">
-                {kpis.operativos} OK
-              </span>
-            </div>
+            <p className="text-xs text-indigo-300 font-semibold">
+              Mantenimientos registrados
+            </p>
           </div>
 
           <div
@@ -1272,59 +1229,80 @@ export default function EquiposTecnicoPage() {
               <p
                 className={`text-xs font-bold uppercase tracking-wider ${tema.colores.textoSecundario}`}
               >
-                Críticos
+                Programados
+              </p>
+              <div className="p-2 rounded-xl bg-sky-500/20 group-hover:bg-sky-500/30 transition-all duration-300">
+                <Calendar className="w-5 h-5 text-sky-400 group-hover:rotate-12 transition-transform duration-300" />
+              </div>
+            </div>
+            <p className="text-3xl font-black text-sky-300 mb-2 group-hover:scale-110 transition-transform duration-300">
+              {kpis.programados}
+            </p>
+            <p className="text-xs text-sky-200 font-semibold">
+              📅 Pendientes de ejecución
+            </p>
+          </div>
+
+          <div
+            className={`rounded-3xl p-6 ${tema.colores.card} ${tema.colores.borde} border-2 ${tema.colores.sombra} transform hover:scale-105 hover:-translate-y-1 transition-all duration-300 group`}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <p
+                className={`text-xs font-bold uppercase tracking-wider ${tema.colores.textoSecundario}`}
+              >
+                En Progreso
+              </p>
+              <div className="p-2 rounded-xl bg-amber-500/20 group-hover:bg-amber-500/30 transition-all duration-300 animate-pulse">
+                <Wrench className="w-5 h-5 text-amber-400 group-hover:rotate-12 transition-transform duration-300" />
+              </div>
+            </div>
+            <p className="text-3xl font-black text-amber-300 mb-2 group-hover:scale-110 transition-transform duration-300">
+              {kpis.enProgreso}
+            </p>
+            <p className="text-xs text-amber-200 font-semibold">
+              ⚙️ Actualmente en ejecución
+            </p>
+          </div>
+
+          <div
+            className={`rounded-3xl p-6 ${tema.colores.card} ${tema.colores.borde} border-2 ${tema.colores.sombra} transform hover:scale-105 hover:-translate-y-1 transition-all duration-300 group`}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <p
+                className={`text-xs font-bold uppercase tracking-wider ${tema.colores.textoSecundario}`}
+              >
+                Completados
+              </p>
+              <div className="p-2 rounded-xl bg-emerald-500/20 group-hover:bg-emerald-500/30 transition-all duration-300">
+                <CheckCircle2 className="w-5 h-5 text-emerald-400 group-hover:rotate-12 transition-transform duration-300" />
+              </div>
+            </div>
+            <p className="text-3xl font-black text-emerald-300 mb-2 group-hover:scale-110 transition-transform duration-300">
+              {kpis.completados}
+            </p>
+            <p className="text-xs text-emerald-200 font-semibold">
+              ✓ Finalizados exitosamente
+            </p>
+          </div>
+
+          <div
+            className={`rounded-3xl p-6 ${tema.colores.card} ${tema.colores.borde} border-2 ${tema.colores.sombra} transform hover:scale-105 hover:-translate-y-1 transition-all duration-300 group`}
+          >
+            <div className="flex items-center justify-between mb-3">
+              <p
+                className={`text-xs font-bold uppercase tracking-wider ${tema.colores.textoSecundario}`}
+              >
+                Vencidos
               </p>
               <div className="p-2 rounded-xl bg-rose-500/20 group-hover:bg-rose-500/30 transition-all duration-300 animate-pulse">
                 <AlertOctagon className="w-5 h-5 text-rose-400 group-hover:rotate-12 transition-transform duration-300" />
               </div>
             </div>
             <p className="text-3xl font-black text-rose-400 mb-2 group-hover:scale-110 transition-transform duration-300">
-              {kpis.criticos}
+              {kpis.vencidos}
             </p>
             <p className="text-xs text-rose-300 font-semibold">
-              🚨 Requieren atención inmediata
-            </p>
-          </div>
-
-          <div
-            className={`rounded-3xl p-6 ${tema.colores.card} ${tema.colores.borde} border-2 ${tema.colores.sombra} transform hover:scale-105 hover:-translate-y-1 transition-all duration-300 group`}
-          >
-            <div className="flex items-center justify-between mb-3">
-              <p
-                className={`text-xs font-bold uppercase tracking-wider ${tema.colores.textoSecundario}`}
-              >
-                En mantenimiento
-              </p>
-              <div className="p-2 rounded-xl bg-amber-500/20 group-hover:bg-amber-500/30 transition-all duration-300">
-                <Wrench className="w-5 h-5 text-amber-400 group-hover:rotate-12 transition-transform duration-300" />
-              </div>
-            </div>
-            <p className="text-3xl font-black text-amber-300 mb-2 group-hover:scale-110 transition-transform duration-300">
-              {kpis.mantenimiento}
-            </p>
-            <p className="text-xs text-amber-200 font-semibold">
-              ⚙️ En reparación o revisión
-            </p>
-          </div>
-
-          <div
-            className={`rounded-3xl p-6 ${tema.colores.card} ${tema.colores.borde} border-2 ${tema.colores.sombra} transform hover:scale-105 hover:-translate-y-1 transition-all duration-300 group`}
-          >
-            <div className="flex items-center justify-between mb-3">
-              <p
-                className={`text-xs font-bold uppercase tracking-wider ${tema.colores.textoSecundario}`}
-              >
-                Próx. mantención
-              </p>
-              <div className="p-2 rounded-xl bg-sky-500/20 group-hover:bg-sky-500/30 transition-all duration-300">
-                <CalendarClock className="w-5 h-5 text-sky-400 group-hover:rotate-12 transition-transform duration-300" />
-              </div>
-            </div>
-            <p className="text-3xl font-black text-sky-300 mb-2 group-hover:scale-110 transition-transform duration-300">
-              {kpis.proximos}
-            </p>
-            <p className="text-xs text-sky-200 font-semibold">
-              📅 En los próximos 30 días
+              🚨 Requieren atención urgente
             </p>
           </div>
 
@@ -1337,19 +1315,17 @@ export default function EquiposTecnicoPage() {
                 <p
                   className={`text-xs font-bold uppercase tracking-wider ${tema.colores.textoSecundario}`}
                 >
-                  Filtrados
+                  Próximos 7 días
                 </p>
-                <div className="p-2 rounded-xl bg-indigo-500/20 group-hover:bg-indigo-500/30 transition-all duration-300">
-                  <TrendingUp className="w-5 h-5 text-indigo-400 group-hover:rotate-12 transition-transform duration-300" />
+                <div className="p-2 rounded-xl bg-purple-500/20 group-hover:bg-purple-500/30 transition-all duration-300">
+                  <CalendarClock className="w-5 h-5 text-purple-400 group-hover:rotate-12 transition-transform duration-300" />
                 </div>
               </div>
-              <p
-                className={`text-3xl font-black ${tema.colores.texto} mb-2 group-hover:scale-110 transition-transform duration-300`}
-              >
-                {equiposFiltrados.length}
+              <p className="text-3xl font-black text-purple-300 mb-2 group-hover:scale-110 transition-transform duration-300">
+                {kpis.proximos}
               </p>
-              <p className="text-xs text-indigo-300 font-semibold">
-                🔍 Resultados actuales
+              <p className="text-xs text-purple-200 font-semibold">
+                ⏰ Programados próximamente
               </p>
             </div>
           </div>
@@ -1365,7 +1341,7 @@ export default function EquiposTecnicoPage() {
               <div
                 className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center shadow-xl`}
               >
-                <FilterMiniIcon />
+                <Filter className="w-6 h-6 text-white" />
               </div>
               <div>
                 <p className={`text-base font-black ${tema.colores.texto}`}>
@@ -1378,33 +1354,12 @@ export default function EquiposTecnicoPage() {
             </div>
 
             <div className="space-y-5">
-              {/* Filtro Centro */}
-              <div>
-                <label
-                  className={`text-xs font-bold mb-2 block ${tema.colores.textoSecundario} uppercase tracking-wider`}
-                >
-                  🏥 Centro de Salud
-                </label>
-                <select
-                  value={filtroCentro}
-                  onChange={(e) => setFiltroCentro(e.target.value)}
-                  className={`w-full rounded-2xl px-4 py-3 text-sm font-semibold ${tema.colores.card} ${tema.colores.borde} border-2 ${tema.colores.texto} focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500 transition-all duration-300 cursor-pointer hover:border-indigo-400`}
-                >
-                  <option value="todos">📍 Todos los centros</option>
-                  {centrosDisponibles.map((c) => (
-                    <option key={c} value={c}>
-                      {c}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
               {/* Filtro Estado */}
               <div>
                 <label
                   className={`text-xs font-bold mb-3 block ${tema.colores.textoSecundario} uppercase tracking-wider`}
                 >
-                  ⚡ Estado Operacional
+                  ⚡ Estado del Mantenimiento
                 </label>
                 <div className="grid grid-cols-2 gap-2">
                   <button
@@ -1418,50 +1373,131 @@ export default function EquiposTecnicoPage() {
                     Todos
                   </button>
                   <button
-                    onClick={() => setFiltroEstado("operativo")}
+                    onClick={() => setFiltroEstado("programado")}
                     className={`px-3 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 transform hover:scale-105 ${
-                      filtroEstado === "operativo"
-                        ? "bg-gradient-to-r from-emerald-600 to-green-600 text-white shadow-lg shadow-emerald-500/50"
+                      filtroEstado === "programado"
+                        ? "bg-gradient-to-r from-sky-600 to-blue-600 text-white shadow-lg shadow-sky-500/50"
                         : `${tema.colores.secundario} ${tema.colores.texto}`
                     }`}
                   >
-                    ✓ Operativos
+                    📅 Programado
                   </button>
                   <button
-                    onClick={() => setFiltroEstado("en_mantenimiento")}
+                    onClick={() => setFiltroEstado("en_progreso")}
                     className={`px-3 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 transform hover:scale-105 ${
-                      filtroEstado === "en_mantenimiento"
+                      filtroEstado === "en_progreso"
                         ? "bg-gradient-to-r from-amber-600 to-orange-600 text-white shadow-lg shadow-amber-500/50"
                         : `${tema.colores.secundario} ${tema.colores.texto}`
                     }`}
                   >
-                    ⚙️ Mantención
+                    ⚙️ En Progreso
                   </button>
                   <button
-                    onClick={() => setFiltroEstado("critico")}
+                    onClick={() => setFiltroEstado("completado")}
                     className={`px-3 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 transform hover:scale-105 ${
-                      filtroEstado === "critico"
+                      filtroEstado === "completado"
+                        ? "bg-gradient-to-r from-emerald-600 to-green-600 text-white shadow-lg shadow-emerald-500/50"
+                        : `${tema.colores.secundario} ${tema.colores.texto}`
+                    }`}
+                  >
+                    ✓ Completado
+                  </button>
+                  <button
+                    onClick={() => setFiltroEstado("vencido")}
+                    className={`px-3 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 transform hover:scale-105 ${
+                      filtroEstado === "vencido"
                         ? "bg-gradient-to-r from-rose-600 to-red-600 text-white shadow-lg shadow-rose-500/50 animate-pulse"
                         : `${tema.colores.secundario} ${tema.colores.texto}`
                     }`}
                   >
-                    🚨 Críticos
+                    🚨 Vencido
+                  </button>
+                  <button
+                    onClick={() => setFiltroEstado("cancelado")}
+                    className={`px-3 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 transform hover:scale-105 ${
+                      filtroEstado === "cancelado"
+                        ? "bg-gradient-to-r from-slate-600 to-gray-600 text-white shadow-lg shadow-slate-500/50"
+                        : `${tema.colores.secundario} ${tema.colores.texto}`
+                    }`}
+                  >
+                    ⊗ Cancelado
                   </button>
                 </div>
               </div>
 
-              {/* Filtro Criticidad */}
+              {/* Filtro Tipo */}
               <div>
                 <label
                   className={`text-xs font-bold mb-3 block ${tema.colores.textoSecundario} uppercase tracking-wider`}
                 >
-                  🎯 Nivel de Criticidad
+                  🔧 Tipo de Mantenimiento
                 </label>
                 <div className="grid grid-cols-2 gap-2">
                   <button
-                    onClick={() => setFiltroCriticidad("todos")}
+                    onClick={() => setFiltroTipo("todos")}
                     className={`px-3 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 transform hover:scale-105 ${
-                      filtroCriticidad === "todos"
+                      filtroTipo === "todos"
+                        ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/50"
+                        : `${tema.colores.secundario} ${tema.colores.texto}`
+                    }`}
+                  >
+                    Todos
+                  </button>
+                  <button
+                    onClick={() => setFiltroTipo("preventivo")}
+                    className={`px-3 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 transform hover:scale-105 ${
+                      filtroTipo === "preventivo"
+                        ? "bg-gradient-to-r from-blue-600 to-cyan-600 text-white shadow-lg shadow-blue-500/50"
+                        : `${tema.colores.secundario} ${tema.colores.texto}`
+                    }`}
+                  >
+                    🛡️ Preventivo
+                  </button>
+                  <button
+                    onClick={() => setFiltroTipo("correctivo")}
+                    className={`px-3 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 transform hover:scale-105 ${
+                      filtroTipo === "correctivo"
+                        ? "bg-gradient-to-r from-orange-600 to-red-600 text-white shadow-lg shadow-orange-500/50"
+                        : `${tema.colores.secundario} ${tema.colores.texto}`
+                    }`}
+                  >
+                    🔨 Correctivo
+                  </button>
+                  <button
+                    onClick={() => setFiltroTipo("predictivo")}
+                    className={`px-3 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 transform hover:scale-105 ${
+                      filtroTipo === "predictivo"
+                        ? "bg-gradient-to-r from-purple-600 to-pink-600 text-white shadow-lg shadow-purple-500/50"
+                        : `${tema.colores.secundario} ${tema.colores.texto}`
+                    }`}
+                  >
+                    🔮 Predictivo
+                  </button>
+                  <button
+                    onClick={() => setFiltroTipo("calibracion")}
+                    className={`px-3 py-2.5 rounded-xl text-xs font-bold col-span-2 transition-all duration-300 transform hover:scale-105 ${
+                      filtroTipo === "calibracion"
+                        ? "bg-gradient-to-r from-cyan-600 to-teal-600 text-white shadow-lg shadow-cyan-500/50"
+                        : `${tema.colores.secundario} ${tema.colores.texto}`
+                    }`}
+                  >
+                    ⚖️ Calibración
+                  </button>
+                </div>
+              </div>
+
+              {/* Filtro Prioridad */}
+              <div>
+                <label
+                  className={`text-xs font-bold mb-3 block ${tema.colores.textoSecundario} uppercase tracking-wider`}
+                >
+                  🎯 Nivel de Prioridad
+                </label>
+                <div className="grid grid-cols-2 gap-2">
+                  <button
+                    onClick={() => setFiltroPrioridad("todos")}
+                    className={`px-3 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 transform hover:scale-105 ${
+                      filtroPrioridad === "todos"
                         ? "bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-lg shadow-indigo-500/50"
                         : `${tema.colores.secundario} ${tema.colores.texto}`
                     }`}
@@ -1469,9 +1505,9 @@ export default function EquiposTecnicoPage() {
                     Todas
                   </button>
                   <button
-                    onClick={() => setFiltroCriticidad("baja")}
+                    onClick={() => setFiltroPrioridad("baja")}
                     className={`px-3 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 transform hover:scale-105 ${
-                      filtroCriticidad === "baja"
+                      filtroPrioridad === "baja"
                         ? "bg-gradient-to-r from-emerald-600 to-green-600 text-white shadow-lg shadow-emerald-500/50"
                         : `${tema.colores.secundario} ${tema.colores.texto}`
                     }`}
@@ -1479,9 +1515,9 @@ export default function EquiposTecnicoPage() {
                     Baja
                   </button>
                   <button
-                    onClick={() => setFiltroCriticidad("media")}
+                    onClick={() => setFiltroPrioridad("media")}
                     className={`px-3 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 transform hover:scale-105 ${
-                      filtroCriticidad === "media"
+                      filtroPrioridad === "media"
                         ? "bg-gradient-to-r from-sky-600 to-blue-600 text-white shadow-lg shadow-sky-500/50"
                         : `${tema.colores.secundario} ${tema.colores.texto}`
                     }`}
@@ -1489,9 +1525,9 @@ export default function EquiposTecnicoPage() {
                     Media
                   </button>
                   <button
-                    onClick={() => setFiltroCriticidad("alta")}
+                    onClick={() => setFiltroPrioridad("alta")}
                     className={`px-3 py-2.5 rounded-xl text-xs font-bold transition-all duration-300 transform hover:scale-105 ${
-                      filtroCriticidad === "alta"
+                      filtroPrioridad === "alta"
                         ? "bg-gradient-to-r from-amber-600 to-orange-600 text-white shadow-lg shadow-amber-500/50"
                         : `${tema.colores.secundario} ${tema.colores.texto}`
                     }`}
@@ -1499,9 +1535,9 @@ export default function EquiposTecnicoPage() {
                     Alta
                   </button>
                   <button
-                    onClick={() => setFiltroCriticidad("critica")}
+                    onClick={() => setFiltroPrioridad("critica")}
                     className={`px-3 py-2.5 rounded-xl text-xs font-bold col-span-2 transition-all duration-300 transform hover:scale-105 ${
-                      filtroCriticidad === "critica"
+                      filtroPrioridad === "critica"
                         ? "bg-gradient-to-r from-rose-600 to-red-600 text-white shadow-lg shadow-rose-500/50 animate-pulse"
                         : `${tema.colores.secundario} ${tema.colores.texto}`
                     }`}
@@ -1511,10 +1547,10 @@ export default function EquiposTecnicoPage() {
                 </div>
               </div>
 
-              {/* Toggle Solo Críticos */}
+              {/* Toggle Solo Vencidos */}
               <div
                 className={`flex items-center justify-between p-4 rounded-2xl ${
-                  soloCriticos
+                  soloVencidos
                     ? "bg-rose-500/20 border-2 border-rose-500/50"
                     : "bg-black/5 border-2 border-transparent"
                 } transition-all duration-300`}
@@ -1523,23 +1559,23 @@ export default function EquiposTecnicoPage() {
                   <label
                     className={`text-xs font-bold ${tema.colores.texto} block mb-1`}
                   >
-                    🚨 Modo Crítico
+                    🚨 Solo Vencidos
                   </label>
                   <p className="text-[10px] text-gray-400">
-                    Solo equipos de alta prioridad
+                    Mostrar únicamente mantenimientos vencidos
                   </p>
                 </div>
                 <button
-                  onClick={() => setSoloCriticos((v) => !v)}
+                  onClick={() => setSoloVencidos((v) => !v)}
                   className={`w-14 h-7 rounded-full flex items-center px-1 transition-all duration-300 ${
-                    soloCriticos
+                    soloVencidos
                       ? "bg-gradient-to-r from-rose-600 to-red-600 shadow-lg shadow-rose-500/50"
                       : "bg-slate-500/40"
                   }`}
                 >
                   <div
                     className={`w-5 h-5 rounded-full bg-white shadow-lg transform transition-transform duration-300 ${
-                      soloCriticos ? "translate-x-7" : "translate-x-0"
+                      soloVencidos ? "translate-x-7" : "translate-x-0"
                     }`}
                   />
                 </button>
@@ -1549,10 +1585,10 @@ export default function EquiposTecnicoPage() {
               <button
                 onClick={() => {
                   setBusqueda("");
-                  setFiltroCentro("todos");
                   setFiltroEstado("todos");
-                  setFiltroCriticidad("todos");
-                  setSoloCriticos(false);
+                  setFiltroTipo("todos");
+                  setFiltroPrioridad("todos");
+                  setSoloVencidos(false);
                 }}
                 className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-2xl text-sm font-bold ${tema.colores.secundario} ${tema.colores.texto} transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl`}
               >
@@ -1564,85 +1600,94 @@ export default function EquiposTecnicoPage() {
 
           {/* Contenido principal - Tabla y Detalle */}
           <section className="xl:col-span-3 space-y-6">
-            {/* Tabla de Equipos Premium */}
+            {/* Tabla de Mantenimientos Premium */}
             <div
               className={`rounded-3xl p-6 ${tema.colores.card} ${tema.colores.borde} border-2 ${tema.colores.sombra} transform hover:shadow-2xl transition-all duration-300`}
             >
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center gap-3">
                   <div className="p-2 rounded-xl bg-indigo-500/20">
-                    <HardDrive className="w-5 h-5 text-indigo-400" />
+                    <History className="w-5 h-5 text-indigo-400" />
                   </div>
                   <div>
                     <p className={`text-lg font-black ${tema.colores.texto}`}>
-                      Inventario de Equipos
+                      Historial de Mantenimientos
                     </p>
                     <p className="text-xs text-indigo-300 font-semibold">
-                      {equiposFiltrados.length} equipos encontrados
+                      {mantenimientosFiltrados.length} registros encontrados
                     </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="px-3 py-1.5 rounded-full bg-emerald-500/20 border border-emerald-500/50">
-                    <span className="text-xs font-bold text-emerald-300">
-                      {kpis.operativos} operativos
-                    </span>
-                  </div>
-                  {kpis.criticos > 0 && (
+                  {kpis.enProgreso > 0 && (
+                    <div className="px-3 py-1.5 rounded-full bg-amber-500/20 border border-amber-500/50 animate-pulse">
+                      <span className="text-xs font-bold text-amber-300">
+                        {kpis.enProgreso} en progreso
+                      </span>
+                    </div>
+                  )}
+                  {kpis.vencidos > 0 && (
                     <div className="px-3 py-1.5 rounded-full bg-rose-500/20 border border-rose-500/50 animate-pulse">
                       <span className="text-xs font-bold text-rose-300">
-                        {kpis.criticos} críticos
+                        {kpis.vencidos} vencidos
                       </span>
                     </div>
                   )}
                 </div>
               </div>
 
-              {loadingEquipos ? (
+              {loadingMantenimientos ? (
                 <div className="py-16 flex flex-col items-center justify-center">
                   <div className="relative mb-6">
                     <div className="w-20 h-20 border-4 border-indigo-500/30 border-t-transparent rounded-full animate-spin" />
                     <div
                       className={`absolute inset-2 rounded-full bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center`}
                     >
-                      <Database className="w-8 h-8 text-white animate-pulse" />
+                      <Wrench className="w-8 h-8 text-white animate-pulse" />
                     </div>
                   </div>
-                  <p
-                    className={`text-sm font-bold ${tema.colores.texto} mb-2`}
-                  >
-                    Cargando inventario...
+                  <p className={`text-sm font-bold ${tema.colores.texto} mb-2`}>
+                    Cargando mantenimientos...
                   </p>
                   <p className={`text-xs ${tema.colores.textoSecundario}`}>
-                    Obteniendo datos de equipos
+                    Obteniendo historial completo
                   </p>
                 </div>
-              ) : equiposFiltrados.length === 0 ? (
+              ) : mantenimientosFiltrados.length === 0 ? (
                 <div className="py-16 text-center">
                   <div
                     className={`w-20 h-20 rounded-3xl bg-gradient-to-br ${tema.colores.gradiente} mx-auto flex items-center justify-center mb-4 shadow-2xl`}
                   >
-                    <Database className="w-10 h-10 text-white" />
+                    <ClipboardList className="w-10 h-10 text-white" />
                   </div>
                   <p className={`text-lg font-black ${tema.colores.texto} mb-2`}>
-                    No se encontraron equipos
+                    No se encontraron mantenimientos
                   </p>
                   <p className={`text-sm ${tema.colores.textoSecundario} mb-4`}>
-                    Ajusta los filtros o realiza una nueva búsqueda
+                    Ajusta los filtros o programa un nuevo mantenimiento
                   </p>
-                  <button
-                    onClick={() => {
-                      setBusqueda("");
-                      setFiltroCentro("todos");
-                      setFiltroEstado("todos");
-                      setFiltroCriticidad("todos");
-                      setSoloCriticos(false);
-                    }}
-                    className={`inline-flex items-center gap-2 px-6 py-3 rounded-2xl ${tema.colores.primario} text-white font-bold transform hover:scale-105 transition-all duration-300 shadow-xl`}
-                  >
-                    <RefreshCw className="w-4 h-4" />
-                    Restablecer filtros
-                  </button>
+                  <div className="flex items-center justify-center gap-3">
+                    <button
+                      onClick={() => {
+                        setBusqueda("");
+                        setFiltroEstado("todos");
+                        setFiltroTipo("todos");
+                        setFiltroPrioridad("todos");
+                        setSoloVencidos(false);
+                      }}
+                      className={`inline-flex items-center gap-2 px-6 py-3 rounded-2xl ${tema.colores.secundario} ${tema.colores.texto} font-bold transform hover:scale-105 transition-all duration-300 shadow-lg`}
+                    >
+                      <RefreshCw className="w-4 h-4" />
+                      Restablecer filtros
+                    </button>
+                    <Link
+                      href="/tecnico/mantenimiento/programar"
+                      className={`inline-flex items-center gap-2 px-6 py-3 rounded-2xl ${tema.colores.primario} text-white font-bold transform hover:scale-105 transition-all duration-300 shadow-xl`}
+                    >
+                      <Plus className="w-4 h-4" />
+                      Programar Mantenimiento
+                    </Link>
+                  </div>
                 </div>
               ) : (
                 <div className="overflow-x-auto custom-scrollbar-premium">
@@ -1657,7 +1702,7 @@ export default function EquiposTecnicoPage() {
                         <th
                           className={`text-left pb-4 pr-6 ${tema.colores.textoSecundario} font-black`}
                         >
-                          Centro / Ubicación
+                          Tipo / Prioridad
                         </th>
                         <th
                           className={`text-left pb-4 pr-6 ${tema.colores.textoSecundario} font-black`}
@@ -1667,17 +1712,17 @@ export default function EquiposTecnicoPage() {
                         <th
                           className={`text-left pb-4 pr-6 ${tema.colores.textoSecundario} font-black`}
                         >
-                          Criticidad
+                          Fecha Programada
                         </th>
                         <th
                           className={`text-left pb-4 pr-6 ${tema.colores.textoSecundario} font-black`}
                         >
-                          Próx. Mantención
+                          Técnico Asignado
                         </th>
                         <th
                           className={`text-left pb-4 pr-6 ${tema.colores.textoSecundario} font-black`}
                         >
-                          Tickets
+                          Duración
                         </th>
                         <th
                           className={`text-center pb-4 ${tema.colores.textoSecundario} font-black`}
@@ -1687,16 +1732,16 @@ export default function EquiposTecnicoPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {equiposFiltrados.map((e, idx) => {
-                        const d = diasHasta(e.proxima_mantencion);
+                      {mantenimientosFiltrados.map((m, idx) => {
+                        const d = diasHasta(m.fecha_programada);
                         const esVencido = d !== null && d < 0;
-                        const esProximo = d !== null && d >= 0 && d <= 30;
+                        const esProximo = d !== null && d >= 0 && d <= 7;
 
                         return (
                           <tr
-                            key={e.id_equipo}
+                            key={m.id_mantenimiento}
                             className={`border-t ${tema.colores.borde} text-xs hover:bg-gradient-to-r hover:from-indigo-500/5 hover:to-purple-500/5 cursor-pointer transition-all duration-300 group`}
-                            onClick={() => setEquipoSeleccionado(e)}
+                            onClick={() => setMantenimientoSeleccionado(m)}
                             style={{
                               animationDelay: `${idx * 50}ms`,
                             }}
@@ -1706,70 +1751,66 @@ export default function EquiposTecnicoPage() {
                                 <div
                                   className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center shadow-lg group-hover:scale-110 group-hover:rotate-3 transition-all duration-300`}
                                 >
-                                  <Cpu className="w-6 h-6 text-white" />
+                                  <HardDrive className="w-6 h-6 text-white" />
                                 </div>
                                 <div>
                                   <p
                                     className={`font-bold ${tema.colores.texto} group-hover:text-indigo-400 transition-colors duration-200`}
                                   >
-                                    {e.nombre}
+                                    {m.equipo.nombre}
                                   </p>
                                   <p className="text-[10px] text-gray-400 font-mono">
-                                    {e.codigo_interno} • {e.tipo_equipo}
+                                    {m.equipo.codigo_interno}
                                   </p>
                                   <p className="text-[10px] text-gray-500 mt-0.5">
-                                    {e.marca} {e.modelo}
+                                    {m.equipo.centro}
                                   </p>
                                 </div>
                               </div>
                             </td>
                             <td className="py-4 pr-6">
-                              <div className="flex items-start gap-2">
-                                <Building2 className="w-4 h-4 text-indigo-400 mt-0.5 flex-shrink-0" />
-                                <div>
-                                  <p
-                                    className={`font-bold ${tema.colores.texto} text-xs`}
-                                  >
-                                    {e.centro}
-                                  </p>
-                                  <p className="text-[10px] text-gray-400">
-                                    📍 {e.ubicacion}
-                                  </p>
-                                  {e.sucursal && (
-                                    <p className="text-[10px] text-gray-500">
-                                      {e.sucursal}
-                                    </p>
-                                  )}
-                                </div>
+                              <div className="space-y-1.5">
+                                <span
+                                  className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-[10px] font-bold ${obtenerBadgeTipo(
+                                    m.tipo_mantenimiento
+                                  )} transform group-hover:scale-105 transition-all duration-300`}
+                                >
+                                  {m.tipo_mantenimiento === "preventivo" && "🛡️"}
+                                  {m.tipo_mantenimiento === "correctivo" && "🔨"}
+                                  {m.tipo_mantenimiento === "predictivo" && "🔮"}
+                                  {m.tipo_mantenimiento === "calibracion" && "⚖️"}
+                                  <span className="uppercase tracking-wide">
+                                    {m.tipo_mantenimiento}
+                                  </span>
+                                </span>
+                                <span
+                                  className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-[10px] font-bold ${obtenerBadgePrioridad(
+                                    m.prioridad
+                                  )} transform group-hover:scale-105 transition-all duration-300`}
+                                >
+                                  {m.prioridad === "baja" && "🟢"}
+                                  {m.prioridad === "media" && "🟡"}
+                                  {m.prioridad === "alta" && "🟠"}
+                                  {m.prioridad === "critica" && "🔴"}
+                                  <span className="uppercase">
+                                    {m.prioridad}
+                                  </span>
+                                </span>
                               </div>
                             </td>
                             <td className="py-4 pr-6">
                               <span
                                 className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-bold ${obtenerBadgeEstado(
-                                  e.estado
+                                  m.estado
                                 )} transform group-hover:scale-110 transition-all duration-300`}
                               >
-                                {e.estado === "operativo" && "✓"}
-                                {e.estado === "en_mantenimiento" && "⚙️"}
-                                {e.estado === "critico" && "🚨"}
-                                {e.estado === "fuera_servicio" && "⊗"}
+                                {m.estado === "programado" && "📅"}
+                                {m.estado === "en_progreso" && "⚙️"}
+                                {m.estado === "completado" && "✓"}
+                                {m.estado === "cancelado" && "⊗"}
+                                {m.estado === "vencido" && "🚨"}
                                 <span className="uppercase tracking-wide">
-                                  {e.estado.replace("_", " ")}
-                                </span>
-                              </span>
-                            </td>
-                            <td className="py-4 pr-6">
-                              <span
-                                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-[10px] font-bold ${obtenerBadgeCriticidad(
-                                  e.criticidad
-                                )} transform group-hover:scale-110 transition-all duration-300`}
-                              >
-                                {e.criticidad === "baja" && "🟢"}
-                                {e.criticidad === "media" && "🟡"}
-                                {e.criticidad === "alta" && "🟠"}
-                                {e.criticidad === "critica" && "🔴"}
-                                <span className="uppercase">
-                                  {e.criticidad}
+                                  {m.estado.replace("_", " ")}
                                 </span>
                               </span>
                             </td>
@@ -1794,7 +1835,7 @@ export default function EquiposTecnicoPage() {
                                         : tema.colores.texto
                                     }`}
                                   >
-                                    {formatearFecha(e.proxima_mantencion)}
+                                    {formatearFecha(m.fecha_programada)}
                                   </p>
                                   {d !== null && (
                                     <p
@@ -1816,40 +1857,73 @@ export default function EquiposTecnicoPage() {
                             </td>
                             <td className="py-4 pr-6">
                               <div className="flex items-center gap-2">
-                                <ClipboardList
-                                  className={`w-4 h-4 ${
-                                    e.tickets_abiertos > 0
-                                      ? "text-indigo-400"
-                                      : "text-gray-500"
-                                  }`}
-                                />
+                                <div
+                                  className={`w-8 h-8 rounded-xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center text-white text-xs font-bold shadow-md`}
+                                >
+                                  {m.tecnico_asignado
+                                    .split(" ")
+                                    .map((n) => n[0])
+                                    .join("")
+                                    .toUpperCase()
+                                    .slice(0, 2)}
+                                </div>
                                 <div>
                                   <p
-                                    className={`text-xs font-bold ${
-                                      e.tickets_abiertos > 0
-                                        ? "text-indigo-300"
-                                        : tema.colores.textoSecundario
-                                    }`}
+                                    className={`text-xs font-bold ${tema.colores.texto}`}
                                   >
-                                    {e.tickets_abiertos}
+                                    {m.tecnico_asignado}
                                   </p>
-                                  <p className="text-[10px] text-gray-500">
-                                    abiertos
+                                  <p className="text-[10px] text-gray-400">
+                                    Técnico asignado
                                   </p>
                                 </div>
                               </div>
                             </td>
+                            <td className="py-4 pr-6">
+                              <div className="flex items-center gap-2">
+                                <Clock className="w-4 h-4 text-indigo-400" />
+                                <div>
+                                  <p
+                                    className={`text-xs font-bold ${tema.colores.texto}`}
+                                  >
+                                    {m.duracion_real_horas
+                                      ? `${m.duracion_real_horas}h reales`
+                                      : `${m.duracion_estimada_horas}h estimadas`}
+                                  </p>
+                                  {m.duracion_real_horas && (
+                                    <p className="text-[10px] text-gray-400">
+                                      Est: {m.duracion_estimada_horas}h
+                                    </p>
+                                  )}
+                                </div>
+                              </div>
+                            </td>
                             <td className="py-4 text-center">
-                              <button
-                                onClick={(ev) => {
-                                  ev.stopPropagation();
-                                  setEquipoSeleccionado(e);
-                                }}
-                                className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-xl ${tema.colores.primario} text-white text-[10px] font-bold transform hover:scale-110 transition-all duration-300 shadow-lg hover:shadow-xl`}
-                              >
-                                <Eye className="w-3.5 h-3.5" />
-                                Ver
-                              </button>
+                              <div className="flex items-center justify-center gap-2">
+                                <button
+                                  onClick={(ev) => {
+                                    ev.stopPropagation();
+                                    setMantenimientoSeleccionado(m);
+                                  }}
+                                  className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-xl ${tema.colores.primario} text-white text-[10px] font-bold transform hover:scale-110 transition-all duration-300 shadow-lg hover:shadow-xl`}
+                                >
+                                  <Eye className="w-3.5 h-3.5" />
+                                  Ver
+                                </button>
+                                {m.estado === "programado" && (
+                                  <button
+                                    onClick={(ev) => {
+                                      ev.stopPropagation();
+                                      router.push(
+                                        `/tecnico/mantenimiento/${m.id_mantenimiento}/editar`
+                                      );
+                                    }}
+                                    className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-xl ${tema.colores.secundario} ${tema.colores.texto} text-[10px] font-bold transform hover:scale-110 transition-all duration-300 shadow-md`}
+                                  >
+                                    <Edit className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
+                              </div>
                             </td>
                           </tr>
                         );
@@ -1871,16 +1945,16 @@ export default function EquiposTecnicoPage() {
                   </div>
                   <div>
                     <p className={`text-lg font-black ${tema.colores.texto}`}>
-                      Detalle del Equipo
+                      Detalle del Mantenimiento
                     </p>
                     <p className="text-xs text-emerald-300 font-semibold">
-                      Información completa y acciones rápidas
+                      Información completa y seguimiento
                     </p>
                   </div>
                 </div>
-                {equipoSeleccionado && (
+                {mantenimientoSeleccionado && (
                   <button
-                    onClick={() => setEquipoSeleccionado(null)}
+                    onClick={() => setMantenimientoSeleccionado(null)}
                     className="p-2 rounded-xl hover:bg-rose-500/20 transition-all duration-200 group"
                   >
                     <X className="w-5 h-5 text-rose-400 group-hover:rotate-90 transition-transform duration-300" />
@@ -1888,45 +1962,48 @@ export default function EquiposTecnicoPage() {
                 )}
               </div>
 
-              {equipoSeleccionado ? (
+              {mantenimientoSeleccionado ? (
                 <div className="space-y-6 animate-fadeIn">
-                  {/* Header del equipo */}
+                  {/* Header del mantenimiento */}
                   <div className="flex items-start gap-4 p-5 rounded-2xl bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border border-indigo-500/30">
                     <div
                       className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center shadow-2xl`}
                     >
-                      <Cpu className="w-8 h-8 text-white" />
+                      <Wrench className="w-8 h-8 text-white" />
                     </div>
                     <div className="flex-1">
                       <h3
                         className={`text-xl font-black ${tema.colores.texto} mb-1`}
                       >
-                        {equipoSeleccionado.nombre}
+                        Mantenimiento #{mantenimientoSeleccionado.id_mantenimiento}
                       </h3>
                       <p
                         className={`text-sm ${tema.colores.textoSecundario} mb-2`}
                       >
-                        {equipoSeleccionado.tipo_equipo} •{" "}
-                        {equipoSeleccionado.marca} {equipoSeleccionado.modelo}
+                        {mantenimientoSeleccionado.equipo.nombre} •{" "}
+                        {mantenimientoSeleccionado.equipo.codigo_interno}
                       </p>
                       <div className="flex flex-wrap items-center gap-2">
                         <span
                           className={`px-3 py-1 rounded-full text-xs font-bold ${obtenerBadgeEstado(
-                            equipoSeleccionado.estado
+                            mantenimientoSeleccionado.estado
                           )}`}
                         >
-                          {equipoSeleccionado.estado.replace("_", " ")}
+                          {mantenimientoSeleccionado.estado.replace("_", " ")}
                         </span>
                         <span
-                          className={`px-3 py-1 rounded-full text-xs font-bold ${obtenerBadgeCriticidad(
-                            equipoSeleccionado.criticidad
+                          className={`px-3 py-1 rounded-full text-xs font-bold ${obtenerBadgeTipo(
+                            mantenimientoSeleccionado.tipo_mantenimiento
                           )}`}
                         >
-                          Criticidad {equipoSeleccionado.criticidad}
+                          {mantenimientoSeleccionado.tipo_mantenimiento}
                         </span>
-                        <span className="px-3 py-1 rounded-full bg-rose-500/20 text-rose-300 text-xs font-bold border border-rose-500/50">
-                          Riesgo clínico:{" "}
-                          {equipoSeleccionado.riesgo_clinico.toUpperCase()}
+                        <span
+                          className={`px-3 py-1 rounded-full text-xs font-bold ${obtenerBadgePrioridad(
+                            mantenimientoSeleccionado.prioridad
+                          )}`}
+                        >
+                          Prioridad {mantenimientoSeleccionado.prioridad}
                         </span>
                       </div>
                     </div>
@@ -1934,206 +2011,265 @@ export default function EquiposTecnicoPage() {
 
                   {/* Grid de información */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Identificación */}
+                    {/* Información del Equipo */}
                     <div className="p-4 rounded-2xl bg-black/5 border border-white/10">
                       <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
-                        🔖 Identificación
+                        🔧 Información del Equipo
                       </p>
                       <div className="space-y-2 text-xs">
                         <div className="flex justify-between">
-                          <span className="text-gray-400">Código interno:</span>
+                          <span className="text-gray-400">Equipo:</span>
                           <span
-                            className={`font-mono font-bold ${tema.colores.texto}`}
+                            className={`font-bold ${tema.colores.texto} text-right`}
                           >
-                            {equipoSeleccionado.codigo_interno}
+                            {mantenimientoSeleccionado.equipo.nombre}
                           </span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-gray-400">Número de serie:</span>
+                          <span className="text-gray-400">Código:</span>
                           <span
                             className={`font-mono font-bold ${tema.colores.texto}`}
                           >
-                            {equipoSeleccionado.numero_serie}
+                            {mantenimientoSeleccionado.equipo.codigo_interno}
+                          </span>
+                        </div>
+                        <div className="flex justify-between">
+                          <span className="text-gray-400">Tipo:</span>
+                          <span className={`font-bold ${tema.colores.texto}`}>
+                            {mantenimientoSeleccionado.equipo.tipo_equipo}
                           </span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-400">Marca/Modelo:</span>
                           <span className={`font-bold ${tema.colores.texto}`}>
-                            {equipoSeleccionado.marca} {equipoSeleccionado.modelo}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Ubicación */}
-                    <div className="p-4 rounded-2xl bg-black/5 border border-white/10">
-                      <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
-                        📍 Ubicación
-                      </p>
-                      <div className="space-y-2 text-xs">
-                        <div className="flex justify-between">
-                          <span className="text-gray-400">Centro:</span>
-                          <span className={`font-bold ${tema.colores.texto}`}>
-                            {equipoSeleccionado.centro}
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-400">Sucursal:</span>
-                          <span className={`font-bold ${tema.colores.texto}`}>
-                            {equipoSeleccionado.sucursal ?? "N/A"}
+                            {mantenimientoSeleccionado.equipo.marca}{" "}
+                            {mantenimientoSeleccionado.equipo.modelo}
                           </span>
                         </div>
                         <div className="flex justify-between">
                           <span className="text-gray-400">Ubicación:</span>
-                          <span className={`font-bold ${tema.colores.texto}`}>
-                            {equipoSeleccionado.ubicacion}
+                          <span
+                            className={`font-bold ${tema.colores.texto} text-right`}
+                          >
+                            {mantenimientoSeleccionado.equipo.ubicacion}
                           </span>
                         </div>
                       </div>
                     </div>
 
-                    {/* Mantenciones */}
+                    {/* Fechas y Tiempos */}
                     <div className="p-4 rounded-2xl bg-black/5 border border-white/10">
                       <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
-                        🔧 Mantenciones
+                        📅 Fechas y Tiempos
                       </p>
                       <div className="space-y-2 text-xs">
                         <div className="flex justify-between">
-                          <span className="text-gray-400">Última:</span>
+                          <span className="text-gray-400">Programado:</span>
                           <span className={`font-bold ${tema.colores.texto}`}>
                             {formatearFecha(
-                              equipoSeleccionado.ultima_mantencion
+                              mantenimientoSeleccionado.fecha_programada
                             )}
                           </span>
                         </div>
-                        <div className="flex justify-between">
-                          <span className="text-gray-400">Próxima:</span>
-                          <span
-                            className={`font-bold ${
-                              diasHasta(equipoSeleccionado.proxima_mantencion) !==
-                                null &&
-                              diasHasta(equipoSeleccionado.proxima_mantencion)! <
-                                0
-                                ? "text-rose-400"
-                                : tema.colores.texto
-                            }`}
-                          >
-                            {formatearFecha(
-                              equipoSeleccionado.proxima_mantencion
-                            )}
-                          </span>
-                        </div>
-                        {diasHasta(equipoSeleccionado.proxima_mantencion) !==
-                          null && (
+                        {mantenimientoSeleccionado.fecha_inicio && (
                           <div className="flex justify-between">
-                            <span className="text-gray-400">Estado:</span>
+                            <span className="text-gray-400">Inicio:</span>
+                            <span className={`font-bold ${tema.colores.texto}`}>
+                              {formatearFechaHora(
+                                mantenimientoSeleccionado.fecha_inicio
+                              )}
+                            </span>
+                          </div>
+                        )}
+                        {mantenimientoSeleccionado.fecha_finalizacion && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-400">Finalización:</span>
+                            <span className={`font-bold ${tema.colores.texto}`}>
+                              {formatearFechaHora(
+                                mantenimientoSeleccionado.fecha_finalizacion
+                              )}
+                            </span>
+                          </div>
+                        )}
+                        <div className="flex justify-between">
+                          <span className="text-gray-400">Duración estimada:</span>
+                          <span className={`font-bold ${tema.colores.texto}`}>
+                            {mantenimientoSeleccionado.duracion_estimada_horas}h
+                          </span>
+                        </div>
+                        {mantenimientoSeleccionado.duracion_real_horas && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-400">Duración real:</span>
                             <span
                               className={`font-bold ${
-                                diasHasta(
-                                  equipoSeleccionado.proxima_mantencion
-                                )! < 0
-                                  ? "text-rose-400"
-                                  : diasHasta(
-                                      equipoSeleccionado.proxima_mantencion
-                                    )! <= 30
+                                mantenimientoSeleccionado.duracion_real_horas >
+                                mantenimientoSeleccionado.duracion_estimada_horas
                                   ? "text-amber-400"
                                   : "text-emerald-400"
                               }`}
                             >
-                              {diasHasta(equipoSeleccionado.proxima_mantencion)! <
-                              0
-                                ? `${-diasHasta(
-                                    equipoSeleccionado.proxima_mantencion
-                                  )!} días de atraso`
-                                : `En ${diasHasta(
-                                    equipoSeleccionado.proxima_mantencion
-                                  )} días`}
+                              {mantenimientoSeleccionado.duracion_real_horas}h
+                            </span>
+                          </div>
+                        )}
+                        {mantenimientoSeleccionado.proximo_mantenimiento && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-400">Próximo:</span>
+                            <span className="font-bold text-sky-400">
+                              {formatearFecha(
+                                mantenimientoSeleccionado.proximo_mantenimiento
+                              )}
                             </span>
                           </div>
                         )}
                       </div>
                     </div>
 
-                    {/* Operación */}
+                    {/* Técnico y Recursos */}
                     <div className="p-4 rounded-2xl bg-black/5 border border-white/10">
                       <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
-                        ⚡ Operación
+                        👤 Técnico y Recursos
                       </p>
                       <div className="space-y-2 text-xs">
                         <div className="flex justify-between">
-                          <span className="text-gray-400">Uso diario:</span>
+                          <span className="text-gray-400">Técnico:</span>
                           <span className={`font-bold ${tema.colores.texto}`}>
-                            {equipoSeleccionado.horas_uso_diario_promedio} h/día
+                            {mantenimientoSeleccionado.tecnico_asignado}
                           </span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-gray-400">Tickets abiertos:</span>
+                          <span className="text-gray-400">Repuestos:</span>
                           <span
                             className={`font-bold ${
-                              equipoSeleccionado.tickets_abiertos > 0
-                                ? "text-indigo-400"
+                              mantenimientoSeleccionado.requiere_repuestos
+                                ? "text-amber-400"
                                 : "text-emerald-400"
                             }`}
                           >
-                            {equipoSeleccionado.tickets_abiertos}
+                            {mantenimientoSeleccionado.requiere_repuestos
+                              ? "Sí requiere"
+                              : "No requiere"}
                           </span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-gray-400">Responsable:</span>
-                          <span className={`font-bold ${tema.colores.texto}`}>
-                            {equipoSeleccionado.responsable}
+                          <span className="text-gray-400">Checklist:</span>
+                          <span
+                            className={`font-bold ${
+                              mantenimientoSeleccionado.checklist_completado
+                                ? "text-emerald-400"
+                                : "text-amber-400"
+                            }`}
+                          >
+                            {mantenimientoSeleccionado.checklist_completado
+                              ? "✓ Completado"
+                              : "⏳ Pendiente"}
                           </span>
                         </div>
+                        {mantenimientoSeleccionado.costo_estimado && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-400">Costo estimado:</span>
+                            <span className={`font-bold ${tema.colores.texto}`}>
+                              $
+                              {mantenimientoSeleccionado.costo_estimado.toLocaleString()}
+                            </span>
+                          </div>
+                        )}
+                        {mantenimientoSeleccionado.costo_real && (
+                          <div className="flex justify-between">
+                            <span className="text-gray-400">Costo real:</span>
+                            <span
+                              className={`font-bold ${
+                                mantenimientoSeleccionado.costo_real >
+                                (mantenimientoSeleccionado.costo_estimado || 0)
+                                  ? "text-rose-400"
+                                  : "text-emerald-400"
+                              }`}
+                            >
+                              $
+                              {mantenimientoSeleccionado.costo_real.toLocaleString()}
+                            </span>
+                          </div>
+                        )}
                       </div>
+                    </div>
+
+                    {/* Descripción */}
+                    <div className="p-4 rounded-2xl bg-black/5 border border-white/10">
+                      <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">
+                        📝 Descripción
+                      </p>
+                      <p className={`text-xs ${tema.colores.texto} leading-relaxed`}>
+                        {mantenimientoSeleccionado.descripcion}
+                      </p>
+                      {mantenimientoSeleccionado.observaciones && (
+                        <>
+                          <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mt-4 mb-2">
+                            💬 Observaciones
+                          </p>
+                          <p
+                            className={`text-xs ${tema.colores.texto} leading-relaxed`}
+                          >
+                            {mantenimientoSeleccionado.observaciones}
+                          </p>
+                        </>
+                      )}
                     </div>
                   </div>
 
-                  {/* Responsable */}
-                  {equipoSeleccionado.telefono_responsable && (
-                    <div className="p-4 rounded-2xl bg-indigo-500/10 border border-indigo-500/30">
-                      <div className="flex items-center gap-3">
-                        <User className="w-5 h-5 text-indigo-400" />
-                        <div>
-                          <p className="text-xs font-bold text-gray-400 uppercase">
-                            Contacto del responsable
-                          </p>
-                          <p className={`text-sm font-bold ${tema.colores.texto}`}>
-                            {equipoSeleccionado.responsable}
-                          </p>
-                          <a
-                            href={`tel:${equipoSeleccionado.telefono_responsable}`}
-                            className="text-sm text-indigo-400 hover:text-indigo-300 font-semibold"
-                          >
-                            📞 {equipoSeleccionado.telefono_responsable}
-                          </a>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
                   {/* Acciones rápidas */}
                   <div className="flex flex-wrap items-center gap-3">
+                    {mantenimientoSeleccionado.estado === "programado" && (
+                      <>
+                        <button
+                          onClick={() => {
+                            // Lógica para iniciar mantenimiento
+                            alert("Función: Iniciar Mantenimiento");
+                          }}
+                          className={`flex items-center gap-2 px-5 py-3 rounded-2xl ${tema.colores.primario} text-white text-sm font-bold transform hover:scale-105 transition-all duration-300 shadow-xl hover:shadow-2xl`}
+                        >
+                          <Activity className="w-4 h-4" />
+                          Iniciar Mantenimiento
+                        </button>
+                        <Link
+                          href={`/tecnico/mantenimiento/${mantenimientoSeleccionado.id_mantenimiento}/editar`}
+                          className={`flex items-center gap-2 px-5 py-3 rounded-2xl ${tema.colores.secundario} ${tema.colores.texto} text-sm font-bold transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl`}
+                        >
+                          <Edit className="w-4 h-4" />
+                          Editar
+                        </Link>
+                      </>
+                    )}
+                    {mantenimientoSeleccionado.estado === "en_progreso" && (
+                      <button
+                        onClick={() => {
+                          // Lógica para finalizar mantenimiento
+                          alert("Función: Finalizar Mantenimiento");
+                        }}
+                        className={`flex items-center gap-2 px-5 py-3 rounded-2xl bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white text-sm font-bold transform hover:scale-105 transition-all duration-300 shadow-xl hover:shadow-2xl`}
+                      >
+                        <CheckCircle2 className="w-4 h-4" />
+                        Finalizar Mantenimiento
+                      </button>
+                    )}
                     <Link
-                      href={`/tecnico/tickets?nuevo=1&equipo=${equipoSeleccionado.id_equipo}`}
-                      className={`flex items-center gap-2 px-5 py-3 rounded-2xl ${tema.colores.primario} text-white text-sm font-bold transform hover:scale-105 transition-all duration-300 shadow-xl hover:shadow-2xl`}
-                    >
-                      <ClipboardList className="w-4 h-4" />
-                      Crear Ticket
-                    </Link>
-                    <Link
-                      href={`/tecnico/mantenimiento/programar?equipo=${equipoSeleccionado.id_equipo}`}
+                      href={`/tecnico/equipos/${mantenimientoSeleccionado.id_equipo}`}
                       className={`flex items-center gap-2 px-5 py-3 rounded-2xl ${tema.colores.secundario} ${tema.colores.texto} text-sm font-bold transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl`}
                     >
-                      <Calendar className="w-4 h-4" />
-                      Programar Mantención
+                      <HardDrive className="w-4 h-4" />
+                      Ver Equipo
                     </Link>
-                    <Link
-                      href={`/tecnico/equipos/${equipoSeleccionado.id_equipo}/historial`}
+                    <button
+                      onClick={() => {
+                        window.open(
+                          `/api/tecnico/mantenimientos/${mantenimientoSeleccionado.id_mantenimiento}/pdf`,
+                          "_blank"
+                        );
+                      }}
                       className={`flex items-center gap-2 px-5 py-3 rounded-2xl ${tema.colores.secundario} ${tema.colores.texto} text-sm font-bold transform hover:scale-105 transition-all duration-300 shadow-lg hover:shadow-xl`}
                     >
-                      <Clock className="w-4 h-4" />
-                      Ver Historial
-                    </Link>
+                      <FileText className="w-4 h-4" />
+                      Generar Reporte
+                    </button>
                   </div>
                 </div>
               ) : (
@@ -2144,10 +2280,10 @@ export default function EquiposTecnicoPage() {
                     <Target className="w-10 h-10 text-white" />
                   </div>
                   <p className={`text-lg font-black ${tema.colores.texto} mb-2`}>
-                    Selecciona un equipo
+                    Selecciona un mantenimiento
                   </p>
                   <p className={`text-sm ${tema.colores.textoSecundario}`}>
-                    Haz clic en cualquier equipo de la tabla para ver su
+                    Haz clic en cualquier registro de la tabla para ver su
                     información completa
                   </p>
                 </div>
@@ -2175,7 +2311,7 @@ export default function EquiposTecnicoPage() {
                 © 2025 AnyssaMed
               </p>
               <p className="text-xs text-gray-400">
-                Módulo Premium de Equipos Técnicos
+                Módulo Premium de Mantenimientos
               </p>
             </div>
           </div>
@@ -2261,26 +2397,6 @@ export default function EquiposTecnicoPage() {
         }
       `}</style>
     </div>
-  );
-}
-
-// ================================
-// COMPONENTE: ICONO DE FILTRO
-// ================================
-
-function FilterMiniIcon() {
-  return (
-    <svg
-      className="w-5 h-5 text-white"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <polygon points="4 4 20 4 13 12 13 19 11 21 11 12 4 4" />
-    </svg>
   );
 }
 

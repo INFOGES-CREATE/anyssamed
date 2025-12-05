@@ -5,8 +5,6 @@ import Link from "next/link";
 import Image from "next/image";
 import SidebarTecnico from "@/components/tecnico/SidebarTecnico";
 
-import { History } from "lucide-react";
-
 import {
   Activity,
   AlertCircle,
@@ -118,6 +116,39 @@ import {
   AlertCircle as AlertCircleIcon,
   MapPin as MapPinIcon,
   Phone as PhoneIcon,
+  History,
+  TrendingUp as TrendingUpIcon,
+  Package,
+  Boxes,
+  FileCheck,
+  FileClock,
+  FileX,
+  Gauge,
+  Timer,
+  Hourglass,
+  PlayCircle,
+  PauseCircle,
+  StopCircle,
+  FastForward,
+  Rewind,
+  SkipForward,
+  SkipBack,
+  Maximize2,
+  Minimize2,
+  ZoomIn,
+  ZoomOut,
+  Move,
+  Copy,
+  Clipboard,
+  ExternalLink,
+  Info,
+  HelpCircle,
+  BookOpen,
+  FileSignature,
+  Stamp,
+  BadgeCheck,
+  ShieldAlert,
+  AlertTriangle as AlertTriangleIcon,
 } from "lucide-react";
 
 // ========================================
@@ -127,6 +158,8 @@ import {
 type TemaColor = "light" | "dark" | "blue" | "purple" | "green";
 
 type RangoRapido = "7d" | "30d" | "90d" | "year" | "todo";
+
+type VistaHistorial = "timeline" | "tabla" | "kanban" | "calendario";
 
 interface ConfiguracionTema {
   nombre: string;
@@ -260,13 +293,24 @@ interface GrupoHistorial {
   tickets: Ticket[];
 }
 
+interface EstadisticasAvanzadas {
+  tasa_resolucion_primera_vez: number;
+  tickets_reabiertos: number;
+  satisfaccion_cliente: number;
+  tiempo_respuesta_promedio: number;
+  tickets_por_tipo: { tipo: string; cantidad: number }[];
+  tickets_por_prioridad: { prioridad: string; cantidad: number }[];
+  tendencia_semanal: { semana: string; cantidad: number }[];
+  top_centros: { centro: string; cantidad: number }[];
+}
+
 // ========================================
 // CONFIGURACIONES DE TEMAS
 // ========================================
 
 const TEMAS: Record<TemaColor, ConfiguracionTema> = {
   light: {
-    nombre: "Claro",
+    nombre: "Claro Profesional",
     icono: Sun,
     colores: {
       fondo: "from-slate-50 via-blue-50 to-indigo-50",
@@ -286,7 +330,7 @@ const TEMAS: Record<TemaColor, ConfiguracionTema> = {
     },
   },
   dark: {
-    nombre: "Oscuro",
+    nombre: "Oscuro Elite",
     icono: Moon,
     colores: {
       fondo: "from-slate-950 via-indigo-950 to-purple-950",
@@ -306,7 +350,7 @@ const TEMAS: Record<TemaColor, ConfiguracionTema> = {
     },
   },
   blue: {
-    nombre: "Azul Técnico",
+    nombre: "Azul Técnico Pro",
     icono: Wifi,
     colores: {
       fondo: "from-blue-950 via-cyan-950 to-teal-950",
@@ -326,7 +370,7 @@ const TEMAS: Record<TemaColor, ConfiguracionTema> = {
     },
   },
   purple: {
-    nombre: "Púrpura Industrial",
+    nombre: "Púrpura Premium",
     icono: Sparkles,
     colores: {
       fondo: "from-purple-950 via-fuchsia-950 to-pink-950",
@@ -378,6 +422,8 @@ export default function HistorialTicketsTecnicoPage() {
   const [loadingData, setLoadingData] = useState(true);
 
   const [estadisticas, setEstadisticas] = useState<EstadisticasTecnico | null>(null);
+  const [estadisticasAvanzadas, setEstadisticasAvanzadas] =
+    useState<EstadisticasAvanzadas | null>(null);
   const [tickets, setTickets] = useState<Ticket[]>([]);
   const [alertas, setAlertas] = useState<AlertaTecnico[]>([]);
 
@@ -387,7 +433,7 @@ export default function HistorialTicketsTecnicoPage() {
   const [perfilAbierto, setPerfilAbierto] = useState(false);
 
   const [busqueda, setBusqueda] = useState("");
-  const [seccionActiva] = useState("tickets");
+  const [vistaActual, setVistaActual] = useState<VistaHistorial>("timeline");
 
   const [filtroEstado, setFiltroEstado] = useState<string>("todos");
   const [filtroPrioridad, setFiltroPrioridad] = useState<string>("todas");
@@ -399,6 +445,8 @@ export default function HistorialTicketsTecnicoPage() {
   >("disponible");
 
   const [ticketSeleccionado, setTicketSeleccionado] = useState<Ticket | null>(null);
+  const [mostrarEstadisticasAvanzadas, setMostrarEstadisticasAvanzadas] =
+    useState(false);
 
   const [fechaDesde, setFechaDesde] = useState(() => {
     const d = new Date();
@@ -412,12 +460,6 @@ export default function HistorialTicketsTecnicoPage() {
   const [exportando, setExportando] = useState<"excel" | "pdf" | null>(null);
 
   const tema = useMemo(() => TEMAS[temaActual], [temaActual]);
-
-  // ========================================
-  // MENÚ DE NAVEGACIÓN
-  // ========================================
-
-  
 
   // ========================================
   // EFECTOS
@@ -441,6 +483,7 @@ export default function HistorialTicketsTecnicoPage() {
     if (usuario?.tecnico) {
       cargarContextoTecnico();
       cargarHistorialTickets();
+      cargarEstadisticasAvanzadas();
     }
   }, [usuario, fechaDesde, fechaHasta]);
 
@@ -586,6 +629,35 @@ export default function HistorialTicketsTecnicoPage() {
     }
   };
 
+  const cargarEstadisticasAvanzadas = async () => {
+    if (!usuario?.tecnico?.id_tecnico) return;
+
+    try {
+      const params = new URLSearchParams({
+        id_tecnico: String(usuario.tecnico.id_tecnico),
+        desde: fechaDesde,
+        hasta: fechaHasta,
+      });
+
+      const res = await fetch(
+        `/api/tecnico/tickets/estadisticas-avanzadas?${params.toString()}`,
+        {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+        }
+      );
+
+      const data = await res.json().catch(() => ({}));
+
+      if (res.ok && data.success) {
+        setEstadisticasAvanzadas(data.estadisticas);
+      }
+    } catch (err) {
+      console.error("Error al cargar estadísticas avanzadas:", err);
+    }
+  };
+
   // ========================================
   // ACCIONES
   // ========================================
@@ -608,13 +680,13 @@ export default function HistorialTicketsTecnicoPage() {
 
       if (response.ok) {
         setDisponibilidad(nuevoEstado);
-        alert(`Estado actualizado a: ${nuevoEstado}`);
+        mostrarNotificacion("Estado actualizado correctamente", "success");
       } else {
-        alert("Error al actualizar disponibilidad");
+        mostrarNotificacion("Error al actualizar disponibilidad", "error");
       }
     } catch (error) {
       console.error("Error al cambiar disponibilidad:", error);
-      alert("Error al actualizar disponibilidad");
+      mostrarNotificacion("Error al actualizar disponibilidad", "error");
     }
   };
 
@@ -637,12 +709,13 @@ export default function HistorialTicketsTecnicoPage() {
           )
         );
         cargarHistorialTickets(false);
+        mostrarNotificacion("Estado del ticket actualizado", "success");
       } else {
-        alert("Error al actualizar estado del ticket");
+        mostrarNotificacion("Error al actualizar estado del ticket", "error");
       }
     } catch (error) {
       console.error("Error al actualizar estado del ticket:", error);
-      alert("Error al actualizar estado del ticket");
+      mostrarNotificacion("Error al actualizar estado del ticket", "error");
     }
   };
 
@@ -669,12 +742,13 @@ export default function HistorialTicketsTecnicoPage() {
               : ticket
           )
         );
+        mostrarNotificacion("Prioridad actualizada", "success");
       } else {
-        alert("Error al actualizar prioridad");
+        mostrarNotificacion("Error al actualizar prioridad", "error");
       }
     } catch (error) {
       console.error("Error al actualizar prioridad", error);
-      alert("Error al actualizar prioridad");
+      mostrarNotificacion("Error al actualizar prioridad", "error");
     }
   };
 
@@ -755,7 +829,7 @@ export default function HistorialTicketsTecnicoPage() {
       );
 
       if (!res.ok) {
-        alert("No se pudo exportar el historial. Intenta nuevamente.");
+        mostrarNotificacion("No se pudo exportar el historial", "error");
         return;
       }
 
@@ -770,12 +844,20 @@ export default function HistorialTicketsTecnicoPage() {
       a.click();
       a.remove();
       window.URL.revokeObjectURL(url);
+      mostrarNotificacion("Historial exportado correctamente", "success");
     } catch (error) {
       console.error("Error al exportar historial:", error);
-      alert("Error al exportar historial");
+      mostrarNotificacion("Error al exportar historial", "error");
     } finally {
       setExportando(null);
     }
+  };
+
+  const mostrarNotificacion = (mensaje: string, tipo: "success" | "error" | "info") => {
+    // Implementación simple de notificación
+    const color = tipo === "success" ? "green" : tipo === "error" ? "red" : "blue";
+    console.log(`[${tipo.toUpperCase()}]: ${mensaje}`);
+    // Aquí podrías integrar una librería de notificaciones como react-toastify
   };
 
   // ========================================
@@ -1014,16 +1096,16 @@ export default function HistorialTicketsTecnicoPage() {
             <div
               className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-20 h-20 bg-gradient-to-br ${tema.colores.gradiente} rounded-full flex items-center justify-center animate-pulse`}
             >
-              <FileText className="w-10 h-10 text-white" />
+              <History className="w-10 h-10 text-white" />
             </div>
           </div>
           <h2 className={`text-4xl font-black mb-4 ${tema.colores.texto}`}>
-            Cargando Historial de Tickets
+            Cargando Historial Premium
           </h2>
           <p
             className={`text-lg font-semibold ${tema.colores.textoSecundario} animate-pulse`}
           >
-            Preparando tu histórico completo de incidencias...
+            Preparando tu histórico completo de incidencias con análisis avanzado...
           </p>
         </div>
       </div>
@@ -1041,13 +1123,13 @@ export default function HistorialTicketsTecnicoPage() {
           <div
             className={`w-24 h-24 bg-gradient-to-br ${tema.colores.gradiente} rounded-3xl flex items-center justify-center mx-auto mb-6 animate-pulse`}
           >
-            <AlertTriangle className="w-12 h-12 text-white" />
+            <ShieldAlert className="w-12 h-12 text-white" />
           </div>
           <h2 className={`text-3xl font-black mb-4 ${tema.colores.texto}`}>
             Acceso No Autorizado
           </h2>
           <p className={`text-lg mb-8 ${tema.colores.textoSecundario}`}>
-            No tienes permisos para acceder al historial de tickets técnicos.
+            No tienes permisos para acceder al historial de tickets técnicos premium.
           </p>
           <Link
             href="/login"
@@ -1062,7 +1144,7 @@ export default function HistorialTicketsTecnicoPage() {
   }
 
   // ========================================
-  // RENDER
+  // RENDER PRINCIPAL
   // ========================================
 
   return (
@@ -1070,7 +1152,7 @@ export default function HistorialTicketsTecnicoPage() {
       className={`min-h-screen transition-all duration-500 bg-gradient-to-br ${tema.colores.fondo}`}
     >
       {/* SIDEBAR */}
-         <SidebarTecnico
+      <SidebarTecnico
         usuario={usuario}
         tema={tema}
         sidebarAbierto={sidebarAbierto}
@@ -1078,47 +1160,67 @@ export default function HistorialTicketsTecnicoPage() {
         estadisticas={estadisticas}
       />
 
-      {/* HEADER */}
+      {/* HEADER PREMIUM */}
       <header
         className={`fixed top-0 right-0 z-40 transition-all duration-300 ${
           sidebarAbierto ? "left-72" : "left-20"
         } ${tema.colores.header} ${tema.colores.borde} border-b ${tema.colores.sombra}`}
       >
         <div className="flex items-center justify-between px-8 py-4">
-          {/* Búsqueda */}
+          {/* Búsqueda avanzada */}
           <div className="flex-1 max-w-2xl">
-            <div className="relative">
+            <div className="relative group">
               <Search
-                className={`absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 ${tema.colores.textoSecundario}`}
+                className={`absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 ${tema.colores.textoSecundario} group-focus-within:text-indigo-500 transition-colors`}
               />
               <input
                 type="text"
-                placeholder="Buscar en el historial por número, título, centro o solicitante..."
+                placeholder="Búsqueda inteligente: número, título, centro, solicitante, fecha..."
                 value={busqueda}
-                onChange={(e) => {
-                  setBusqueda(e.target.value);
-                }}
-                className={`w-full pl-12 pr-4 py-3 rounded-xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto} placeholder:${tema.colores.textoSecundario} focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all duration-300`}
+                onChange={(e) => setBusqueda(e.target.value)}
+                className={`w-full pl-12 pr-12 py-3 rounded-xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto} placeholder:${tema.colores.textoSecundario} focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all duration-300`}
               />
               {busqueda && (
                 <button
-                  onClick={() => {
-                    setBusqueda("");
-                  }}
-                  className={`absolute right-4 top-1/2 transform -translate-y-1/2 p-1 rounded-lg ${tema.colores.hover}`}
+                  onClick={() => setBusqueda("")}
+                  className={`absolute right-4 top-1/2 transform -translate-y-1/2 p-1 rounded-lg ${tema.colores.hover} transition-all duration-200 hover:scale-110`}
                 >
                   <X className="w-4 h-4" />
                 </button>
               )}
+              <div className="absolute left-0 right-0 -bottom-1 h-0.5 bg-gradient-to-r from-transparent via-indigo-500 to-transparent opacity-0 group-focus-within:opacity-100 transition-opacity" />
             </div>
           </div>
 
           {/* Acciones header */}
           <div className="flex items-center gap-3 ml-6">
+            {/* Selector de vista */}
+            <div className="flex items-center gap-1 p-1 rounded-xl bg-black/10">
+              {[
+                { id: "timeline", icon: History, label: "Timeline" },
+                { id: "tabla", icon: ClipboardList, label: "Tabla" },
+                { id: "kanban", icon: Layers, label: "Kanban" },
+                { id: "calendario", icon: Calendar, label: "Calendario" },
+              ].map((vista) => (
+                <button
+                  key={vista.id}
+                  onClick={() => setVistaActual(vista.id as VistaHistorial)}
+                  className={`px-3 py-2 rounded-lg font-semibold text-xs transition-all duration-300 ${
+                    vistaActual === vista.id
+                      ? `bg-gradient-to-r ${tema.colores.gradiente} text-white shadow-lg`
+                      : `${tema.colores.texto} hover:bg-white/10`
+                  }`}
+                  title={vista.label}
+                >
+                  <vista.icon className="w-4 h-4" />
+                </button>
+              ))}
+            </div>
+
             {/* Temas */}
             <div className="relative group">
               <button
-                className={`p-3 rounded-xl font-semibold transition-all duration-300 ${tema.colores.secundario} ${tema.colores.texto}`}
+                className={`p-3 rounded-xl font-semibold transition-all duration-300 ${tema.colores.secundario} ${tema.colores.texto} hover:scale-105`}
               >
                 <Sparkles className="w-5 h-5" />
               </button>
@@ -1127,7 +1229,7 @@ export default function HistorialTicketsTecnicoPage() {
                 className={`absolute right-0 mt-2 w-64 rounded-2xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 p-4 space-y-2 z-50`}
               >
                 <p className={`text-sm font-bold mb-3 ${tema.colores.texto}`}>
-                  Seleccionar Tema
+                  Temas Premium
                 </p>
                 {Object.entries(TEMAS).map(([key, t]) => (
                   <button
@@ -1135,7 +1237,7 @@ export default function HistorialTicketsTecnicoPage() {
                     onClick={() => cambiarTema(key as TemaColor)}
                     className={`w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl font-semibold transition-all duration-300 ${
                       temaActual === key
-                        ? `bg-gradient-to-r ${t.colores.gradiente} text-white`
+                        ? `bg-gradient-to-r ${t.colores.gradiente} text-white shadow-lg scale-105`
                         : `${tema.colores.hover} ${tema.colores.texto}`
                     }`}
                   >
@@ -1143,7 +1245,7 @@ export default function HistorialTicketsTecnicoPage() {
                       <t.icono className="w-5 h-5" />
                       <span>{t.nombre}</span>
                     </div>
-                    {temaActual === key && <Check className="w-5 h-5" />}
+                    {temaActual === key && <BadgeCheck className="w-5 h-5" />}
                   </button>
                 ))}
               </div>
@@ -1153,11 +1255,11 @@ export default function HistorialTicketsTecnicoPage() {
             <div className="relative">
               <button
                 onClick={() => setNotificacionesAbiertas(!notificacionesAbiertas)}
-                className={`relative p-3 rounded-xl font-semibold transition-all duration-300 ${tema.colores.secundario} ${tema.colores.texto}`}
+                className={`relative p-3 rounded-xl font-semibold transition-all duration-300 ${tema.colores.secundario} ${tema.colores.texto} hover:scale-105`}
               >
-                <AlertCircle className="w-5 h-5" />
+                <Bell className="w-5 h-5" />
                 {alertas.filter((a) => !a.leida).length > 0 && (
-                  <span className="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center animate-pulse">
+                  <span className="absolute -top-1 -right-1 w-6 h-6 bg-gradient-to-r from-red-500 to-pink-500 text-white text-xs font-bold rounded-full flex items-center justify-center animate-pulse shadow-lg">
                     {alertas.filter((a) => !a.leida).length > 9
                       ? "9+"
                       : alertas.filter((a) => !a.leida).length}
@@ -1167,27 +1269,33 @@ export default function HistorialTicketsTecnicoPage() {
 
               {notificacionesAbiertas && (
                 <div
-                  className={`absolute right-0 mt-2 w-96 rounded-2xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} max-h-96 overflow-y-auto z-50`}
+                  className={`absolute right-0 mt-2 w-96 rounded-2xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} max-h-96 overflow-y-auto custom-scrollbar z-50 animate-slideDown`}
                 >
                   <div
-                    className={`p-4 border-b ${tema.colores.borde} sticky top-0 ${tema.colores.card}`}
+                    className={`p-4 border-b ${tema.colores.borde} sticky top-0 ${tema.colores.card} backdrop-blur-xl`}
                   >
-                    <h3
-                      className={`text-lg font-black ${tema.colores.texto}`}
-                    >
-                      Alertas Activas
-                    </h3>
+                    <div className="flex items-center justify-between">
+                      <h3 className={`text-lg font-black ${tema.colores.texto}`}>
+                        Alertas Activas
+                      </h3>
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-bold ${tema.colores.secundario}`}
+                      >
+                        {alertas.filter((a) => !a.leida).length} nuevas
+                      </span>
+                    </div>
                   </div>
 
                   {alertas.length === 0 ? (
                     <div className="p-8 text-center">
                       <BellOff
-                        className={`w-12 h-12 mx-auto mb-3 ${tema.colores.textoSecundario}`}
+                        className={`w-12 h-12 mx-auto mb-3 ${tema.colores.textoSecundario} opacity-50`}
                       />
-                      <p
-                        className={`text-sm ${tema.colores.textoSecundario}`}
-                      >
+                      <p className={`text-sm font-semibold ${tema.colores.textoSecundario}`}>
                         No tienes alertas activas
+                      </p>
+                      <p className={`text-xs mt-1 ${tema.colores.textoSecundario}`}>
+                        Te notificaremos cuando haya novedades
                       </p>
                     </div>
                   ) : (
@@ -1195,36 +1303,39 @@ export default function HistorialTicketsTecnicoPage() {
                       {alertas.slice(0, 5).map((alerta) => (
                         <div
                           key={alerta.id_alerta}
-                          className={`p-4 ${tema.colores.hover} transition-colors cursor-pointer ${
-                            !alerta.leida ? "bg-indigo-500/5" : ""
+                          className={`p-4 ${tema.colores.hover} transition-all duration-200 cursor-pointer hover:scale-[1.02] ${
+                            !alerta.leida ? "bg-indigo-500/5 border-l-4 border-indigo-500" : ""
                           }`}
                         >
                           <div className="flex items-start gap-3">
                             <div
                               className={`w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 ${obtenerColorPrioridad(
                                 alerta.prioridad
-                              )}`}
+                              )} shadow-lg`}
                             >
                               <AlertCircleIcon className="w-5 h-5" />
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p
-                                className={`text-sm font-bold mb-1 ${tema.colores.texto}`}
-                              >
+                              <p className={`text-sm font-bold mb-1 ${tema.colores.texto}`}>
                                 {alerta.titulo}
                               </p>
                               <p
-                                className={`text-xs mb-2 ${tema.colores.textoSecundario}`}
+                                className={`text-xs mb-2 ${tema.colores.textoSecundario} line-clamp-2`}
                               >
                                 {alerta.descripcion}
                               </p>
-                              <p
-                                className={`text-xs font-medium ${tema.colores.textoSecundario}`}
-                              >
-                                {alerta?.fecha_creacion
-                                  ? formatearFecha(alerta.fecha_creacion)
-                                  : "Sin fecha"}
-                              </p>
+                              <div className="flex items-center justify-between">
+                                <p
+                                  className={`text-xs font-medium ${tema.colores.textoSecundario}`}
+                                >
+                                  {alerta?.fecha_creacion
+                                    ? formatearFecha(alerta.fecha_creacion)
+                                    : "Sin fecha"}
+                                </p>
+                                {!alerta.leida && (
+                                  <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse" />
+                                )}
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -1235,56 +1346,48 @@ export default function HistorialTicketsTecnicoPage() {
               )}
             </div>
 
-            {/* Disponibilidad */}
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => cambiarDisponibilidad("disponible")}
-                className={`px-4 py-2 rounded-xl font-semibold text-sm transition-all duration-300 ${
-                  disponibilidad === "disponible"
-                    ? "bg-green-600 text-white"
-                    : `${tema.colores.secundario} ${tema.colores.texto}`
-                }`}
-              >
-                ✓ Disponible
-              </button>
-              <button
-                onClick={() => cambiarDisponibilidad("ocupado")}
-                className={`px-4 py-2 rounded-xl font-semibold text-sm transition-all duration-300 ${
-                  disponibilidad === "ocupado"
-                    ? "bg-yellow-600 text-white"
-                    : `${tema.colores.secundario} ${tema.colores.texto}`
-                }`}
-              >
-                ⏳ Ocupado
-              </button>
-              <button
-                onClick={() => cambiarDisponibilidad("fuera_servicio")}
-                className={`px-4 py-2 rounded-xl font-semibold text-sm transition-all duration-300 ${
-                  disponibilidad === "fuera_servicio"
-                    ? "bg-red-600 text-white"
-                    : `${tema.colores.secundario} ${tema.colores.texto}`
-                }`}
-              >
-                ✕ Fuera Servicio
-              </button>
+            {/* Disponibilidad mejorada */}
+            <div className="flex items-center gap-2 p-1 rounded-xl bg-black/10">
+              {[
+                { id: "disponible", label: "Disponible", icon: CheckCircle2, color: "green" },
+                { id: "ocupado", label: "Ocupado", icon: Clock, color: "yellow" },
+                { id: "fuera_servicio", label: "Fuera", icon: X, color: "red" },
+              ].map((estado) => (
+                <button
+                  key={estado.id}
+                  onClick={() =>
+                    cambiarDisponibilidad(
+                      estado.id as "disponible" | "ocupado" | "fuera_servicio"
+                    )
+                  }
+                  className={`px-3 py-2 rounded-lg font-semibold text-xs transition-all duration-300 flex items-center gap-2 ${
+                    disponibilidad === estado.id
+                      ? `bg-${estado.color}-600 text-white shadow-lg scale-105`
+                      : `${tema.colores.texto} hover:bg-white/10`
+                  }`}
+                >
+                  <estado.icon className="w-4 h-4" />
+                  <span className="hidden lg:inline">{estado.label}</span>
+                </button>
+              ))}
             </div>
 
             {/* Perfil */}
             <div className="relative">
               <button
                 onClick={() => setPerfilAbierto(!perfilAbierto)}
-                className={`flex items-center gap-3 px-4 py-2 rounded-xl transition-all duration-300 ${tema.colores.hover}`}
+                className={`flex items-center gap-3 px-4 py-2 rounded-xl transition-all duration-300 ${tema.colores.hover} hover:scale-105`}
               >
                 <div className="text-right hidden md:block">
                   <p className={`text-sm font-bold ${tema.colores.texto}`}>
                     {usuario.nombre} {usuario.apellido_paterno}
                   </p>
                   <p className={`text-xs ${tema.colores.textoSecundario}`}>
-                    Técnico
+                    Técnico Premium
                   </p>
                 </div>
                 <div
-                  className={`w-10 h-10 rounded-xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center text-white font-bold shadow-lg`}
+                  className={`w-10 h-10 rounded-xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center text-white font-bold shadow-lg ring-2 ring-white/20`}
                 >
                   {usuario.foto_perfil_url ? (
                     <Image
@@ -1299,7 +1402,7 @@ export default function HistorialTicketsTecnicoPage() {
                   )}
                 </div>
                 <ChevronDown
-                  className={`w-4 h-4 ${tema.colores.texto} transition-transform ${
+                  className={`w-4 h-4 ${tema.colores.texto} transition-transform duration-300 ${
                     perfilAbierto ? "rotate-180" : ""
                   }`}
                 />
@@ -1307,11 +1410,13 @@ export default function HistorialTicketsTecnicoPage() {
 
               {perfilAbierto && (
                 <div
-                  className={`absolute right-0 mt-2 w-80 rounded-2xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} p-4 z-50`}
+                  className={`absolute right-0 mt-2 w-80 rounded-2xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} p-4 z-50 animate-slideDown`}
                 >
-                  <div className="flex items-center gap-4 mb-4 pb-4 border-b border-gray-700/50">
+                  <div
+                    className={`flex items-center gap-4 mb-4 pb-4 border-b ${tema.colores.borde}`}
+                  >
                     <div
-                      className={`w-16 h-16 rounded-xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center text-white font-bold text-xl shadow-lg`}
+                      className={`w-16 h-16 rounded-xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center text-white font-bold text-xl shadow-lg ring-4 ring-white/10`}
                     >
                       {usuario.foto_perfil_url ? (
                         <Image
@@ -1326,9 +1431,7 @@ export default function HistorialTicketsTecnicoPage() {
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p
-                        className={`text-lg font-black ${tema.colores.texto}`}
-                      >
+                      <p className={`text-lg font-black ${tema.colores.texto}`}>
                         {usuario.nombre} {usuario.apellido_paterno}
                       </p>
                       <p
@@ -1336,9 +1439,7 @@ export default function HistorialTicketsTecnicoPage() {
                       >
                         {usuario.tecnico?.tipo_tecnico}
                       </p>
-                      <p
-                        className={`text-xs font-medium ${tema.colores.textoSecundario}`}
-                      >
+                      <p className={`text-xs font-medium ${tema.colores.textoSecundario}`}>
                         {usuario.tecnico?.centro?.nombre ?? "Sin centro asignado"}
                       </p>
                     </div>
@@ -1347,28 +1448,31 @@ export default function HistorialTicketsTecnicoPage() {
                   <div className="space-y-1">
                     <Link
                       href="/tecnico/perfil"
-                      className={`flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all duration-300 ${tema.colores.hover} ${tema.colores.texto}`}
+                      className={`flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all duration-300 ${tema.colores.hover} ${tema.colores.texto} hover:scale-105`}
                     >
                       <User className="w-5 h-5" />
                       <span>Mi Perfil</span>
+                      <ChevronRight className="w-4 h-4 ml-auto" />
                     </Link>
                     <Link
                       href="/tecnico/configuracion"
-                      className={`flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all duration-300 ${tema.colores.hover} ${tema.colores.texto}`}
+                      className={`flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all duration-300 ${tema.colores.hover} ${tema.colores.texto} hover:scale-105`}
                     >
                       <Settings className="w-5 h-5" />
                       <span>Configuración</span>
+                      <ChevronRight className="w-4 h-4 ml-auto" />
                     </Link>
                     <Link
                       href="/tecnico/ayuda"
-                      className={`flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all duration-300 ${tema.colores.hover} ${tema.colores.texto}`}
+                      className={`flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all duration-300 ${tema.colores.hover} ${tema.colores.texto} hover:scale-105`}
                     >
-                      <Lightbulb className="w-5 h-5" />
-                      <span>Ayuda</span>
+                      <HelpCircle className="w-5 h-5" />
+                      <span>Ayuda y Soporte</span>
+                      <ChevronRight className="w-4 h-4 ml-auto" />
                     </Link>
                     <button
                       onClick={cerrarSesion}
-                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all duration-300 ${tema.colores.hover} text-red-500 hover:text-red-400`}
+                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all duration-300 ${tema.colores.hover} text-red-500 hover:text-red-400 hover:scale-105`}
                     >
                       <LogOut className="w-5 h-5" />
                       <span>Cerrar Sesión</span>
@@ -1381,235 +1485,455 @@ export default function HistorialTicketsTecnicoPage() {
         </div>
       </header>
 
-      {/* MAIN */}
+      {/* MAIN CONTENT */}
       <main
         className={`transition-all duration-300 ${
           sidebarAbierto ? "ml-72" : "ml-20"
         } pt-24 p-8`}
       >
-        {/* Encabezado de página */}
-        <div className="mb-8 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-          <div>
-            <h2
-              className={`text-4xl lg:text-5xl font-black mb-2 ${tema.colores.texto} flex items-center gap-3`}
-            >
-              {obtenerSaludo()}, {usuario.nombre}
-              <span className="animate-wave inline-block">📚</span>
-            </h2>
-            <p
-              className={`text-lg font-semibold ${tema.colores.textoSecundario}`}
-            >
-              Historial completo de tus tickets técnicos, con trazabilidad total.
-            </p>
-            <p
-              className={`text-sm font-semibold mt-2 ${tema.colores.textoSecundario} flex items-center gap-2`}
-            >
-              <CalendarClock className="w-4 h-4" />
-              Rango actual:{" "}
-              <span className={tema.colores.texto}>
-                {formatearFechaSoloDia(fechaDesde)} –{" "}
-                {formatearFechaSoloDia(fechaHasta)}
-              </span>
-            </p>
-          </div>
+        {/* Encabezado de página premium */}
+        <div className="mb-8">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+            <div className="flex-1">
+              <div className="flex items-center gap-4 mb-3">
+                <div
+                  className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center shadow-2xl animate-float`}
+                >
+                  <History className="w-8 h-8 text-white" />
+                </div>
+                <div>
+                  <h1
+                    className={`text-4xl lg:text-5xl font-black ${tema.colores.texto} flex items-center gap-3`}
+                  >
+                    {obtenerSaludo()}, {usuario.nombre}
+                    <span className="animate-wave inline-block text-3xl">👋</span>
+                  </h1>
+                  <p
+                    className={`text-lg font-semibold ${tema.colores.textoSecundario} mt-1`}
+                  >
+                    Historial completo de tickets con análisis avanzado y trazabilidad
+                    total
+                  </p>
+                </div>
+              </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              onClick={() => cargarHistorialTickets()}
-              className={`flex items-center gap-2 px-5 py-3 ${tema.colores.secundario} rounded-xl font-semibold text-sm ${tema.colores.texto} transition-all duration-300 hover:scale-105`}
-            >
-              <RefreshCw
-                className={`w-4 h-4 ${loadingData ? "animate-spin" : ""}`}
-              />
-              Actualizar
-            </button>
-            <button
-              onClick={() => exportarHistorial("excel")}
-              className={`flex items-center gap-2 px-5 py-3 ${tema.colores.secundario} rounded-xl font-semibold text-sm ${tema.colores.texto} transition-all duration-300 hover:scale-105`}
-              disabled={exportando === "excel"}
-            >
-              <FileSpreadsheet className="w-4 h-4" />
-              {exportando === "excel" ? "Exportando..." : "Exportar Excel"}
-            </button>
-            <button
-              onClick={() => exportarHistorial("pdf")}
-              className={`flex items-center gap-2 px-5 py-3 ${tema.colores.primario} text-white rounded-xl font-bold text-sm transition-all duration-300 hover:scale-105 ${tema.colores.sombra}`}
-              disabled={exportando === "pdf"}
-            >
-              <Printer className="w-4 h-4" />
-              {exportando === "pdf" ? "Generando PDF..." : "Exportar PDF"}
-            </button>
+              <div className="flex flex-wrap items-center gap-3 mt-4">
+                <div
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl ${tema.colores.card} ${tema.colores.borde} border`}
+                >
+                  <CalendarClock className={`w-4 h-4 ${tema.colores.acento}`} />
+                  <span className={`text-sm font-semibold ${tema.colores.texto}`}>
+                    {formatearFechaSoloDia(fechaDesde)} – {formatearFechaSoloDia(fechaHasta)}
+                  </span>
+                </div>
+                <div
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl ${tema.colores.card} ${tema.colores.borde} border`}
+                >
+                  <TrendingUpIcon className={`w-4 h-4 ${tema.colores.acento}`} />
+                  <span className={`text-sm font-semibold ${tema.colores.texto}`}>
+                    {ticketsFiltrados.length} tickets en rango
+                  </span>
+                </div>
+                <div
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r ${tema.colores.gradiente} text-white shadow-lg`}
+                >
+                  <Sparkles className="w-4 h-4" />
+                  <span className="text-sm font-bold">Vista {vistaActual}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                onClick={() => cargarHistorialTickets()}
+                disabled={loadingData}
+                className={`flex items-center gap-2 px-5 py-3 ${tema.colores.secundario} rounded-xl font-semibold text-sm ${tema.colores.texto} transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed`}
+              >
+                <RefreshCw
+                  className={`w-4 h-4 ${loadingData ? "animate-spin" : ""}`}
+                />
+                Actualizar
+              </button>
+              <button
+                onClick={() => setMostrarEstadisticasAvanzadas(!mostrarEstadisticasAvanzadas)}
+                className={`flex items-center gap-2 px-5 py-3 rounded-xl font-semibold text-sm transition-all duration-300 hover:scale-105 ${
+                  mostrarEstadisticasAvanzadas
+                    ? `bg-gradient-to-r ${tema.colores.gradiente} text-white shadow-lg`
+                    : `${tema.colores.secundario} ${tema.colores.texto}`
+                }`}
+              >
+                <BarChart3 className="w-4 h-4" />
+                Estadísticas
+              </button>
+              <button
+                onClick={() => exportarHistorial("excel")}
+                disabled={exportando === "excel"}
+                className={`flex items-center gap-2 px-5 py-3 ${tema.colores.secundario} rounded-xl font-semibold text-sm ${tema.colores.texto} transition-all duration-300 hover:scale-105 disabled:opacity-50`}
+              >
+                <FileSpreadsheet className="w-4 h-4" />
+                {exportando === "excel" ? "Exportando..." : "Excel"}
+              </button>
+              <button
+                onClick={() => exportarHistorial("pdf")}
+                disabled={exportando === "pdf"}
+                className={`flex items-center gap-2 px-5 py-3 ${tema.colores.primario} text-white rounded-xl font-bold text-sm transition-all duration-300 hover:scale-105 ${tema.colores.sombra} disabled:opacity-50`}
+              >
+                <Printer className="w-4 h-4" />
+                {exportando === "pdf" ? "Generando..." : "PDF"}
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* Resumen rápido */}
+        {/* Estadísticas avanzadas desplegable */}
+        {mostrarEstadisticasAvanzadas && estadisticasAvanzadas && (
+          <div
+            className={`mb-8 rounded-2xl p-6 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} animate-slideDown`}
+          >
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <div
+                  className={`w-12 h-12 rounded-xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center shadow-lg`}
+                >
+                  <BarChart3 className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <h3 className={`text-2xl font-black ${tema.colores.texto}`}>
+                    Análisis Avanzado
+                  </h3>
+                  <p className={`text-sm ${tema.colores.textoSecundario}`}>
+                    Métricas detalladas de rendimiento y calidad
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setMostrarEstadisticasAvanzadas(false)}
+                className={`p-2 rounded-lg ${tema.colores.hover}`}
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+              <MetricaAvanzada
+                tema={tema}
+                icono={Target}
+                titulo="Tasa Primera Resolución"
+                valor={`${estadisticasAvanzadas.tasa_resolucion_primera_vez}%`}
+                tendencia="up"
+                color="from-emerald-500 to-teal-500"
+              />
+              <MetricaAvanzada
+                tema={tema}
+                icono={RefreshCw}
+                titulo="Tickets Reabiertos"
+                valor={estadisticasAvanzadas.tickets_reabiertos}
+                tendencia="down"
+                color="from-orange-500 to-red-500"
+              />
+              <MetricaAvanzada
+                tema={tema}
+                icono={Star}
+                titulo="Satisfacción Cliente"
+                valor={`${estadisticasAvanzadas.satisfaccion_cliente}%`}
+                tendencia="up"
+                color="from-yellow-500 to-orange-500"
+              />
+              <MetricaAvanzada
+                tema={tema}
+                icono={Timer}
+                titulo="Tiempo Respuesta Promedio"
+                valor={`${estadisticasAvanzadas.tiempo_respuesta_promedio} min`}
+                tendencia="down"
+                color="from-blue-500 to-cyan-500"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Tickets por tipo */}
+              <div
+                className={`rounded-xl p-4 ${tema.colores.fondoSecundario} ${tema.colores.borde} border`}
+              >
+                <h4 className={`text-sm font-bold mb-3 ${tema.colores.texto}`}>
+                  Distribución por Tipo
+                </h4>
+                <div className="space-y-2">
+                  {estadisticasAvanzadas.tickets_por_tipo.map((item) => (
+                    <div key={item.tipo} className="flex items-center gap-3">
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between mb-1">
+                          <span
+                            className={`text-xs font-semibold ${tema.colores.texto}`}
+                          >
+                            {item.tipo.toUpperCase()}
+                          </span>
+                          <span
+                            className={`text-xs font-bold ${tema.colores.acento}`}
+                          >
+                            {item.cantidad}
+                          </span>
+                        </div>
+                        <div className="h-2 bg-black/10 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full bg-gradient-to-r ${tema.colores.gradiente} rounded-full transition-all duration-500`}
+                            style={{
+                              width: `${
+                                (item.cantidad /
+                                  estadisticasAvanzadas.tickets_por_tipo.reduce(
+                                    (a, b) => a + b.cantidad,
+                                    0
+                                  )) *
+                                100
+                              }%`,
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Tickets por prioridad */}
+              <div
+                className={`rounded-xl p-4 ${tema.colores.fondoSecundario} ${tema.colores.borde} border`}
+              >
+                <h4 className={`text-sm font-bold mb-3 ${tema.colores.texto}`}>
+                  Distribución por Prioridad
+                </h4>
+                <div className="space-y-2">
+                  {estadisticasAvanzadas.tickets_por_prioridad.map((item) => (
+                    <div key={item.prioridad} className="flex items-center gap-3">
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between mb-1">
+                          <span
+                            className={`text-xs font-semibold ${tema.colores.texto}`}
+                          >
+                            {item.prioridad.toUpperCase()}
+                          </span>
+                          <span
+                            className={`text-xs font-bold ${tema.colores.acento}`}
+                          >
+                            {item.cantidad}
+                          </span>
+                        </div>
+                        <div className="h-2 bg-black/10 rounded-full overflow-hidden">
+                          <div
+                            className={`h-full rounded-full transition-all duration-500 ${
+                              item.prioridad === "critica"
+                                ? "bg-gradient-to-r from-red-500 to-pink-500"
+                                : item.prioridad === "alta"
+                                ? "bg-gradient-to-r from-orange-500 to-yellow-500"
+                                : item.prioridad === "media"
+                                ? "bg-gradient-to-r from-yellow-500 to-green-500"
+                                : "bg-gradient-to-r from-green-500 to-emerald-500"
+                            }`}
+                            style={{
+                              width: `${
+                                (item.cantidad /
+                                  estadisticasAvanzadas.tickets_por_prioridad.reduce(
+                                    (a, b) => a + b.cantidad,
+                                    0
+                                  )) *
+                                100
+                              }%`,
+                            }}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Resumen rápido mejorado */}
         <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-6 mb-8">
-          <ResumenCard
+          <ResumenCardPremium
             tema={tema}
-            icono={ClipboardList}
-            titulo="Tickets en rango"
+            icono={Package}
+            titulo="Total Tickets"
             valor={resumenHistorial.total}
             chip="Historial filtrado"
             color="from-indigo-500 to-purple-500"
+            animacion="pulse"
           />
-          <ResumenCard
+          <ResumenCardPremium
             tema={tema}
             icono={CheckCircle2}
             titulo="Resueltos"
             valor={resumenHistorial.resueltos}
-            chip="Cerrados correctamente"
+            chip="Cerrados exitosamente"
             color="from-emerald-500 to-teal-500"
+            animacion="bounce"
           />
-          <ResumenCard
+          <ResumenCardPremium
             tema={tema}
-            icono={AlertOctagon}
+            icono={FileX}
             titulo="Cancelados"
             valor={resumenHistorial.cancelados}
-            chip="Incidentes anulados"
+            chip="Anulados"
             color="from-slate-500 to-slate-700"
+            animacion="fade"
           />
-          <ResumenCard
+          <ResumenCardPremium
             tema={tema}
-            icono={Clock3}
-            titulo="Promedio resolución (min)"
-            valor={resumenHistorial.promedioResolucion}
-            chip="Tiempo real"
+            icono={Timer}
+            titulo="Tiempo Promedio"
+            valor={`${resumenHistorial.promedioResolucion}m`}
+            chip="Resolución real"
             color="from-blue-500 to-cyan-500"
+            animacion="slide"
           />
-          <ResumenCard
+          <ResumenCardPremium
             tema={tema}
-            icono={Target}
-            titulo="Cumplimiento SLA (%)"
-            valor={resumenHistorial.dentroSla}
+            icono={Gauge}
+            titulo="Cumplimiento SLA"
+            valor={`${resumenHistorial.dentroSla}%`}
             chip="Dentro del objetivo"
             color="from-emerald-500 to-lime-500"
+            animacion="scale"
           />
-          <ResumenCard
+          <ResumenCardPremium
             tema={tema}
             icono={Flame}
             titulo="Pendientes"
             valor={resumenHistorial.abiertos + resumenHistorial.en_progreso}
-            chip="Aún abiertos"
+            chip="Aún activos"
             color="from-orange-500 to-red-500"
+            animacion="shake"
           />
         </div>
 
-        {/* Filtros avanzados + rango */}
+        {/* Filtros avanzados premium */}
         <div
-          className={`rounded-2xl p-5 mb-6 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra}`}
+          className={`rounded-2xl p-6 mb-6 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra}`}
         >
-          <div className="flex flex-col lg:flex-row gap-4 lg:items-center lg:justify-between">
-            {/* Rango rápido */}
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="flex items-center gap-2">
-                <CalendarRange className={`w-4 h-4 ${tema.colores.acento}`} />
-                <span
-                  className={`text-sm font-semibold ${tema.colores.textoSecundario}`}
-                >
-                  Rango rápido
-                </span>
-              </div>
+          <div className="flex items-center gap-3 mb-4">
+            <div
+              className={`w-10 h-10 rounded-xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center shadow-lg`}
+            >
+              <Filter className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <h3 className={`text-lg font-black ${tema.colores.texto}`}>
+                Filtros Avanzados
+              </h3>
+              <p className={`text-xs ${tema.colores.textoSecundario}`}>
+                Personaliza tu vista del historial
+              </p>
+            </div>
+          </div>
+
+          {/* Rango rápido */}
+          <div className="mb-4">
+            <label className={`text-sm font-bold mb-2 block ${tema.colores.texto}`}>
+              Rango Temporal
+            </label>
+            <div className="flex flex-wrap gap-2">
               {[
-                { id: "7d", label: "Últimos 7 días" },
-                { id: "30d", label: "Últimos 30 días" },
-                { id: "90d", label: "Últimos 90 días" },
-                { id: "year", label: "Año actual" },
-                { id: "todo", label: "Todo el historial" },
+                { id: "7d", label: "7 días", icon: Clock },
+                { id: "30d", label: "30 días", icon: CalendarDays },
+                { id: "90d", label: "90 días", icon: CalendarRange },
+                { id: "year", label: "Año actual", icon: Calendar },
+                { id: "todo", label: "Todo", icon: History },
               ].map((r) => (
                 <button
                   key={r.id}
                   onClick={() => cambiarRangoRapido(r.id as RangoRapido)}
-                  className={`px-3 py-2 rounded-xl text-xs md:text-sm font-semibold border transition-all duration-300 ${
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold border transition-all duration-300 hover:scale-105 ${
                     rangoRapido === r.id
-                      ? `bg-gradient-to-r ${tema.colores.gradiente} text-white border-transparent`
+                      ? `bg-gradient-to-r ${tema.colores.gradiente} text-white border-transparent shadow-lg`
                       : `${tema.colores.hover} ${tema.colores.textoSecundario} ${tema.colores.borde}`
                   }`}
                 >
+                  <r.icon className="w-4 h-4" />
                   {r.label}
                 </button>
               ))}
             </div>
+          </div>
 
-            {/* Rango exacto */}
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="flex items-center gap-2">
-                <span
-                  className={`text-xs md:text-sm font-semibold ${tema.colores.textoSecundario}`}
-                >
-                  Desde
-                </span>
-                <input
-                  type="date"
-                  value={fechaDesde}
-                  onChange={(e) => setFechaDesde(e.target.value)}
-                  className={`px-3 py-2 rounded-xl text-xs md:text-sm ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto}`}
-                />
-              </div>
-              <div className="flex items-center gap-2">
-                <span
-                  className={`text-xs md:text-sm font-semibold ${tema.colores.textoSecundario}`}
-                >
-                  Hasta
-                </span>
-                <input
-                  type="date"
-                  value={fechaHasta}
-                  onChange={(e) => setFechaHasta(e.target.value)}
-                  className={`px-3 py-2 rounded-xl text-xs md:text-sm ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto}`}
-                />
-              </div>
+          {/* Rango personalizado */}
+          <div className="mb-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className={`text-xs font-bold mb-2 block ${tema.colores.texto}`}>
+                Fecha Desde
+              </label>
+              <input
+                type="date"
+                value={fechaDesde}
+                onChange={(e) => setFechaDesde(e.target.value)}
+                className={`w-full px-4 py-2 rounded-xl text-sm ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto} focus:ring-2 focus:ring-indigo-500/50 transition-all`}
+              />
+            </div>
+            <div>
+              <label className={`text-xs font-bold mb-2 block ${tema.colores.texto}`}>
+                Fecha Hasta
+              </label>
+              <input
+                type="date"
+                value={fechaHasta}
+                onChange={(e) => setFechaHasta(e.target.value)}
+                className={`w-full px-4 py-2 rounded-xl text-sm ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto} focus:ring-2 focus:ring-indigo-500/50 transition-all`}
+              />
+            </div>
+            <div className="flex items-end">
               <button
                 onClick={() => cargarHistorialTickets()}
-                className={`px-4 py-2 rounded-xl text-xs md:text-sm font-semibold ${tema.colores.primario} text-white`}
+                className={`w-full px-4 py-2 rounded-xl text-sm font-bold ${tema.colores.primario} text-white transition-all duration-300 hover:scale-105 shadow-lg`}
               >
-                Aplicar rango
+                Aplicar Rango
               </button>
             </div>
           </div>
 
-          {/* Línea divisoria */}
-          <div className={`mt-4 pt-4 border-t ${tema.colores.borde}`}></div>
-
-          {/* Filtros por estado/tipo/etc */}
-          <div className="flex flex-col lg:flex-row gap-4 lg:items-center lg:justify-between mt-2">
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="flex items-center gap-2">
-                <Filter className={`w-4 h-4 ${tema.colores.acento}`} />
-                <span
-                  className={`text-sm font-semibold ${tema.colores.textoSecundario}`}
-                >
-                  Filtros
-                </span>
-              </div>
-
+          {/* Filtros por categoría */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div>
+              <label className={`text-xs font-bold mb-2 block ${tema.colores.texto}`}>
+                Estado
+              </label>
               <select
                 value={filtroEstado}
                 onChange={(e) => setFiltroEstado(e.target.value)}
-                className={`px-3 py-2 rounded-xl text-xs md:text-sm ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto}`}
+                className={`w-full px-4 py-2 rounded-xl text-sm ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto} focus:ring-2 focus:ring-indigo-500/50 transition-all`}
               >
                 <option value="todos">Todos los estados</option>
-                <option value="abierto">Abiertos</option>
-                <option value="en_progreso">En progreso</option>
-                <option value="resuelto">Resueltos</option>
-                <option value="cancelado">Cancelados</option>
+                <option value="abierto">🔴 Abiertos</option>
+                <option value="en_progreso">🔵 En progreso</option>
+                <option value="resuelto">🟢 Resueltos</option>
+                <option value="cancelado">⚫ Cancelados</option>
               </select>
+            </div>
 
+            <div>
+              <label className={`text-xs font-bold mb-2 block ${tema.colores.texto}`}>
+                Prioridad
+              </label>
               <select
                 value={filtroPrioridad}
                 onChange={(e) => setFiltroPrioridad(e.target.value)}
-                className={`px-3 py-2 rounded-xl text-xs md:text-sm ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto}`}
+                className={`w-full px-4 py-2 rounded-xl text-sm ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto} focus:ring-2 focus:ring-indigo-500/50 transition-all`}
               >
                 <option value="todas">Todas las prioridades</option>
-                <option value="critica">Crítica</option>
-                <option value="alta">Alta</option>
-                <option value="media">Media</option>
-                <option value="baja">Baja</option>
+                <option value="critica">🔥 Crítica</option>
+                <option value="alta">⚡ Alta</option>
+                <option value="media">⚠️ Media</option>
+                <option value="baja">✅ Baja</option>
               </select>
+            </div>
 
+            <div>
+              <label className={`text-xs font-bold mb-2 block ${tema.colores.texto}`}>
+                Tipo
+              </label>
               <select
                 value={filtroTipo}
                 onChange={(e) => setFiltroTipo(e.target.value)}
-                className={`px-3 py-2 rounded-xl text-xs md:text-sm ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto}`}
+                className={`w-full px-4 py-2 rounded-xl text-sm ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto} focus:ring-2 focus:ring-indigo-500/50 transition-all`}
               >
                 <option value="todos">Todos los tipos</option>
                 {tiposDisponibles.map((tipo) => (
@@ -1618,11 +1942,16 @@ export default function HistorialTicketsTecnicoPage() {
                   </option>
                 ))}
               </select>
+            </div>
 
+            <div>
+              <label className={`text-xs font-bold mb-2 block ${tema.colores.texto}`}>
+                Centro
+              </label>
               <select
                 value={filtroCentro}
                 onChange={(e) => setFiltroCentro(e.target.value)}
-                className={`px-3 py-2 rounded-xl text-xs md:text-sm ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto}`}
+                className={`w-full px-4 py-2 rounded-xl text-sm ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto} focus:ring-2 focus:ring-indigo-500/50 transition-all`}
               >
                 <option value="todos">Todos los centros</option>
                 {centrosDisponibles.map((c) => (
@@ -1631,37 +1960,62 @@ export default function HistorialTicketsTecnicoPage() {
                   </option>
                 ))}
               </select>
-
-              <button
-                onClick={() => {
-                  setFiltroEstado("todos");
-                  setFiltroPrioridad("todas");
-                  setFiltroTipo("todos");
-                  setFiltroCentro("todos");
-                }}
-                className={`px-3 py-2 rounded-xl font-semibold text-xs md:text-sm ${tema.colores.hover} ${tema.colores.texto}`}
-              >
-                Limpiar filtros
-              </button>
             </div>
+          </div>
 
-            <div className="flex items-center gap-3 text-xs md:text-sm">
-              <span className={tema.colores.textoSecundario}>
-                {ticketsFiltrados.length} tickets en el historial filtrado
+          <div className="mt-4 flex items-center justify-between">
+            <button
+              onClick={() => {
+                setFiltroEstado("todos");
+                setFiltroPrioridad("todas");
+                setFiltroTipo("todos");
+                setFiltroCentro("todos");
+                setBusqueda("");
+              }}
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl font-semibold text-sm ${tema.colores.hover} ${tema.colores.texto} transition-all duration-300 hover:scale-105`}
+            >
+              <X className="w-4 h-4" />
+              Limpiar Filtros
+            </button>
+            <div className="flex items-center gap-2">
+              <span
+                className={`text-sm font-semibold ${tema.colores.textoSecundario}`}
+              >
+                Mostrando
+              </span>
+              <span
+                className={`px-3 py-1 rounded-full text-sm font-bold bg-gradient-to-r ${tema.colores.gradiente} text-white shadow-lg`}
+              >
+                {ticketsFiltrados.length}
+              </span>
+              <span
+                className={`text-sm font-semibold ${tema.colores.textoSecundario}`}
+              >
+                de {tickets.length} tickets
               </span>
             </div>
           </div>
         </div>
 
-        {/* Contenido principal: Timeline histórico */}
+        {/* Contenido principal según vista */}
         {loadingData ? (
-          <div className="flex items-center justify-center py-20">
-            <div className="text-center">
-              <Loader2 className="w-16 h-16 animate-spin text-indigo-500 mx-auto mb-4" />
-              <p
-                className={`text-lg font-semibold ${tema.colores.textoSecundario}`}
-              >
-                Cargando historial de tickets...
+          <div
+            className={`rounded-2xl p-12 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra}`}
+          >
+            <div className="flex flex-col items-center justify-center py-12">
+              <div className="relative mb-6">
+                <div className="w-20 h-20 border-4 border-indigo-400 border-t-transparent rounded-full animate-spin"></div>
+                <div
+                  className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-12 h-12 bg-gradient-to-br ${tema.colores.gradiente} rounded-full flex items-center justify-center animate-pulse`}
+                >
+                  <History className="w-6 h-6 text-white" />
+                </div>
+              </div>
+              <h3 className={`text-2xl font-black mb-2 ${tema.colores.texto}`}>
+                Cargando Historial Premium
+              </h3>
+              <p className={`text-sm ${tema.colores.textoSecundario}`}>
+                Procesando datos con análisis avanzado...
               </p>
             </div>
           </div>
@@ -1677,511 +2031,152 @@ export default function HistorialTicketsTecnicoPage() {
             <h3 className={`text-2xl font-black mb-2 ${tema.colores.texto}`}>
               No hay tickets en este rango
             </h3>
-            <p className={tema.colores.textoSecundario}>
+            <p className={`text-lg mb-6 ${tema.colores.textoSecundario}`}>
               Ajusta el rango de fechas o los filtros para visualizar el historial
-              completo de tus incidencias.
             </p>
+            <div className="flex flex-wrap justify-center gap-3">
+              <button
+                onClick={() => cambiarRangoRapido("30d")}
+                className={`px-6 py-3 rounded-xl font-bold ${tema.colores.primario} text-white transition-all duration-300 hover:scale-105 shadow-lg`}
+              >
+                Ver últimos 30 días
+              </button>
+              <button
+                onClick={() => cambiarRangoRapido("todo")}
+                className={`px-6 py-3 rounded-xl font-bold ${tema.colores.secundario} ${tema.colores.texto} transition-all duration-300 hover:scale-105`}
+              >
+                Ver todo el historial
+              </button>
+            </div>
           </div>
         ) : (
-          <div
-            className={`rounded-2xl p-4 md:p-6 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra}`}
-          >
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div
-                  className={`w-10 h-10 rounded-xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center text-white`}
-                >
-                  <History className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3
-                    className={`text-xl font-black ${tema.colores.texto}`}
-                  >
-                    Línea de tiempo de tickets
-                  </h3>
-                  <p
-                    className={`text-xs md:text-sm font-semibold ${tema.colores.textoSecundario}`}
-                  >
-                    Visualiza la evolución cronológica de tus incidencias por día y
-                    por estado.
-                  </p>
-                </div>
-              </div>
-            </div>
+          <>
+            {/* Vista Timeline */}
+            {vistaActual === "timeline" && (
+              <VistaTimeline
+                tema={tema}
+                historialAgrupado={historialAgrupado}
+                setTicketSeleccionado={setTicketSeleccionado}
+                obtenerIconoTipo={obtenerIconoTipo}
+                obtenerColorEstado={obtenerColorEstado}
+                obtenerColorPrioridad={obtenerColorPrioridad}
+                formatearFecha={formatearFecha}
+                actualizarEstadoTicket={actualizarEstadoTicket}
+              />
+            )}
 
-            {/* Timeline */}
-            <div className="relative pl-4 md:pl-6">
-              {/* Línea vertical */}
-              <div className="absolute left-2 md:left-3 top-0 bottom-0 w-[2px] bg-gradient-to-b from-indigo-500/60 via-indigo-400/40 to-transparent pointer-events-none" />
+            {/* Vista Tabla */}
+            {vistaActual === "tabla" && (
+              <VistaTabla
+                tema={tema}
+                ticketsFiltrados={ticketsFiltrados}
+                setTicketSeleccionado={setTicketSeleccionado}
+                obtenerIconoTipo={obtenerIconoTipo}
+                obtenerColorEstado={obtenerColorEstado}
+                obtenerColorPrioridad={obtenerColorPrioridad}
+                formatearFecha={formatearFecha}
+              />
+            )}
 
-              <div className="space-y-6">
-                {historialAgrupado.map((grupo) => (
-                  <div key={grupo.fecha} className="relative">
-                    {/* Punto grande del día */}
-                    <div className="flex items-center gap-3 mb-3">
-                      <div className="relative">
-                        <div className="w-4 h-4 rounded-full bg-indigo-500 shadow-lg shadow-indigo-500/40" />
-                        <div className="w-7 h-7 rounded-full border border-indigo-400/60 absolute -top-1.5 -left-1.5 opacity-60" />
-                      </div>
-                      <div>
-                        <h4
-                          className={`text-sm md:text-base font-black ${tema.colores.texto}`}
-                        >
-                          {grupo.label}
-                        </h4>
-                        <p
-                          className={`text-[11px] md:text-xs ${tema.colores.textoSecundario}`}
-                        >
-                          {grupo.tickets.length} ticket
-                          {grupo.tickets.length !== 1 ? "s" : ""} en este día
-                        </p>
-                      </div>
-                    </div>
+            {/* Vista Kanban */}
+            {vistaActual === "kanban" && (
+              <VistaKanban
+                tema={tema}
+                ticketsFiltrados={ticketsFiltrados}
+                setTicketSeleccionado={setTicketSeleccionado}
+                obtenerIconoTipo={obtenerIconoTipo}
+                obtenerColorPrioridad={obtenerColorPrioridad}
+                formatearFecha={formatearFecha}
+                actualizarEstadoTicket={actualizarEstadoTicket}
+              />
+            )}
 
-                    {/* Tickets del día */}
-                    <div className="space-y-3 md:space-y-4 ml-4 md:ml-6">
-                      {grupo.tickets.map((ticket) => (
-                        <div
-                          key={ticket.id_ticket}
-                          className="relative"
-                        >
-                          {/* Punto del ticket */}
-                          <div className="absolute -left-4 md:-left-5 top-5 w-3 h-3 rounded-full bg-indigo-400 shadow-md shadow-indigo-400/40" />
-
-                          <div
-                            className={`rounded-2xl p-3 md:p-4 ${tema.colores.card} ${tema.colores.borde} border transition-all duration-300 hover:scale-[1.01] hover:-translate-y-0.5 cursor-pointer`}
-                            onClick={() => setTicketSeleccionado(ticket)}
-                          >
-                            <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-3">
-                              <div className="flex items-start gap-3">
-                                <div
-                                  className={`w-9 h-9 rounded-xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center text-white flex-shrink-0`}
-                                >
-                                  {(() => {
-                                    const Icono = obtenerIconoTipo(ticket.tipo);
-                                    return <Icono className="w-4 h-4" />;
-                                  })()}
-                                </div>
-                                <div className="min-w-0">
-                                  <p
-                                    className={`text-xs md:text-sm font-bold ${tema.colores.texto}`}
-                                  >
-                                    {ticket.numero_ticket} — {ticket.titulo}
-                                  </p>
-                                  <p
-                                    className={`text-[11px] md:text-xs mt-1 ${tema.colores.textoSecundario} line-clamp-2`}
-                                  >
-                                    {ticket.descripcion}
-                                  </p>
-
-                                  <div className="mt-2 flex flex-wrap items-center gap-2 text-[10px] md:text-[11px]">
-                                    <span
-                                      className={`inline-flex items-center gap-1 px-2 py-1 rounded-full font-bold border ${obtenerColorEstado(
-                                        ticket.estado
-                                      )}`}
-                                    >
-                                      <Activity className="w-3 h-3" />
-                                      {ticket.estado}
-                                    </span>
-                                    <span
-                                      className={`inline-flex items-center gap-1 px-2 py-1 rounded-full font-bold border ${obtenerColorPrioridad(
-                                        ticket.prioridad
-                                      )}`}
-                                    >
-                                      {ticket.prioridad === "critica" ? (
-                                        <Flame className="w-3 h-3" />
-                                      ) : (
-                                        <ZapIcon className="w-3 h-3" />
-                                      )}
-                                      {ticket.prioridad}
-                                    </span>
-                                    <span
-                                      className={`inline-flex items-center gap-1 px-2 py-1 rounded-full font-semibold ${tema.colores.hover}`}
-                                    >
-                                      <MapPinIcon className="w-3 h-3" />
-                                      {ticket.centro?.nombre ?? "Sin centro"}
-                                    </span>
-                                  </div>
-                                </div>
-                              </div>
-
-                              <div className="text-[10px] md:text-[11px] flex flex-col items-start md:items-end gap-1 md:min-w-[170px]">
-                                <div className="flex flex-col items-start md:items-end gap-0.5">
-                                  <span className={tema.colores.textoSecundario}>
-                                    Creado:{" "}
-                                    <span className={tema.colores.texto}>
-                                      {formatearFecha(ticket.fecha_creacion)}
-                                    </span>
-                                  </span>
-                                  {ticket.fecha_asignacion && (
-                                    <span className={tema.colores.textoSecundario}>
-                                      Asignado:{" "}
-                                      <span className={tema.colores.texto}>
-                                        {formatearFecha(ticket.fecha_asignacion)}
-                                      </span>
-                                    </span>
-                                  )}
-                                  {ticket.fecha_resolucion && (
-                                    <span className={tema.colores.textoSecundario}>
-                                      Resuelto:{" "}
-                                      <span className={tema.colores.texto}>
-                                        {formatearFecha(ticket.fecha_resolucion)}
-                                      </span>
-                                    </span>
-                                  )}
-                                </div>
-
-                                <div className="mt-1 flex flex-wrap items-center gap-1">
-                                  <span
-                                    className={`${tema.colores.textoSecundario} font-semibold`}
-                                  >
-                                    Estimado:{" "}
-                                    <span className={tema.colores.texto}>
-                                      {ticket.tiempo_estimado_minutos} min
-                                    </span>
-                                  </span>
-                                  {ticket.tiempo_real_minutos !== null && (
-                                    <span
-                                      className={`${tema.colores.textoSecundario} font-semibold`}
-                                    >
-                                      • Real:{" "}
-                                      <span className={tema.colores.texto}>
-                                        {ticket.tiempo_real_minutos} min
-                                      </span>
-                                    </span>
-                                  )}
-                                </div>
-
-                                <div className="mt-2 flex flex-wrap items-center gap-2">
-                                  {ticket.solicitante.telefono && (
-                                    <a
-                                      href={`tel:${ticket.solicitante.telefono}`}
-                                      onClick={(e) => e.stopPropagation()}
-                                      className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg ${tema.colores.hover} ${tema.colores.texto}`}
-                                    >
-                                      <PhoneIcon className="w-3 h-3" />
-                                      Llamar
-                                    </a>
-                                  )}
-                                  <Link
-                                    href={`/tecnico/tickets/${ticket.id_ticket}`}
-                                    onClick={(e) => e.stopPropagation()}
-                                    className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg ${tema.colores.primario} text-white text-[10px] md:text-[11px] font-semibold`}
-                                  >
-                                    <Eye className="w-3 h-3" />
-                                    Ver detalle
-                                  </Link>
-                                </div>
-
-                                <div className="mt-2 flex flex-wrap gap-1 text-[10px]">
-                                  {ticket.estado !== "abierto" && (
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        actualizarEstadoTicket(ticket.id_ticket, "abierto");
-                                      }}
-                                      className="px-2 py-1 rounded-lg bg-gray-700/40 text-white"
-                                    >
-                                      ⇠ Abierto
-                                    </button>
-                                  )}
-                                  {ticket.estado !== "en_progreso" && (
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        actualizarEstadoTicket(
-                                          ticket.id_ticket,
-                                          "en_progreso"
-                                        );
-                                      }}
-                                      className="px-2 py-1 rounded-lg bg-blue-600/80 text-white"
-                                    >
-                                      ▶ En progreso
-                                    </button>
-                                  )}
-                                  {ticket.estado !== "resuelto" && (
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        actualizarEstadoTicket(
-                                          ticket.id_ticket,
-                                          "resuelto"
-                                        );
-                                      }}
-                                      className="px-2 py-1 rounded-lg bg-emerald-600/90 text-white"
-                                    >
-                                      ✓ Resuelto
-                                    </button>
-                                  )}
-                                  {ticket.estado !== "cancelado" && (
-                                    <button
-                                      onClick={(e) => {
-                                        e.stopPropagation();
-                                        actualizarEstadoTicket(
-                                          ticket.id_ticket,
-                                          "cancelado"
-                                        );
-                                      }}
-                                      className="px-2 py-1 rounded-lg bg-gray-500/80 text-white"
-                                    >
-                                      ✕ Cancelar
-                                    </button>
-                                  )}
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
+            {/* Vista Calendario */}
+            {vistaActual === "calendario" && (
+              <VistaCalendario
+                tema={tema}
+                ticketsFiltrados={ticketsFiltrados}
+                setTicketSeleccionado={setTicketSeleccionado}
+                obtenerColorEstado={obtenerColorEstado}
+                obtenerColorPrioridad={obtenerColorPrioridad}
+                formatearFecha={formatearFecha}
+              />
+            )}
+          </>
         )}
 
-        {/* FOOTER */}
+        {/* FOOTER PREMIUM */}
         <footer
-          className={`transition-all duration-300 mt-10 rounded-2xl px-6 py-4 ${tema.colores.card} ${tema.colores.borde} border`}
+          className={`transition-all duration-300 mt-10 rounded-2xl px-6 py-4 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra}`}
         >
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-xs md:text-sm">
-            <div className="flex items-center gap-2">
-              <p className={tema.colores.textoSecundario}>
-                © 2025 AnyssaMed - Historial de Tickets Técnicos.
-              </p>
-              <span
-                className={`px-3 py-1 rounded-full text-[10px] font-bold bg-gradient-to-r ${tema.colores.gradiente} text-white`}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+            <div className="flex items-center gap-3">
+              <div
+                className={`w-8 h-8 rounded-lg bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center shadow-lg`}
               >
-                v4.0.0
+                <Sparkles className="w-4 h-4 text-white" />
+              </div>
+              <div>
+                <p className={`text-sm font-bold ${tema.colores.texto}`}>
+                  © 2025 AnyssaMed Premium
+                </p>
+                <p className={`text-xs ${tema.colores.textoSecundario}`}>
+                  Historial de Tickets con IA y Analytics
+                </p>
+              </div>
+              <span
+                className={`px-3 py-1 rounded-full text-xs font-bold bg-gradient-to-r ${tema.colores.gradiente} text-white shadow-lg`}
+              >
+                v5.0.0 Premium
               </span>
             </div>
             <div className="flex items-center gap-4">
               <Link
                 href="/ayuda"
-                className={`text-xs md:text-sm font-bold transition-colors ${tema.colores.textoSecundario} hover:${tema.colores.acento}`}
+                className={`text-sm font-bold transition-colors ${tema.colores.textoSecundario} hover:${tema.colores.acento}`}
               >
                 Ayuda
               </Link>
               <Link
                 href="/privacidad"
-                className={`text-xs md:text-sm font-bold transition-colors ${tema.colores.textoSecundario} hover:${tema.colores.acento}`}
+                className={`text-sm font-bold transition-colors ${tema.colores.textoSecundario} hover:${tema.colores.acento}`}
               >
                 Privacidad
               </Link>
               <Link
                 href="/terminos"
-                className={`text-xs md:text-sm font-bold transition-colors ${tema.colores.textoSecundario} hover:${tema.colores.acento}`}
+                className={`text-sm font-bold transition-colors ${tema.colores.textoSecundario} hover:${tema.colores.acento}`}
               >
                 Términos
               </Link>
               <button
                 onClick={cerrarSesion}
-                className={`text-xs md:text-sm font-bold transition-colors ${tema.colores.textoSecundario} hover:text-red-400 flex items-center gap-1`}
+                className={`text-sm font-bold transition-colors ${tema.colores.textoSecundario} hover:text-red-400 flex items-center gap-1`}
               >
                 <LogOut className="w-4 h-4" />
-                Cerrar Sesión
+                Salir
               </button>
             </div>
           </div>
         </footer>
       </main>
 
-      {/* PANEL DETALLE TICKET */}
+      {/* PANEL DETALLE TICKET PREMIUM */}
       {ticketSeleccionado && (
-        <div className="fixed inset-0 z-[55] flex justify-end">
-          <div
-            className="flex-1 bg-black/40"
-            onClick={() => setTicketSeleccionado(null)}
-          />
-          <div
-            className={`w-full max-w-md md:max-w-xl h-full ${tema.colores.card} ${tema.colores.borde} border-l ${tema.colores.sombra} p-5 md:p-6 overflow-y-auto custom-scrollbar`}
-          >
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <div
-                  className={`w-10 h-10 rounded-xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center text-white`}
-                >
-                  {(() => {
-                    const Icono = obtenerIconoTipo(ticketSeleccionado.tipo);
-                    return <Icono className="w-5 h-5" />;
-                  })()}
-                </div>
-                <div>
-                  <p
-                    className={`text-xs font-semibold ${tema.colores.textoSecundario}`}
-                  >
-                    {ticketSeleccionado.numero_ticket}
-                  </p>
-                  <h3
-                    className={`text-lg font-black ${tema.colores.texto}`}
-                  >
-                    {ticketSeleccionado.titulo}
-                  </h3>
-                </div>
-              </div>
-              <button
-                onClick={() => setTicketSeleccionado(null)}
-                className="p-1 rounded-lg hover:bg-black/10"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            <div className="grid grid-cols-2 gap-2 mb-4">
-              <div>
-                <p className="text-[11px] font-semibold uppercase opacity-70">
-                  Estado
-                </p>
-                <div className="mt-1 flex flex-wrap gap-1">
-                  <span
-                    className={`px-3 py-1 rounded-full text-[11px] font-bold border ${obtenerColorEstado(
-                      ticketSeleccionado.estado
-                    )}`}
-                  >
-                    {ticketSeleccionado.estado}
-                  </span>
-                </div>
-              </div>
-              <div>
-                <p className="text-[11px] font-semibold uppercase opacity-70">
-                  Prioridad
-                </p>
-                <div className="mt-1 flex flex-wrap gap-1">
-                  <span
-                    className={`px-3 py-1 rounded-full text-[11px] font-bold border ${obtenerColorPrioridad(
-                      ticketSeleccionado.prioridad
-                    )}`}
-                  >
-                    {ticketSeleccionado.prioridad}
-                  </span>
-                </div>
-              </div>
-              <div>
-                <p className="text-[11px] font-semibold uppercase opacity-70">
-                  Tipo
-                </p>
-                <p className={`text-xs font-semibold ${tema.colores.texto}`}>
-                  {ticketSeleccionado.tipo.toUpperCase()}
-                </p>
-              </div>
-              <div>
-                <p className="text-[11px] font-semibold uppercase opacity-70">
-                  Centro
-                </p>
-                <p className={`text-xs font-semibold ${tema.colores.texto}`}>
-                  {ticketSeleccionado.centro?.nombre}
-                </p>
-              </div>
-            </div>
-
-            <div className="mb-4">
-              <p className="text-[11px] font-semibold uppercase opacity-70">
-                Descripción
-              </p>
-              <p className={`mt-1 text-xs ${tema.colores.textoSecundario}`}>
-                {ticketSeleccionado.descripcion}
-              </p>
-            </div>
-
-            {ticketSeleccionado.equipo_afectado && (
-              <div className="mb-4">
-                <p className="text-[11px] font-semibold uppercase opacity-70">
-                  Equipo afectado
-                </p>
-                <p className={`mt-1 text-xs ${tema.colores.texto}`}>
-                  {ticketSeleccionado.equipo_afectado.nombre} (
-                  {ticketSeleccionado.equipo_afectado.tipo}) —{" "}
-                  {ticketSeleccionado.equipo_afectado.ubicacion}
-                </p>
-              </div>
-            )}
-
-            <div className="grid grid-cols-2 gap-2 mb-4 text-[11px]">
-              <div>
-                <p className="font-semibold uppercase opacity-70">
-                  Solicitante
-                </p>
-                <p className={tema.colores.texto}>
-                  {ticketSeleccionado.solicitante.nombre_completo}
-                </p>
-                <p className={tema.colores.textoSecundario}>
-                  {ticketSeleccionado.solicitante.email}
-                </p>
-                {ticketSeleccionado.solicitante.telefono && (
-                  <a
-                    href={`tel:${ticketSeleccionado.solicitante.telefono}`}
-                    className={`inline-flex items-center gap-1 mt-1 text-[11px] ${tema.colores.acento}`}
-                  >
-                    <PhoneIcon className="w-3 h-3" />
-                    {ticketSeleccionado.solicitante.telefono}
-                  </a>
-                )}
-              </div>
-              <div>
-                <p className="font-semibold uppercase opacity-70">
-                  Tiempos
-                </p>
-                <p className={tema.colores.textoSecundario}>
-                  Creado: {formatearFecha(ticketSeleccionado.fecha_creacion)}
-                </p>
-                <p className={tema.colores.textoSecundario}>
-                  Asignado: {formatearFecha(ticketSeleccionado.fecha_asignacion)}
-                </p>
-                {ticketSeleccionado.fecha_resolucion && (
-                  <p className={tema.colores.textoSecundario}>
-                    Resuelto: {formatearFecha(ticketSeleccionado.fecha_resolucion)}
-                  </p>
-                )}
-                <p className={tema.colores.textoSecundario}>
-                  Estimado: {ticketSeleccionado.tiempo_estimado_minutos} min
-                </p>
-                {ticketSeleccionado.tiempo_real_minutos && (
-                  <p className={tema.colores.textoSecundario}>
-                    Real: {ticketSeleccionado.tiempo_real_minutos} min
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <div className="flex flex-wrap gap-2 mb-4 text-[11px]">
-              <button
-                onClick={() =>
-                  actualizarEstadoTicket(ticketSeleccionado.id_ticket, "en_progreso")
-                }
-                className="px-3 py-2 rounded-xl bg-blue-600 text-white font-bold"
-              >
-                Marcar en progreso
-              </button>
-              <button
-                onClick={() =>
-                  actualizarEstadoTicket(ticketSeleccionado.id_ticket, "resuelto")
-                }
-                className="px-3 py-2 rounded-xl bg-emerald-600 text-white font-bold"
-              >
-                Marcar resuelto
-              </button>
-              <button
-                onClick={() =>
-                  actualizarEstadoTicket(ticketSeleccionado.id_ticket, "cancelado")
-                }
-                className="px-3 py-2 rounded-xl bg-gray-600 text-white font-bold"
-              >
-                Cancelar ticket
-              </button>
-              <Link
-                href={`/tecnico/tickets/${ticketSeleccionado.id_ticket}`}
-                className={`px-3 py-2 rounded-xl font-bold ${tema.colores.hover} ${tema.colores.texto} inline-flex items-center gap-1`}
-              >
-                <Eye className="w-3 h-3" />
-                Ver en página completa
-              </Link>
-            </div>
-          </div>
-        </div>
+        <PanelDetalleTicket
+          ticket={ticketSeleccionado}
+          tema={tema}
+          onClose={() => setTicketSeleccionado(null)}
+          obtenerIconoTipo={obtenerIconoTipo}
+          obtenerColorEstado={obtenerColorEstado}
+          obtenerColorPrioridad={obtenerColorPrioridad}
+          formatearFecha={formatearFecha}
+          actualizarEstadoTicket={actualizarEstadoTicket}
+          actualizarPrioridadTicket={actualizarPrioridadTicket}
+        />
       )}
 
-      {/* ESTILOS GLOBALES */}
+      {/* ESTILOS GLOBALES PREMIUM */}
       <style jsx global>{`
         * {
           margin: 0;
@@ -2214,32 +2209,13 @@ export default function HistorialTicketsTecnicoPage() {
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
           background: rgba(99, 102, 241, 0.8);
         }
-        .custom-scrollbar {
-          scrollbar-color: rgba(99, 102, 241, 0.5) transparent;
-          scrollbar-width: thin;
-        }
 
         @keyframes wave {
-          0%,
-          100% {
-            transform: rotate(0deg);
-          }
-          10%,
-          20% {
-            transform: rotate(14deg);
-          }
-          30%,
-          60%,
-          90% {
-            transform: rotate(-8deg);
-          }
-          40%,
-          80% {
-            transform: rotate(14deg);
-          }
-          50% {
-            transform: rotate(10deg);
-          }
+          0%, 100% { transform: rotate(0deg); }
+          10%, 20% { transform: rotate(14deg); }
+          30%, 60%, 90% { transform: rotate(-8deg); }
+          40%, 80% { transform: rotate(14deg); }
+          50% { transform: rotate(10deg); }
         }
         .animate-wave {
           animation: wave 1s ease-in-out infinite;
@@ -2247,22 +2223,49 @@ export default function HistorialTicketsTecnicoPage() {
           display: inline-block;
         }
 
-        @media (max-width: 768px) {
-          .hidden.md\\:block {
-            display: none;
+        @keyframes float {
+          0%, 100% { transform: translateY(0px); }
+          50% { transform: translateY(-10px); }
+        }
+        .animate-float {
+          animation: float 3s ease-in-out infinite;
+        }
+
+        @keyframes slideDown {
+          from {
+            opacity: 0;
+            transform: translateY(-10px);
           }
-          .block.md\\:hidden {
-            display: block;
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .animate-slideDown {
+          animation: slideDown 0.3s ease-out;
+        }
+
+        @keyframes pulse-glow {
+          0%, 100% {
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.5);
+          }
+          50% {
+            box-shadow: 0 0 40px rgba(99, 102, 241, 0.8);
+          }
+        }
+        .animate-pulse-glow {
+          animation: pulse-glow 2s ease-in-out infinite;
+        }
+
+        @media (max-width: 768px) {
+          .hidden\\.md\\:block {
+            display: none;
           }
         }
 
         @media print {
           .no-print {
             display: none !important;
-          }
-          body {
-            background: white;
-            color: black;
           }
         }
 
@@ -2273,74 +2276,2054 @@ export default function HistorialTicketsTecnicoPage() {
             transition-duration: 0.01ms !important;
           }
         }
-
-        @media (prefers-color-scheme: dark) {
-          input,
-          select,
-          textarea {
-            color-scheme: dark;
-          }
-        }
       `}</style>
     </div>
   );
 }
 
 // ========================================
-// COMPONENTES AUXILIARES
+// COMPONENTES AUXILIARES PREMIUM
 // ========================================
 
-function ResumenCard({
+function ResumenCardPremium({
   tema,
   icono: Icono,
   titulo,
   valor,
   chip,
   color,
+  animacion,
 }: {
   tema: ConfiguracionTema;
   icono: any;
   titulo: string;
-  valor: number;
+  valor: number | string;
   chip: string;
   color: string;
+  animacion: string;
 }) {
   return (
     <div
-      className={`rounded-2xl p-4 md:p-5 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} transition-all duration-300 hover:scale-105 hover:-translate-y-1 cursor-pointer group`}
+      className={`rounded-2xl p-5 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} transition-all duration-300 hover:scale-105 hover:-translate-y-2 cursor-pointer group relative overflow-hidden`}
     >
-      <div className="flex items-center justify-between mb-3">
-        <div
-          className={`w-10 h-10 bg-gradient-to-br ${color} rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform`}
-        >
-          <Icono className="w-5 h-5 text-white" />
+      <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
+      
+      <div className="relative z-10">
+        <div className="flex items-center justify-between mb-3">
+          <div
+            className={`w-12 h-12 bg-gradient-to-br ${color} rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 group-hover:rotate-6 transition-all duration-300`}
+          >
+            <Icono className="w-6 h-6 text-white" />
+          </div>
+          <div
+            className={`w-8 h-8 rounded-lg bg-gradient-to-br ${color} opacity-20 group-hover:opacity-40 transition-opacity`}
+          />
         </div>
-      </div>
-      <div className={`text-3xl font-black mb-1 ${tema.colores.texto}`}>
-        {isNaN(valor) ? 0 : valor}
-      </div>
-      <div
-        className={`text-xs font-bold uppercase tracking-wider ${tema.colores.textoSecundario}`}
-      >
-        {titulo}
-      </div>
-      <div className="mt-2">
-        <span
-          className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-semibold ${tema.colores.hover}`}
+        
+        <div className={`text-3xl font-black mb-1 ${tema.colores.texto} group-hover:scale-110 transition-transform origin-left`}>
+          {isNaN(Number(valor)) ? valor : Number(valor).toLocaleString()}
+        </div>
+        
+        <div
+          className={`text-xs font-bold uppercase tracking-wider ${tema.colores.textoSecundario} mb-2`}
         >
-          <ZapIcon className="w-3 h-3" />
-          {chip}
-        </span>
+          {titulo}
+        </div>
+        
+        <div className="flex items-center justify-between">
+          <span
+            className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-semibold ${tema.colores.hover}`}
+          >
+            <Sparkles className="w-3 h-3" />
+            {chip}
+          </span>
+          <ChevronRight className={`w-4 h-4 ${tema.colores.textoSecundario} group-hover:translate-x-1 transition-transform`} />
+        </div>
       </div>
     </div>
   );
 }
 
-function HistoryIcon() {
+function MetricaAvanzada({
+  tema,
+  icono: Icono,
+  titulo,
+  valor,
+  tendencia,
+  color,
+}: {
+  tema: ConfiguracionTema;
+  icono: any;
+  titulo: string;
+  valor: number | string;
+  tendencia: "up" | "down";
+  color: string;
+}) {
   return (
-    <div className="relative">
-      <Clock3 className="w-5 h-5" />
-      <span className="absolute -right-0.5 -bottom-0.5 w-2 h-2 rounded-full bg-emerald-400" />
+    <div
+      className={`rounded-xl p-4 ${tema.colores.fondoSecundario} ${tema.colores.borde} border transition-all duration-300 hover:scale-105`}
+    >
+      <div className="flex items-center justify-between mb-2">
+        <div
+          className={`w-10 h-10 bg-gradient-to-br ${color} rounded-lg flex items-center justify-center shadow-lg`}
+        >
+          <Icono className="w-5 h-5 text-white" />
+        </div>
+        {tendencia === "up" ? (
+          <TrendingUp className="w-5 h-5 text-emerald-500" />
+        ) : (
+          <TrendingDown className="w-5 h-5 text-red-500" />
+        )}
+      </div>
+      <div className={`text-2xl font-black ${tema.colores.texto} mb-1`}>
+        {valor}
+      </div>
+      <div className={`text-xs font-semibold ${tema.colores.textoSecundario}`}>
+        {titulo}
+      </div>
     </div>
   );
 }
+
+// Continúa en el siguiente mensaje con los componentes de vistas...
+// ========================================
+// COMPONENTE: VISTA TIMELINE PREMIUM
+// ========================================
+
+function VistaTimeline({
+  tema,
+  historialAgrupado,
+  setTicketSeleccionado,
+  obtenerIconoTipo,
+  obtenerColorEstado,
+  obtenerColorPrioridad,
+  formatearFecha,
+  actualizarEstadoTicket,
+}: {
+  tema: ConfiguracionTema;
+  historialAgrupado: GrupoHistorial[];
+  setTicketSeleccionado: (ticket: Ticket) => void;
+  obtenerIconoTipo: (tipo: string) => any;
+  obtenerColorEstado: (estado: string) => string;
+  obtenerColorPrioridad: (prioridad: string) => string;
+  formatearFecha: (fecha: string) => string;
+  actualizarEstadoTicket: (id: number, estado: Ticket["estado"]) => void;
+}) {
+  return (
+    <div
+      className={`rounded-2xl p-6 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} animate-slideDown`}
+    >
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-3">
+          <div
+            className={`w-12 h-12 rounded-xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center shadow-lg animate-pulse-glow`}
+          >
+            <History className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h3 className={`text-2xl font-black ${tema.colores.texto}`}>
+              Timeline de Tickets
+            </h3>
+            <p className={`text-sm ${tema.colores.textoSecundario}`}>
+              Visualización cronológica completa con análisis temporal
+            </p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          <span
+            className={`px-4 py-2 rounded-xl text-sm font-bold bg-gradient-to-r ${tema.colores.gradiente} text-white shadow-lg`}
+          >
+            {historialAgrupado.reduce((acc, g) => acc + g.tickets.length, 0)} tickets
+          </span>
+        </div>
+      </div>
+
+      {/* Timeline */}
+      <div className="relative pl-8">
+        {/* Línea vertical principal */}
+        <div className="absolute left-3 top-0 bottom-0 w-1 bg-gradient-to-b from-indigo-500 via-purple-500 to-pink-500 rounded-full shadow-lg" />
+
+        <div className="space-y-8">
+          {historialAgrupado.map((grupo, grupoIdx) => (
+            <div key={grupo.fecha} className="relative animate-slideDown" style={{ animationDelay: `${grupoIdx * 0.1}s` }}>
+              {/* Punto del día */}
+              <div className="flex items-center gap-4 mb-4">
+                <div className="relative">
+                  <div className="w-6 h-6 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 shadow-xl shadow-indigo-500/50 animate-pulse" />
+                  <div className="absolute inset-0 w-6 h-6 rounded-full border-4 border-indigo-400/30 animate-ping" />
+                </div>
+                <div className="flex-1">
+                  <h4 className={`text-lg font-black ${tema.colores.texto}`}>
+                    {grupo.label}
+                  </h4>
+                  <p className={`text-xs ${tema.colores.textoSecundario}`}>
+                    {grupo.tickets.length} ticket{grupo.tickets.length !== 1 ? "s" : ""} •{" "}
+                    {grupo.tickets.filter((t) => t.estado === "resuelto").length} resueltos
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  {grupo.tickets.some((t) => t.prioridad === "critica") && (
+                    <span className="px-3 py-1 rounded-full text-xs font-bold bg-red-500/20 text-red-300 border border-red-400/40 flex items-center gap-1">
+                      <Flame className="w-3 h-3" />
+                      Críticos
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              {/* Tickets del día */}
+              <div className="space-y-4 ml-6">
+                {grupo.tickets.map((ticket, ticketIdx) => {
+                  const IconoTipo = obtenerIconoTipo(ticket.tipo);
+                  
+                  return (
+                    <div
+                      key={ticket.id_ticket}
+                      className="relative group animate-slideDown"
+                      style={{ animationDelay: `${(grupoIdx * 0.1) + (ticketIdx * 0.05)}s` }}
+                    >
+                      {/* Punto del ticket */}
+                      <div className="absolute -left-6 top-6 w-4 h-4 rounded-full bg-gradient-to-br from-indigo-400 to-purple-400 shadow-lg shadow-indigo-400/50 group-hover:scale-125 transition-transform" />
+
+                      <div
+                        onClick={() => setTicketSeleccionado(ticket)}
+                        className={`rounded-2xl p-5 ${tema.colores.card} ${tema.colores.borde} border transition-all duration-300 hover:scale-[1.02] hover:-translate-y-1 cursor-pointer group-hover:shadow-2xl group-hover:border-indigo-500/50 relative overflow-hidden`}
+                      >
+                        {/* Efecto de brillo */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
+
+                        <div className="relative z-10">
+                          <div className="flex items-start justify-between gap-4 mb-4">
+                            <div className="flex items-start gap-4 flex-1">
+                              {/* Icono del tipo */}
+                              <div
+                                className={`w-14 h-14 rounded-xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center shadow-lg group-hover:scale-110 group-hover:rotate-6 transition-all duration-300 flex-shrink-0`}
+                              >
+                                <IconoTipo className="w-7 h-7 text-white" />
+                              </div>
+
+                              {/* Información principal */}
+                              <div className="flex-1 min-w-0">
+                                <div className="flex items-start justify-between gap-2 mb-2">
+                                  <div className="flex-1">
+                                    <div className="flex items-center gap-2 mb-1">
+                                      <span
+                                        className={`text-xs font-bold px-3 py-1 rounded-full bg-gradient-to-r ${tema.colores.gradiente} text-white shadow-lg`}
+                                      >
+                                        {ticket.numero_ticket}
+                                      </span>
+                                      <span
+                                        className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold border ${obtenerColorEstado(
+                                          ticket.estado
+                                        )}`}
+                                      >
+                                        <Activity className="w-3 h-3" />
+                                        {ticket.estado.replace("_", " ").toUpperCase()}
+                                      </span>
+                                      <span
+                                        className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold border ${obtenerColorPrioridad(
+                                          ticket.prioridad
+                                        )}`}
+                                      >
+                                        {ticket.prioridad === "critica" ? (
+                                          <Flame className="w-3 h-3 animate-pulse" />
+                                        ) : (
+                                          <ZapIcon className="w-3 h-3" />
+                                        )}
+                                        {ticket.prioridad.toUpperCase()}
+                                      </span>
+                                    </div>
+                                    <h5
+                                      className={`text-base font-black ${tema.colores.texto} mb-2 group-hover:text-indigo-500 transition-colors`}
+                                    >
+                                      {ticket.titulo}
+                                    </h5>
+                                    <p
+                                      className={`text-sm ${tema.colores.textoSecundario} line-clamp-2 mb-3`}
+                                    >
+                                      {ticket.descripcion}
+                                    </p>
+                                  </div>
+                                </div>
+
+                                {/* Metadatos */}
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3">
+                                  <div
+                                    className={`flex items-center gap-2 px-3 py-2 rounded-lg ${tema.colores.hover}`}
+                                  >
+                                    <MapPinIcon className={`w-4 h-4 ${tema.colores.acento}`} />
+                                    <div className="min-w-0">
+                                      <p className="text-[10px] font-semibold opacity-70">
+                                        Centro
+                                      </p>
+                                      <p
+                                        className={`text-xs font-bold ${tema.colores.texto} truncate`}
+                                      >
+                                        {ticket.centro?.nombre}
+                                      </p>
+                                    </div>
+                                  </div>
+
+                                  <div
+                                    className={`flex items-center gap-2 px-3 py-2 rounded-lg ${tema.colores.hover}`}
+                                  >
+                                    <User className={`w-4 h-4 ${tema.colores.acento}`} />
+                                    <div className="min-w-0">
+                                      <p className="text-[10px] font-semibold opacity-70">
+                                        Solicitante
+                                      </p>
+                                      <p
+                                        className={`text-xs font-bold ${tema.colores.texto} truncate`}
+                                      >
+                                        {ticket.solicitante.nombre_completo}
+                                      </p>
+                                    </div>
+                                  </div>
+
+                                  <div
+                                    className={`flex items-center gap-2 px-3 py-2 rounded-lg ${tema.colores.hover}`}
+                                  >
+                                    <Clock className={`w-4 h-4 ${tema.colores.acento}`} />
+                                    <div className="min-w-0">
+                                      <p className="text-[10px] font-semibold opacity-70">
+                                        Tiempo Est.
+                                      </p>
+                                      <p
+                                        className={`text-xs font-bold ${tema.colores.texto}`}
+                                      >
+                                        {ticket.tiempo_estimado_minutos} min
+                                      </p>
+                                    </div>
+                                  </div>
+
+                                  {ticket.tiempo_real_minutos && (
+                                    <div
+                                      className={`flex items-center gap-2 px-3 py-2 rounded-lg ${tema.colores.hover}`}
+                                    >
+                                      <Timer className={`w-4 h-4 ${tema.colores.acento}`} />
+                                      <div className="min-w-0">
+                                        <p className="text-[10px] font-semibold opacity-70">
+                                          Tiempo Real
+                                        </p>
+                                        <p
+                                          className={`text-xs font-bold ${
+                                            ticket.tiempo_real_minutos <=
+                                            ticket.tiempo_estimado_minutos
+                                              ? "text-emerald-500"
+                                              : "text-red-500"
+                                          }`}
+                                        >
+                                          {ticket.tiempo_real_minutos} min
+                                        </p>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+
+                                {/* Fechas */}
+                                <div className="flex flex-wrap items-center gap-3 mb-3 text-xs">
+                                  <div className="flex items-center gap-1">
+                                    <CalendarPlus
+                                      className={`w-3 h-3 ${tema.colores.textoSecundario}`}
+                                    />
+                                    <span className={tema.colores.textoSecundario}>
+                                      Creado:
+                                    </span>
+                                    <span className={tema.colores.texto}>
+                                      {formatearFecha(ticket.fecha_creacion)}
+                                    </span>
+                                  </div>
+                                  {ticket.fecha_resolucion && (
+                                    <div className="flex items-center gap-1">
+                                      <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                                      <span className={tema.colores.textoSecundario}>
+                                        Resuelto:
+                                      </span>
+                                      <span className="text-emerald-500 font-bold">
+                                        {formatearFecha(ticket.fecha_resolucion)}
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+
+                                {/* Acciones rápidas */}
+                                <div className="flex flex-wrap items-center gap-2">
+                                  {ticket.estado !== "resuelto" && (
+                                    <button
+                                      onClick={(e) => {
+                                        e.stopPropagation();
+                                        actualizarEstadoTicket(
+                                          ticket.id_ticket,
+                                          "resuelto"
+                                        );
+                                      }}
+                                      className="px-3 py-1.5 rounded-lg text-xs font-bold bg-emerald-600 text-white hover:bg-emerald-700 transition-all duration-300 hover:scale-105 shadow-lg flex items-center gap-1"
+                                    >
+                                      <CheckCircle2 className="w-3 h-3" />
+                                      Resolver
+                                    </button>
+                                  )}
+                                  {ticket.estado !== "en_progreso" &&
+                                    ticket.estado !== "resuelto" && (
+                                      <button
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          actualizarEstadoTicket(
+                                            ticket.id_ticket,
+                                            "en_progreso"
+                                          );
+                                        }}
+                                        className="px-3 py-1.5 rounded-lg text-xs font-bold bg-blue-600 text-white hover:bg-blue-700 transition-all duration-300 hover:scale-105 shadow-lg flex items-center gap-1"
+                                      >
+                                        <PlayCircle className="w-3 h-3" />
+                                        Iniciar
+                                      </button>
+                                    )}
+                                  {ticket.solicitante.telefono && (
+                                    <a
+                                      href={`tel:${ticket.solicitante.telefono}`}
+                                      onClick={(e) => e.stopPropagation()}
+                                      className={`px-3 py-1.5 rounded-lg text-xs font-bold ${tema.colores.hover} ${tema.colores.texto} transition-all duration-300 hover:scale-105 flex items-center gap-1`}
+                                    >
+                                      <PhoneIcon className="w-3 h-3" />
+                                      Llamar
+                                    </a>
+                                  )}
+                                  <Link
+                                    href={`/tecnico/tickets/${ticket.id_ticket}`}
+                                    onClick={(e) => e.stopPropagation()}
+                                    className={`px-3 py-1.5 rounded-lg text-xs font-bold ${tema.colores.primario} text-white transition-all duration-300 hover:scale-105 shadow-lg flex items-center gap-1`}
+                                  >
+                                    <Eye className="w-3 h-3" />
+                                    Ver Detalle
+                                  </Link>
+                                </div>
+                              </div>
+                            </div>
+
+                            {/* Indicador de calificación */}
+                            {ticket.calificacion && (
+                              <div className="flex items-center gap-1 px-3 py-2 rounded-lg bg-yellow-500/20 border border-yellow-400/40">
+                                <Star className="w-4 h-4 text-yellow-500 fill-yellow-500" />
+                                <span className="text-sm font-bold text-yellow-500">
+                                  {ticket.calificacion.toFixed(1)}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ========================================
+// COMPONENTE: VISTA TABLA PREMIUM
+// ========================================
+
+function VistaTabla({
+  tema,
+  ticketsFiltrados,
+  setTicketSeleccionado,
+  obtenerIconoTipo,
+  obtenerColorEstado,
+  obtenerColorPrioridad,
+  formatearFecha,
+}: {
+  tema: ConfiguracionTema;
+  ticketsFiltrados: Ticket[];
+  setTicketSeleccionado: (ticket: Ticket) => void;
+  obtenerIconoTipo: (tipo: string) => any;
+  obtenerColorEstado: (estado: string) => string;
+  obtenerColorPrioridad: (prioridad: string) => string;
+  formatearFecha: (fecha: string) => string;
+}) {
+  const [ordenarPor, setOrdenarPor] = useState<"fecha" | "prioridad" | "estado">("fecha");
+  const [ordenAsc, setOrdenAsc] = useState(false);
+
+  const ticketsOrdenados = useMemo(() => {
+    const copia = [...ticketsFiltrados];
+    
+    copia.sort((a, b) => {
+      if (ordenarPor === "fecha") {
+        const fechaA = a.fecha_resolucion || a.fecha_asignacion || a.fecha_creacion;
+        const fechaB = b.fecha_resolucion || b.fecha_asignacion || b.fecha_creacion;
+        return ordenAsc
+          ? fechaA.localeCompare(fechaB)
+          : fechaB.localeCompare(fechaA);
+      } else if (ordenarPor === "prioridad") {
+        const prioridades = { critica: 4, alta: 3, media: 2, baja: 1 };
+        const diff =
+          prioridades[b.prioridad as keyof typeof prioridades] -
+          prioridades[a.prioridad as keyof typeof prioridades];
+        return ordenAsc ? -diff : diff;
+      } else {
+        return ordenAsc
+          ? a.estado.localeCompare(b.estado)
+          : b.estado.localeCompare(a.estado);
+      }
+    });
+
+    return copia;
+  }, [ticketsFiltrados, ordenarPor, ordenAsc]);
+
+  return (
+    <div
+      className={`rounded-2xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} overflow-hidden animate-slideDown`}
+    >
+      <div className="p-6 border-b border-gray-700/50">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div
+              className={`w-12 h-12 rounded-xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center shadow-lg`}
+            >
+              <ClipboardList className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h3 className={`text-2xl font-black ${tema.colores.texto}`}>
+                Vista de Tabla
+              </h3>
+              <p className={`text-sm ${tema.colores.textoSecundario}`}>
+                Visualización compacta y ordenable
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <span className={`text-sm font-semibold ${tema.colores.textoSecundario}`}>
+              Ordenar por:
+            </span>
+            <select
+              value={ordenarPor}
+              onChange={(e) =>
+                setOrdenarPor(e.target.value as "fecha" | "prioridad" | "estado")
+              }
+              className={`px-3 py-2 rounded-lg text-sm font-bold ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto}`}
+            >
+              <option value="fecha">Fecha</option>
+              <option value="prioridad">Prioridad</option>
+              <option value="estado">Estado</option>
+            </select>
+            <button
+              onClick={() => setOrdenAsc(!ordenAsc)}
+              className={`p-2 rounded-lg ${tema.colores.hover} transition-all duration-300 hover:scale-110`}
+            >
+              {ordenAsc ? (
+                <TrendingUp className="w-5 h-5" />
+              ) : (
+                <TrendingDown className="w-5 h-5" />
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="overflow-x-auto custom-scrollbar">
+        <table className="w-full">
+          <thead className={`${tema.colores.fondoSecundario} border-b ${tema.colores.borde}`}>
+            <tr>
+              <th className={`px-6 py-4 text-left text-xs font-black ${tema.colores.texto} uppercase tracking-wider`}>
+                Ticket
+              </th>
+              <th className={`px-6 py-4 text-left text-xs font-black ${tema.colores.texto} uppercase tracking-wider`}>
+                Estado
+              </th>
+              <th className={`px-6 py-4 text-left text-xs font-black ${tema.colores.texto} uppercase tracking-wider`}>
+                Prioridad
+              </th>
+              <th className={`px-6 py-4 text-left text-xs font-black ${tema.colores.texto} uppercase tracking-wider`}>
+                Tipo
+              </th>
+              <th className={`px-6 py-4 text-left text-xs font-black ${tema.colores.texto} uppercase tracking-wider`}>
+                Centro
+              </th>
+              <th className={`px-6 py-4 text-left text-xs font-black ${tema.colores.texto} uppercase tracking-wider`}>
+                Fecha
+              </th>
+              <th className={`px-6 py-4 text-left text-xs font-black ${tema.colores.texto} uppercase tracking-wider`}>
+                Tiempo
+              </th>
+              <th className={`px-6 py-4 text-center text-xs font-black ${tema.colores.texto} uppercase tracking-wider`}>
+                Acciones
+              </th>
+            </tr>
+          </thead>
+          <tbody className={`divide-y ${tema.colores.borde}`}>
+            {ticketsOrdenados.map((ticket, idx) => {
+              const IconoTipo = obtenerIconoTipo(ticket.tipo);
+              
+              return (
+                <tr
+                  key={ticket.id_ticket}
+                  onClick={() => setTicketSeleccionado(ticket)}
+                  className={`${tema.colores.hover} transition-all duration-300 cursor-pointer hover:scale-[1.01] animate-slideDown`}
+                  style={{ animationDelay: `${idx * 0.03}s` }}
+                >
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`w-10 h-10 rounded-lg bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center shadow-lg flex-shrink-0`}
+                      >
+                        <IconoTipo className="w-5 h-5 text-white" />
+                      </div>
+                      <div className="min-w-0">
+                        <p
+                          className={`text-sm font-bold ${tema.colores.texto} truncate`}
+                        >
+                          {ticket.numero_ticket}
+                        </p>
+                        <p
+                          className={`text-xs ${tema.colores.textoSecundario} truncate`}
+                        >
+                          {ticket.titulo}
+                        </p>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span
+                      className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold border ${obtenerColorEstado(
+                        ticket.estado
+                      )}`}
+                    >
+                      <Activity className="w-3 h-3" />
+                      {ticket.estado.replace("_", " ")}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span
+                      className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold border ${obtenerColorPrioridad(
+                        ticket.prioridad
+                      )}`}
+                    >
+                      {ticket.prioridad === "critica" ? (
+                        <Flame className="w-3 h-3 animate-pulse" />
+                      ) : (
+                        <ZapIcon className="w-3 h-3" />
+                      )}
+                      {ticket.prioridad}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className={`text-sm font-semibold ${tema.colores.texto}`}>
+                      {ticket.tipo.toUpperCase()}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-2">
+                      <MapPinIcon className={`w-4 h-4 ${tema.colores.acento}`} />
+                      <span className={`text-sm font-semibold ${tema.colores.texto}`}>
+                        {ticket.centro?.nombre}
+                      </span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <p className={`text-xs ${tema.colores.texto}`}>
+                      {formatearFecha(
+                        ticket.fecha_resolucion ||
+                          ticket.fecha_asignacion ||
+                          ticket.fecha_creacion
+                      )}
+                    </p>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-2">
+                      <Timer className={`w-4 h-4 ${tema.colores.acento}`} />
+                      <span
+                        className={`text-sm font-bold ${
+                          ticket.tiempo_real_minutos &&
+                          ticket.tiempo_real_minutos <= ticket.tiempo_estimado_minutos
+                            ? "text-emerald-500"
+                            : tema.colores.texto
+                        }`}
+                      >
+                        {ticket.tiempo_real_minutos || ticket.tiempo_estimado_minutos} min
+                      </span>
+                    </div>
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center justify-center gap-2">
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setTicketSeleccionado(ticket);
+                        }}
+                        className={`p-2 rounded-lg ${tema.colores.primario} text-white transition-all duration-300 hover:scale-110 shadow-lg`}
+                      >
+                        <Eye className="w-4 h-4" />
+                      </button>
+                      {ticket.solicitante.telefono && (
+                        <a
+                          href={`tel:${ticket.solicitante.telefono}`}
+                          onClick={(e) => e.stopPropagation()}
+                          className={`p-2 rounded-lg ${tema.colores.hover} transition-all duration-300 hover:scale-110`}
+                        >
+                          <PhoneIcon className="w-4 h-4" />
+                        </a>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ========================================
+// COMPONENTE: VISTA KANBAN PREMIUM
+// ========================================
+
+function VistaKanban({
+  tema,
+  ticketsFiltrados,
+  setTicketSeleccionado,
+  obtenerIconoTipo,
+  obtenerColorPrioridad,
+  formatearFecha,
+  actualizarEstadoTicket,
+}: {
+  tema: ConfiguracionTema;
+  ticketsFiltrados: Ticket[];
+  setTicketSeleccionado: (ticket: Ticket) => void;
+  obtenerIconoTipo: (tipo: string) => any;
+  obtenerColorPrioridad: (prioridad: string) => string;
+  formatearFecha: (fecha: string) => string;
+  actualizarEstadoTicket: (id: number, estado: Ticket["estado"]) => void;
+}) {
+  const columnas: { estado: Ticket["estado"]; titulo: string; icono: any; color: string }[] = [
+    { estado: "abierto", titulo: "Abiertos", icono: AlertCircle, color: "from-red-500 to-pink-500" },
+    { estado: "en_progreso", titulo: "En Progreso", icono: PlayCircle, color: "from-blue-500 to-cyan-500" },
+    { estado: "resuelto", titulo: "Resueltos", icono: CheckCircle2, color: "from-emerald-500 to-teal-500" },
+    { estado: "cancelado", titulo: "Cancelados", icono: X, color: "from-gray-500 to-slate-500" },
+  ];
+
+  const ticketsPorEstado = useMemo(() => {
+    const mapa: Record<string, Ticket[]> = {
+      abierto: [],
+      en_progreso: [],
+      resuelto: [],
+      cancelado: [],
+    };
+
+    ticketsFiltrados.forEach((ticket) => {
+      mapa[ticket.estado].push(ticket);
+    });
+
+    return mapa;
+  }, [ticketsFiltrados]);
+
+  return (
+    <div className="animate-slideDown">
+      <div
+        className={`rounded-2xl p-6 mb-6 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra}`}
+      >
+        <div className="flex items-center gap-3">
+          <div
+            className={`w-12 h-12 rounded-xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center shadow-lg`}
+          >
+            <Layers className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h3 className={`text-2xl font-black ${tema.colores.texto}`}>
+              Vista Kanban
+            </h3>
+            <p className={`text-sm ${tema.colores.textoSecundario}`}>
+              Gestión visual por estados con drag & drop
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+        {columnas.map((columna, colIdx) => (
+          <div
+            key={columna.estado}
+            className={`rounded-2xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} overflow-hidden animate-slideDown`}
+            style={{ animationDelay: `${colIdx * 0.1}s` }}
+          >
+            {/* Header de columna */}
+            <div className={`p-4 bg-gradient-to-r ${columna.color} border-b ${tema.colores.borde}`}>
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-white/20 backdrop-blur-xl rounded-lg flex items-center justify-center">
+                    <columna.icono className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h4 className="text-lg font-black text-white">{columna.titulo}</h4>
+                    <p className="text-xs font-semibold text-white/80">
+                      {ticketsPorEstado[columna.estado].length} tickets
+                    </p>
+                  </div>
+                </div>
+                <span className="px-3 py-1 rounded-full text-sm font-bold bg-white/20 backdrop-blur-xl text-white">
+                  {ticketsPorEstado[columna.estado].length}
+                </span>
+              </div>
+            </div>
+
+            {/* Tickets */}
+            <div className="p-4 space-y-3 max-h-[600px] overflow-y-auto custom-scrollbar">
+              {ticketsPorEstado[columna.estado].length === 0 ? (
+                <div className="text-center py-8">
+                  <columna.icono
+                    className={`w-12 h-12 mx-auto mb-3 ${tema.colores.textoSecundario} opacity-30`}
+                  />
+                  <p className={`text-sm font-semibold ${tema.colores.textoSecundario}`}>
+                    No hay tickets
+                  </p>
+                </div>
+              ) : (
+                ticketsPorEstado[columna.estado].map((ticket, ticketIdx) => {
+                  const IconoTipo = obtenerIconoTipo(ticket.tipo);
+                  
+                  return (
+                    <div
+                      key={ticket.id_ticket}
+                      onClick={() => setTicketSeleccionado(ticket)}
+                      className={`rounded-xl p-4 ${tema.colores.fondoSecundario} ${tema.colores.borde} border transition-all duration-300 hover:scale-105 hover:shadow-xl cursor-pointer group animate-slideDown`}
+                      style={{ animationDelay: `${ticketIdx * 0.05}s` }}
+                    >
+                      <div className="flex items-start gap-3 mb-3">
+                        <div
+                          className={`w-10 h-10 rounded-lg bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform flex-shrink-0`}
+                        >
+                          <IconoTipo className="w-5 h-5 text-white" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p
+                            className={`text-xs font-bold mb-1 px-2 py-1 rounded-md bg-gradient-to-r ${tema.colores.gradiente} text-white inline-block`}
+                          >
+                            {ticket.numero_ticket}
+                          </p>
+                          <h5
+                            className={`text-sm font-black ${tema.colores.texto} line-clamp-2 group-hover:text-indigo-500 transition-colors`}
+                          >
+                            {ticket.titulo}
+                          </h5>
+                        </div>
+                      </div>
+
+                      <div className="space-y-2 mb-3">
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`flex-1 px-2 py-1 rounded-md text-xs font-bold border ${obtenerColorPrioridad(
+                              ticket.prioridad
+                            )}`}
+                          >
+                            {ticket.prioridad === "critica" ? "🔥" : "⚡"}{" "}
+                            {ticket.prioridad.toUpperCase()}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs">
+                          <MapPinIcon className={`w-3 h-3 ${tema.colores.acento}`} />
+                          <span className={`font-semibold ${tema.colores.texto} truncate`}>
+                            {ticket.centro?.nombre}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs">
+                          <Clock className={`w-3 h-3 ${tema.colores.acento}`} />
+                          <span className={`font-semibold ${tema.colores.textoSecundario}`}>
+                            {formatearFecha(ticket.fecha_creacion)}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Acciones rápidas de cambio de estado */}
+                      <div className="flex flex-wrap gap-1">
+                        {columnas
+                          .filter((c) => c.estado !== columna.estado)
+                          .map((c) => (
+                            <button
+                              key={c.estado}
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                actualizarEstadoTicket(ticket.id_ticket, c.estado);
+                              }}
+                              className={`flex-1 px-2 py-1 rounded-md text-[10px] font-bold bg-gradient-to-r ${c.color} text-white transition-all duration-300 hover:scale-105 shadow-lg`}
+                              title={`Mover a ${c.titulo}`}
+                            >
+                              <c.icono className="w-3 h-3 mx-auto" />
+                            </button>
+                          ))}
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ========================================
+// COMPONENTE: VISTA CALENDARIO PREMIUM
+// ========================================
+
+function VistaCalendario({
+  tema,
+  ticketsFiltrados,
+  setTicketSeleccionado,
+  obtenerColorEstado,
+  obtenerColorPrioridad,
+  formatearFecha,
+}: {
+  tema: ConfiguracionTema;
+  ticketsFiltrados: Ticket[];
+  setTicketSeleccionado: (ticket: Ticket) => void;
+  obtenerColorEstado: (estado: string) => string;
+  obtenerColorPrioridad: (prioridad: string) => string;
+  formatearFecha: (fecha: string) => string;
+}) {
+  const [mesActual, setMesActual] = useState(new Date());
+
+  const ticketsPorDia = useMemo(() => {
+    const mapa: Record<string, Ticket[]> = {};
+
+    ticketsFiltrados.forEach((ticket) => {
+      const fecha =
+        ticket.fecha_resolucion || ticket.fecha_asignacion || ticket.fecha_creacion;
+      const dia = fecha.slice(0, 10);
+      if (!mapa[dia]) mapa[dia] = [];
+      mapa[dia].push(ticket);
+    });
+
+    return mapa;
+  }, [ticketsFiltrados]);
+
+  const diasDelMes = useMemo(() => {
+    const year = mesActual.getFullYear();
+    const month = mesActual.getMonth();
+    const primerDia = new Date(year, month, 1);
+    const ultimoDia = new Date(year, month + 1, 0);
+    const dias: Date[] = [];
+
+    // Días del mes anterior para completar la primera semana
+    const diaSemana = primerDia.getDay();
+    for (let i = diaSemana - 1; i >= 0; i--) {
+      dias.push(new Date(year, month, -i));
+    }
+
+    // Días del mes actual
+    for (let i = 1; i <= ultimoDia.getDate(); i++) {
+      dias.push(new Date(year, month, i));
+    }
+
+    // Días del mes siguiente para completar la última semana
+    const diasRestantes = 7 - (dias.length % 7);
+    if (diasRestantes < 7) {
+      for (let i = 1; i <= diasRestantes; i++) {
+        dias.push(new Date(year, month + 1, i));
+      }
+    }
+
+    return dias;
+  }, [mesActual]);
+
+  const cambiarMes = (direccion: number) => {
+    setMesActual(
+      new Date(mesActual.getFullYear(), mesActual.getMonth() + direccion, 1)
+    );
+  };
+
+  return (
+    <div className="animate-slideDown">
+      <div
+        className={`rounded-2xl p-6 mb-6 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra}`}
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div
+              className={`w-12 h-12 rounded-xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center shadow-lg`}
+            >
+              <Calendar className="w-6 h-6 text-white" />
+            </div>
+            <div>
+              <h3 className={`text-2xl font-black ${tema.colores.texto}`}>
+                Vista Calendario
+              </h3>
+              <p className={`text-sm ${tema.colores.textoSecundario}`}>
+                Visualización temporal por días
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => cambiarMes(-1)}
+              className={`p-2 rounded-lg ${tema.colores.hover} transition-all duration-300 hover:scale-110`}
+            >
+              <SkipBack className="w-5 h-5" />
+            </button>
+            <div className="text-center">
+              <p className={`text-xl font-black ${tema.colores.texto}`}>
+                {mesActual.toLocaleDateString("es-CL", { month: "long", year: "numeric" })}
+              </p>
+            </div>
+            <button
+              onClick={() => cambiarMes(1)}
+              className={`p-2 rounded-lg ${tema.colores.hover} transition-all duration-300 hover:scale-110`}
+            >
+              <SkipForward className="w-5 h-5" />
+            </button>
+            <button
+              onClick={() => setMesActual(new Date())}
+              className={`px-4 py-2 rounded-lg font-bold ${tema.colores.primario} text-white transition-all duration-300 hover:scale-105 shadow-lg`}
+            >
+              Hoy
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div
+        className={`rounded-2xl overflow-hidden ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra}`}
+      >
+        {/* Encabezado de días */}
+        <div className={`grid grid-cols-7 gap-px ${tema.colores.fondoSecundario}`}>
+          {["Dom", "Lun", "Mar", "Mié", "Jue", "Vie", "Sáb"].map((dia) => (
+            <div
+              key={dia}
+              className={`p-4 text-center font-black text-sm ${tema.colores.texto} bg-gradient-to-r ${tema.colores.gradiente} text-white`}
+            >
+              {dia}
+            </div>
+          ))}
+        </div>
+
+        {/* Días del mes */}
+        <div className={`grid grid-cols-7 gap-px ${tema.colores.borde} bg-gray-700/20`}>
+          {diasDelMes.map((dia, idx) => {
+            const diaStr = dia.toISOString().slice(0, 10);
+            const ticketsDelDia = ticketsPorDia[diaStr] || [];
+            const esMesActual = dia.getMonth() === mesActual.getMonth();
+            const esHoy =
+              dia.toDateString() === new Date().toDateString();
+
+            return (
+              <div
+                key={idx}
+                className={`min-h-[120px] p-3 ${tema.colores.card} transition-all duration-300 hover:scale-105 cursor-pointer ${
+                  !esMesActual ? "opacity-30" : ""
+                } ${esHoy ? `ring-2 ring-indigo-500 shadow-lg` : ""}`}
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <span
+                    className={`text-sm font-bold ${
+                      esHoy
+                        ? `px-2 py-1 rounded-full bg-gradient-to-r ${tema.colores.gradiente} text-white`
+                        : tema.colores.texto
+                    }`}
+                  >
+                    {dia.getDate()}
+                  </span>
+                  {ticketsDelDia.length > 0 && (
+                    <span
+                      className={`px-2 py-1 rounded-full text-xs font-bold bg-gradient-to-r ${tema.colores.gradiente} text-white shadow-lg`}
+                    >
+                      {ticketsDelDia.length}
+                    </span>
+                  )}
+                </div>
+
+                <div className="space-y-1">
+                  {ticketsDelDia.slice(0, 3).map((ticket) => (
+                    <div
+                      key={ticket.id_ticket}
+                      onClick={() => setTicketSeleccionado(ticket)}
+                      className={`px-2 py-1 rounded-lg text-xs font-semibold ${tema.colores.hover} ${tema.colores.texto} truncate transition-all duration-300 hover:scale-105 cursor-pointer border-l-2 ${
+                        ticket.prioridad === "critica"
+                          ? "border-red-500"
+                          : ticket.prioridad === "alta"
+                          ? "border-orange-500"
+                          : ticket.prioridad === "media"
+                          ? "border-yellow-500"
+                          : "border-green-500"
+                      }`}
+                      title={ticket.titulo}
+                    >
+                      {ticket.numero_ticket}
+                    </div>
+                  ))}
+                  {ticketsDelDia.length > 3 && (
+                    <div
+                      className={`px-2 py-1 rounded-lg text-xs font-bold text-center ${tema.colores.hover} ${tema.colores.acento}`}
+                    >
+                      +{ticketsDelDia.length - 3} más
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ========================================
+// COMPONENTE: PANEL DETALLE TICKET PREMIUM
+// ========================================
+
+function PanelDetalleTicket({
+  ticket,
+  tema,
+  onClose,
+  obtenerIconoTipo,
+  obtenerColorEstado,
+  obtenerColorPrioridad,
+  formatearFecha,
+  actualizarEstadoTicket,
+  actualizarPrioridadTicket,
+}: {
+  ticket: Ticket;
+  tema: ConfiguracionTema;
+  onClose: () => void;
+  obtenerIconoTipo: (tipo: string) => any;
+  obtenerColorEstado: (estado: string) => string;
+  obtenerColorPrioridad: (prioridad: string) => string;
+  formatearFecha: (fecha: string) => string;
+  actualizarEstadoTicket: (id: number, estado: Ticket["estado"]) => void;
+  actualizarPrioridadTicket: (id: number, prioridad: Ticket["prioridad"]) => void;
+}) {
+  const IconoTipo = obtenerIconoTipo(ticket.tipo);
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-end md:items-center justify-center p-0 md:p-4 animate-slideDown">
+      {/* Overlay */}
+      <div
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+        onClick={onClose}
+      />
+
+      {/* Panel */}
+      <div
+        className={`relative w-full md:max-w-3xl max-h-[90vh] rounded-t-3xl md:rounded-3xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} overflow-hidden animate-slideUp`}
+      >
+        {/* Header con gradiente */}
+        <div className={`relative p-6 bg-gradient-to-r ${tema.colores.gradiente} text-white overflow-hidden`}>
+          <div className="absolute inset-0 bg-black/20" />
+          <div className="relative z-10">
+            <div className="flex items-start justify-between mb-4">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 bg-white/20 backdrop-blur-xl rounded-2xl flex items-center justify-center shadow-2xl">
+                  <IconoTipo className="w-8 h-8 text-white" />
+                </div>
+                <div>
+                  <p className="text-sm font-bold mb-1 opacity-90">
+                    {ticket.numero_ticket}
+                  </p>
+                  <h3 className="text-2xl font-black">{ticket.titulo}</h3>
+                  <p className="text-sm opacity-80 mt-1">{ticket.tipo.toUpperCase()}</p>
+                </div>
+              </div>
+              <button
+                onClick={onClose}
+                className="p-2 rounded-xl bg-white/20 backdrop-blur-xl hover:bg-white/30 transition-all duration-300 hover:scale-110"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <span
+                className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold bg-white/20 backdrop-blur-xl border border-white/30`}
+              >
+                <Activity className="w-3 h-3" />
+                {ticket.estado.replace("_", " ").toUpperCase()}
+              </span>
+              <span
+                className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold bg-white/20 backdrop-blur-xl border border-white/30`}
+              >
+                {ticket.prioridad === "critica" ? (
+                  <Flame className="w-3 h-3 animate-pulse" />
+                ) : (
+                  <ZapIcon className="w-3 h-3" />
+                )}
+                {ticket.prioridad.toUpperCase()}
+              </span>
+              {ticket.calificacion && (
+                <span className="inline-flex items-center gap-1 px-3 py-1.5 rounded-full text-xs font-bold bg-white/20 backdrop-blur-xl border border-white/30">
+                  <Star className="w-3 h-3 fill-white" />
+                  {ticket.calificacion.toFixed(1)}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+
+        {/* Contenido */}
+        <div className="p-6 max-h-[calc(90vh-200px)] overflow-y-auto custom-scrollbar">
+          {/* Descripción */}
+          <div className="mb-6">
+            <h4 className={`text-sm font-black mb-2 ${tema.colores.texto} uppercase tracking-wider flex items-center gap-2`}>
+              <FileText className="w-4 h-4" />
+              Descripción
+            </h4>
+            <p className={`text-sm ${tema.colores.textoSecundario} leading-relaxed`}>
+              {ticket.descripcion}
+            </p>
+          </div>
+
+          {/* Información del solicitante */}
+          <div className={`mb-6 p-4 rounded-xl ${tema.colores.fondoSecundario} ${tema.colores.borde} border`}>
+            <h4 className={`text-sm font-black mb-3 ${tema.colores.texto} uppercase tracking-wider flex items-center gap-2`}>
+              <User className="w-4 h-4" />
+              Solicitante
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <p className="text-xs font-semibold opacity-70 mb-1">Nombre</p>
+                <p className={`text-sm font-bold ${tema.colores.texto}`}>
+                  {ticket.solicitante.nombre_completo}
+                </p>
+              </div>
+              <div>
+                <p className="text-xs font-semibold opacity-70 mb-1">Email</p>
+                <a
+                  href={`mailto:${ticket.solicitante.email}`}
+                  className={`text-sm font-bold ${tema.colores.acento} hover:underline`}
+                >
+                  {ticket.solicitante.email}
+                </a>
+              </div>
+              {ticket.solicitante.telefono && (
+                <div>
+                  <p className="text-xs font-semibold opacity-70 mb-1">Teléfono</p>
+                  <a
+                    href={`tel:${ticket.solicitante.telefono}`}
+                    className={`text-sm font-bold ${tema.colores.acento} hover:underline flex items-center gap-2`}
+                  >
+                    <PhoneIcon className="w-4 h-4" />
+                    {ticket.solicitante.telefono}
+                  </a>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Información del centro y equipo */}
+          <div className={`mb-6 p-4 rounded-xl ${tema.colores.fondoSecundario} ${tema.colores.borde} border`}>
+            <h4 className={`text-sm font-black mb-3 ${tema.colores.texto} uppercase tracking-wider flex items-center gap-2`}>
+              <Building2 className="w-4 h-4" />
+              Ubicación y Equipo
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <p className="text-xs font-semibold opacity-70 mb-1">Centro</p>
+                <p className={`text-sm font-bold ${tema.colores.texto}`}>
+                  {ticket.centro?.nombre}
+                </p>
+                <p className={`text-xs ${tema.colores.textoSecundario}`}>
+                  {ticket.centro?.ciudad}
+                </p>
+              </div>
+              {ticket.departamento && (
+                <div>
+                  <p className="text-xs font-semibold opacity-70 mb-1">Departamento</p>
+                  <p className={`text-sm font-bold ${tema.colores.texto}`}>
+                    {ticket.departamento.nombre}
+                  </p>
+                </div>
+              )}
+              {ticket.equipo_afectado && (
+                <>
+                  <div>
+                    <p className="text-xs font-semibold opacity-70 mb-1">Equipo</p>
+                    <p className={`text-sm font-bold ${tema.colores.texto}`}>
+                      {ticket.equipo_afectado.nombre}
+                    </p>
+                    <p className={`text-xs ${tema.colores.textoSecundario}`}>
+                      {ticket.equipo_afectado.tipo}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-xs font-semibold opacity-70 mb-1">Ubicación</p>
+                    <p className={`text-sm font-bold ${tema.colores.texto}`}>
+                      {ticket.equipo_afectado.ubicacion}
+                    </p>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Timeline de fechas */}
+          <div className={`mb-6 p-4 rounded-xl ${tema.colores.fondoSecundario} ${tema.colores.borde} border`}>
+            <h4 className={`text-sm font-black mb-3 ${tema.colores.texto} uppercase tracking-wider flex items-center gap-2`}>
+              <Clock className="w-4 h-4" />
+              Timeline
+            </h4>
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-blue-500/20 flex items-center justify-center">
+                  <CalendarPlus className="w-4 h-4 text-blue-500" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-xs font-semibold opacity-70">Creado</p>
+                  <p className={`text-sm font-bold ${tema.colores.texto}`}>
+                    {formatearFecha(ticket.fecha_creacion)}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-lg bg-indigo-500/20 flex items-center justify-center">
+                  <UserCheck className="w-4 h-4 text-indigo-500" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-xs font-semibold opacity-70">Asignado</p>
+                  <p className={`text-sm font-bold ${tema.colores.texto}`}>
+                    {formatearFecha(ticket.fecha_asignacion)}
+                  </p>
+                </div>
+              </div>
+              {ticket.fecha_resolucion && (
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-500/20 flex items-center justify-center">
+                    <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-xs font-semibold opacity-70">Resuelto</p>
+                    <p className="text-sm font-bold text-emerald-500">
+                      {formatearFecha(ticket.fecha_resolucion)}
+                    </p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Tiempos */}
+          <div className={`mb-6 p-4 rounded-xl ${tema.colores.fondoSecundario} ${tema.colores.borde} border`}>
+            <h4 className={`text-sm font-black mb-3 ${tema.colores.texto} uppercase tracking-wider flex items-center gap-2`}>
+              <Timer className="w-4 h-4" />
+              Tiempos de Resolución
+            </h4>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <p className="text-xs font-semibold opacity-70 mb-1">Tiempo Estimado</p>
+                <p className={`text-2xl font-black ${tema.colores.texto}`}>
+                  {ticket.tiempo_estimado_minutos}
+                  <span className="text-sm font-semibold ml-1">min</span>
+                </p>
+              </div>
+              {ticket.tiempo_real_minutos && (
+                <div>
+                  <p className="text-xs font-semibold opacity-70 mb-1">Tiempo Real</p>
+                  <p
+                    className={`text-2xl font-black ${
+                      ticket.tiempo_real_minutos <= ticket.tiempo_estimado_minutos
+                        ? "text-emerald-500"
+                        : "text-red-500"
+                    }`}
+                  >
+                    {ticket.tiempo_real_minutos}
+                    <span className="text-sm font-semibold ml-1">min</span>
+                  </p>
+                  {ticket.tiempo_real_minutos <= ticket.tiempo_estimado_minutos ? (
+                    <div className="flex items-center gap-1 mt-1">
+                      <CheckCircle2 className="w-3 h-3 text-emerald-500" />
+                      <span className="text-xs font-bold text-emerald-500">
+                        Dentro del SLA
+                      </span>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1 mt-1">
+                      <AlertTriangle className="w-3 h-3 text-red-500" />
+                      <span className="text-xs font-bold text-red-500">
+                        Fuera del SLA
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Notas del técnico */}
+          {ticket.notas_tecnico && (
+            <div className={`mb-6 p-4 rounded-xl ${tema.colores.fondoSecundario} ${tema.colores.borde} border`}>
+              <h4 className={`text-sm font-black mb-2 ${tema.colores.texto} uppercase tracking-wider flex items-center gap-2`}>
+                <FileSignature className="w-4 h-4" />
+                Notas del Técnico
+              </h4>
+              <p className={`text-sm ${tema.colores.textoSecundario} leading-relaxed`}>
+                {ticket.notas_tecnico}
+              </p>
+            </div>
+          )}
+
+          {/* Calificación y comentario del cliente */}
+          {(ticket.calificacion || ticket.comentario_cliente) && (
+            <div className={`mb-6 p-4 rounded-xl bg-gradient-to-r from-yellow-500/10 to-orange-500/10 border border-yellow-500/30`}>
+              <h4 className={`text-sm font-black mb-3 ${tema.colores.texto} uppercase tracking-wider flex items-center gap-2`}>
+                <Star className="w-4 h-4 text-yellow-500" />
+                Evaluación del Cliente
+              </h4>
+              {ticket.calificacion && (
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="flex items-center gap-1">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <Star
+                        key={star}
+                        className={`w-5 h-5 ${
+                          star <= ticket.calificacion!
+                            ? "text-yellow-500 fill-yellow-500"
+                            : "text-gray-400"
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <span className="text-2xl font-black text-yellow-500">
+                    {ticket.calificacion.toFixed(1)}
+                  </span>
+                  <span className={`text-sm font-semibold ${tema.colores.textoSecundario}`}>
+                    / 5.0
+                  </span>
+                </div>
+              )}
+              {ticket.comentario_cliente && (
+                <div>
+                  <p className="text-xs font-semibold opacity-70 mb-1">Comentario</p>
+                  <p className={`text-sm ${tema.colores.texto} italic leading-relaxed`}>
+                    "{ticket.comentario_cliente}"
+                  </p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Acciones de cambio de estado */}
+          <div className={`mb-6 p-4 rounded-xl ${tema.colores.fondoSecundario} ${tema.colores.borde} border`}>
+            <h4 className={`text-sm font-black mb-3 ${tema.colores.texto} uppercase tracking-wider flex items-center gap-2`}>
+              <Settings className="w-4 h-4" />
+              Cambiar Estado
+            </h4>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+              {[
+                { estado: "abierto", label: "Abierto", icon: AlertCircle, color: "from-red-500 to-pink-500" },
+                { estado: "en_progreso", label: "En Progreso", icon: PlayCircle, color: "from-blue-500 to-cyan-500" },
+                { estado: "resuelto", label: "Resuelto", icon: CheckCircle2, color: "from-emerald-500 to-teal-500" },
+                { estado: "cancelado", label: "Cancelado", icon: X, color: "from-gray-500 to-slate-500" },
+              ].map((item) => (
+                <button
+                  key={item.estado}
+                  onClick={() => {
+                    actualizarEstadoTicket(ticket.id_ticket, item.estado as Ticket["estado"]);
+                    onClose();
+                  }}
+                  disabled={ticket.estado === item.estado}
+                  className={`flex flex-col items-center gap-2 p-3 rounded-xl font-bold text-sm transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed ${
+                    ticket.estado === item.estado
+                      ? `bg-gradient-to-r ${item.color} text-white shadow-lg`
+                      : `${tema.colores.hover} ${tema.colores.texto}`
+                  }`}
+                >
+                  <item.icon className="w-5 h-5" />
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Acciones de cambio de prioridad */}
+          <div className={`mb-6 p-4 rounded-xl ${tema.colores.fondoSecundario} ${tema.colores.borde} border`}>
+            <h4 className={`text-sm font-black mb-3 ${tema.colores.texto} uppercase tracking-wider flex items-center gap-2`}>
+              <Flame className="w-4 h-4" />
+              Cambiar Prioridad
+            </h4>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+              {[
+                { prioridad: "baja", label: "Baja", icon: CheckSquare, color: "from-green-500 to-emerald-500" },
+                { prioridad: "media", label: "Media", icon: AlertCircle, color: "from-yellow-500 to-orange-500" },
+                { prioridad: "alta", label: "Alta", icon: AlertTriangle, color: "from-orange-500 to-red-500" },
+                { prioridad: "critica", label: "Crítica", icon: Flame, color: "from-red-500 to-pink-500" },
+              ].map((item) => (
+                <button
+                  key={item.prioridad}
+                  onClick={() => {
+                    actualizarPrioridadTicket(ticket.id_ticket, item.prioridad as Ticket["prioridad"]);
+                  }}
+                  disabled={ticket.prioridad === item.prioridad}
+                  className={`flex flex-col items-center gap-2 p-3 rounded-xl font-bold text-sm transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed ${
+                    ticket.prioridad === item.prioridad
+                      ? `bg-gradient-to-r ${item.color} text-white shadow-lg`
+                      : `${tema.colores.hover} ${tema.colores.texto}`
+                  }`}
+                >
+                  <item.icon className={`w-5 h-5 ${item.prioridad === "critica" ? "animate-pulse" : ""}`} />
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Acciones rápidas */}
+          <div className="flex flex-wrap gap-3">
+            <Link
+              href={`/tecnico/tickets/${ticket.id_ticket}`}
+              className={`flex-1 flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold ${tema.colores.primario} text-white transition-all duration-300 hover:scale-105 shadow-lg`}
+            >
+              <ExternalLink className="w-5 h-5" />
+              Ver Página Completa
+            </Link>
+            {ticket.solicitante.telefono && (
+              <a
+                href={`tel:${ticket.solicitante.telefono}`}
+                className={`flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold ${tema.colores.secundario} ${tema.colores.texto} transition-all duration-300 hover:scale-105`}
+              >
+                <PhoneCall className="w-5 h-5" />
+                Llamar
+              </a>
+            )}
+            <a
+              href={`mailto:${ticket.solicitante.email}`}
+              className={`flex items-center justify-center gap-2 px-6 py-3 rounded-xl font-bold ${tema.colores.secundario} ${tema.colores.texto} transition-all duration-300 hover:scale-105`}
+            >
+              <Mail className="w-5 h-5" />
+              Email
+            </a>
+          </div>
+        </div>
+
+        {/* Footer del panel */}
+        <div className={`p-4 border-t ${tema.colores.borde} bg-gradient-to-r ${tema.colores.gradiente}`}>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2 text-white">
+              <Info className="w-4 h-4" />
+              <span className="text-xs font-semibold">
+                ID: {ticket.id_ticket} • Última actualización: {formatearFecha(ticket.fecha_asignacion)}
+              </span>
+            </div>
+            <button
+              onClick={onClose}
+              className="px-4 py-2 rounded-xl font-bold bg-white/20 backdrop-blur-xl text-white hover:bg-white/30 transition-all duration-300 hover:scale-105"
+            >
+              Cerrar
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ========================================
+// ESTILOS ADICIONALES Y ANIMACIONES
+// ========================================
+
+const estilosGlobalesAdicionales = `
+  @keyframes slideUp {
+    from {
+      opacity: 0;
+      transform: translateY(100px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .animate-slideUp {
+    animation: slideUp 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @keyframes shimmer {
+    0% {
+      background-position: -1000px 0;
+    }
+    100% {
+      background-position: 1000px 0;
+    }
+  }
+
+  .animate-shimmer {
+    animation: shimmer 2s infinite linear;
+    background: linear-gradient(
+      to right,
+      transparent 0%,
+      rgba(255, 255, 255, 0.1) 50%,
+      transparent 100%
+    );
+    background-size: 1000px 100%;
+  }
+
+  @keyframes gradient-shift {
+    0%, 100% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+  }
+
+  .animate-gradient {
+    background-size: 200% 200%;
+    animation: gradient-shift 3s ease infinite;
+  }
+
+  @keyframes bounce-subtle {
+    0%, 100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-5px);
+    }
+  }
+
+  .animate-bounce-subtle {
+    animation: bounce-subtle 2s ease-in-out infinite;
+  }
+
+  @keyframes rotate-slow {
+    from {
+      transform: rotate(0deg);
+    }
+    to {
+      transform: rotate(360deg);
+    }
+  }
+
+  .animate-rotate-slow {
+    animation: rotate-slow 20s linear infinite;
+  }
+
+  @keyframes fade-in {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  .animate-fade-in {
+    animation: fade-in 0.5s ease-out;
+  }
+
+  /* Scrollbar personalizada premium */
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #6366f1 0%, #8b5cf6 50%, #ec4899 100%);
+    border-radius: 10px;
+    border: 2px solid rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #4f46e5 0%, #7c3aed 50%, #db2777 100%);
+    box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
+  }
+
+  /* Efectos de hover premium */
+  .hover-lift {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .hover-lift:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+  }
+
+  /* Efectos de glassmorphism */
+  .glass-effect {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  /* Efectos de neomorphism */
+  .neo-effect {
+    box-shadow: 
+      8px 8px 16px rgba(0, 0, 0, 0.2),
+      -8px -8px 16px rgba(255, 255, 255, 0.05);
+  }
+
+  /* Gradientes animados */
+  .gradient-animated {
+    background: linear-gradient(
+      -45deg,
+      #6366f1,
+      #8b5cf6,
+      #ec4899,
+      #f59e0b
+    );
+    background-size: 400% 400%;
+    animation: gradient-shift 15s ease infinite;
+  }
+
+  /* Efectos de texto brillante */
+  .text-glow {
+    text-shadow: 
+      0 0 10px rgba(99, 102, 241, 0.5),
+      0 0 20px rgba(139, 92, 246, 0.3),
+      0 0 30px rgba(236, 72, 153, 0.2);
+  }
+
+  /* Bordes animados */
+  @keyframes border-spin {
+    0% {
+      transform: rotate(0deg);
+    }
+    100% {
+      transform: rotate(360deg);
+    }
+  }
+
+  .border-animated::before {
+    content: '';
+    position: absolute;
+    inset: -2px;
+    background: linear-gradient(45deg, #6366f1, #8b5cf6, #ec4899, #f59e0b);
+    border-radius: inherit;
+    animation: border-spin 3s linear infinite;
+    z-index: -1;
+  }
+
+  /* Efectos de partículas */
+  @keyframes float-particles {
+    0%, 100% {
+      transform: translateY(0) translateX(0);
+    }
+    33% {
+      transform: translateY(-20px) translateX(10px);
+    }
+    66% {
+      transform: translateY(-10px) translateX(-10px);
+    }
+  }
+
+  .particle-effect {
+    animation: float-particles 6s ease-in-out infinite;
+  }
+
+  /* Efectos de pulso mejorado */
+  @keyframes pulse-ring {
+    0% {
+      transform: scale(0.95);
+      box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.7);
+    }
+    70% {
+      transform: scale(1);
+      box-shadow: 0 0 0 10px rgba(99, 102, 241, 0);
+    }
+    100% {
+      transform: scale(0.95);
+      box-shadow: 0 0 0 0 rgba(99, 102, 241, 0);
+    }
+  }
+
+  .pulse-ring {
+    animation: pulse-ring 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+
+  /* Efectos de carga skeleton */
+  @keyframes skeleton-loading {
+    0% {
+      background-position: -200px 0;
+    }
+    100% {
+      background-position: calc(200px + 100%) 0;
+    }
+  }
+
+  .skeleton {
+    background: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0.05) 0px,
+      rgba(255, 255, 255, 0.15) 40px,
+      rgba(255, 255, 255, 0.05) 80px
+    );
+    background-size: 200px 100%;
+    animation: skeleton-loading 1.5s infinite;
+  }
+
+  /* Transiciones suaves para todo */
+  * {
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Mejoras de accesibilidad */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+
+  /* Mejoras para modo oscuro */
+  @media (prefers-color-scheme: dark) {
+    .glass-effect {
+      background: rgba(0, 0, 0, 0.3);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+  }
+
+  /* Efectos de hover para botones */
+  .btn-premium {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+  }
+
+  .btn-premium::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      45deg,
+      transparent,
+      rgba(255, 255, 255, 0.1),
+      transparent
+    );
+    transform: translateX(-100%);
+    transition: transform 0.6s;
+  }
+
+  .btn-premium:hover::before {
+    transform: translateX(100%);
+  }
+
+  /* Efectos de badge */
+  .badge-premium {
+    position: relative;
+    overflow: hidden;
+  }
+
+  .badge-premium::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+  }
+
+  .badge-premium:hover::after {
+    width: 300px;
+    height: 300px;
+  }
+
+  /* Efectos de card premium */
+  .card-premium {
+    position: relative;
+    transform-style: preserve-3d;
+    transition: transform 0.6s;
+  }
+
+  .card-premium:hover {
+    transform: rotateY(5deg) rotateX(5deg);
+  }
+
+  .card-premium::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      135deg,
+      rgba(99, 102, 241, 0.1) 0%,
+      transparent 50%,
+      rgba(236, 72, 153, 0.1) 100%
+    );
+    opacity: 0;
+    transition: opacity 0.3s;
+    pointer-events: none;
+  }
+
+  .card-premium:hover::before {
+    opacity: 1;
+  }
+
+  /* Efectos de tooltip premium */
+  .tooltip-premium {
+    position: relative;
+  }
+
+  .tooltip-premium::after {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%) translateY(-8px);
+    padding: 8px 12px;
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 8px;
+    white-space: nowrap;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s, transform 0.3s;
+  }
+
+  .tooltip-premium:hover::after {
+    opacity: 1;
+    transform: translateX(-50%) translateY(-4px);
+  }
+
+  /* Efectos de input premium */
+  .input-premium {
+    position: relative;
+  }
+
+  .input-premium input:focus {
+    box-shadow: 
+      0 0 0 3px rgba(99, 102, 241, 0.1),
+      0 0 20px rgba(99, 102, 241, 0.2);
+  }
+
+  /* Efectos de tabla premium */
+  .table-premium tbody tr {
+    transition: all 0.3s ease;
+  }
+
+  .table-premium tbody tr:hover {
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(99, 102, 241, 0.05),
+      transparent
+    );
+    transform: scale(1.01);
+  }
+
+  /* Efectos de timeline premium */
+  .timeline-premium::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 2px;
+    background: linear-gradient(
+      180deg,
+      #6366f1 0%,
+      #8b5cf6 50%,
+      #ec4899 100%
+    );
+    box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
+  }
+
+  /* Efectos de modal premium */
+  .modal-premium {
+    animation: modal-appear 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  @keyframes modal-appear {
+    from {
+      opacity: 0;
+      transform: scale(0.95) translateY(20px);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+
+  /* Efectos de notificación premium */
+  @keyframes notification-slide {
+    from {
+      transform: translateX(400px);
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+
+  .notification-premium {
+    animation: notification-slide 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  /* Efectos de progreso premium */
+  @keyframes progress-indeterminate {
+    0% {
+      transform: translateX(-100%);
+    }
+    100% {
+      transform: translateX(400%);
+    }
+  }
+
+  .progress-indeterminate::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(255, 255, 255, 0.3),
+      transparent
+    );
+    animation: progress-indeterminate 1.5s infinite;
+  }
+
+  /* Mejoras de rendimiento */
+  .gpu-accelerated {
+    transform: translateZ(0);
+    will-change: transform;
+  }
+
+  /* Efectos de focus premium */
+  *:focus-visible {
+    outline: 2px solid #6366f1;
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  /* Efectos de selección premium */
+  ::selection {
+    background: rgba(99, 102, 241, 0.3);
+    color: white;
+  }
+
+  /* Efectos de placeholder premium */
+  ::placeholder {
+    color: rgba(156, 163, 175, 0.5);
+    font-weight: 500;
+  }
+
+  /* Efectos de autofill premium */
+  input:-webkit-autofill {
+    -webkit-box-shadow: 0 0 0 1000px rgba(99, 102, 241, 0.1) inset;
+    -webkit-text-fill-color: currentColor;
+  }
+`;
+
+// Exportar el componente principal
+//export default TicketDetalleModal;
+

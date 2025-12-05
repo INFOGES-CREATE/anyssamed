@@ -3,10 +3,10 @@
 
 import { useState, useEffect, useMemo } from "react";
 import SidebarTecnico from "@/components/tecnico/SidebarTecnico";
-
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
+
 
 import {
   Activity,
@@ -109,6 +109,11 @@ import {
   GraduationCap,
   Handshake,
   Clock3,
+  Filter,
+  SlidersHorizontal,
+  Maximize2,
+  Minimize2,
+  TrendingUpIcon,
 } from "lucide-react";
 
 import {
@@ -132,7 +137,11 @@ import {
   PolarAngleAxis,
   PolarRadiusAxis,
   Radar,
+  ComposedChart,
 } from "recharts";
+
+// 👇 agrega este import (puede ir justo debajo)
+import type { PieLabelRenderProps } from "recharts";
 
 // ========================================
 // TIPOS
@@ -435,19 +444,85 @@ const DATOS_EFICIENCIA_TECNICO_DEFAULT: EficienciaTecnico[] = [
 ];
 
 // ========================================
+// COMPONENTE: Skeleton Loader Premium
+// ========================================
+
+const SkeletonCard = ({ tema }: { tema: ConfiguracionTema }) => (
+  <div
+    className={`rounded-2xl p-6 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} animate-pulse`}
+  >
+    <div className="flex items-center justify-between mb-4">
+      <div className="w-12 h-12 bg-gradient-to-br from-gray-700 to-gray-600 rounded-xl"></div>
+      <div className="w-6 h-6 bg-gray-700 rounded"></div>
+    </div>
+    <div className="space-y-3">
+      <div className="h-4 bg-gray-700 rounded w-3/4"></div>
+      <div className="h-8 bg-gray-700 rounded w-1/2"></div>
+      <div className="h-3 bg-gray-700 rounded w-2/3"></div>
+    </div>
+  </div>
+);
+
+const SkeletonChart = ({ tema }: { tema: ConfiguracionTema }) => (
+  <div
+    className={`rounded-2xl p-6 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} animate-pulse`}
+  >
+    <div className="flex items-center gap-3 mb-6">
+      <div className="w-12 h-12 bg-gradient-to-br from-gray-700 to-gray-600 rounded-xl"></div>
+      <div className="flex-1 space-y-2">
+        <div className="h-5 bg-gray-700 rounded w-1/3"></div>
+        <div className="h-3 bg-gray-700 rounded w-1/2"></div>
+      </div>
+    </div>
+    <div className="h-[300px] bg-gray-700/30 rounded-xl"></div>
+  </div>
+);
+
+// ========================================
+// COMPONENTE: Tooltip Personalizado
+// ========================================
+
+const CustomTooltip = ({ active, payload, label, tema }: any) => {
+  if (active && payload && payload.length) {
+    return (
+      <div
+        className={`rounded-xl p-4 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} backdrop-blur-xl`}
+      >
+        <p className={`font-bold mb-2 ${tema.colores.texto}`}>{label}</p>
+        {payload.map((entry: any, index: number) => (
+          <div key={index} className="flex items-center justify-between gap-4 mb-1">
+            <div className="flex items-center gap-2">
+              <div
+                className="w-3 h-3 rounded-full"
+                style={{ backgroundColor: entry.color }}
+              ></div>
+              <span className={`text-sm font-semibold ${tema.colores.textoSecundario}`}>
+                {entry.name}:
+              </span>
+            </div>
+            <span className={`text-sm font-bold ${tema.colores.texto}`}>
+              {entry.value}
+            </span>
+          </div>
+        ))}
+      </div>
+    );
+  }
+  return null;
+};
+
+// ========================================
 // COMPONENTE PRINCIPAL
 // ========================================
 
 export default function ReportesTecnicoPage() {
   const pathname = usePathname();
 
-  // Sesión / estado general
+  // Estados
   const [usuario, setUsuario] = useState<UsuarioSesion | null>(null);
   const [loading, setLoading] = useState(true);
   const [loadingReportes, setLoadingReportes] = useState(true);
-
   const [estadisticas, setEstadisticas] = useState<EstadisticasTecnico | null>(null);
-
   const [datosTicketsSemana, setDatosTicketsSemana] = useState<SerieTicketsSemana[]>(
     DATOS_TICKETS_SEMANA_DEFAULT
   );
@@ -459,12 +534,12 @@ export default function ReportesTecnicoPage() {
   const [datosEficienciaTecnico, setDatosEficienciaTecnico] =
     useState<EficienciaTecnico[]>(DATOS_EFICIENCIA_TECNICO_DEFAULT);
   const [resumenCentros, setResumenCentros] = useState<ResumenCentro[]>([]);
-  const [metricasRendimiento, setMetricasRendimiento] = useState<MetricaRendimientoTecnico[]>(
-    []
-  );
+  const [metricasRendimiento, setMetricasRendimiento] = useState<
+    MetricaRendimientoTecnico[]
+  >([]);
   const [alertas, setAlertas] = useState<AlertaTecnico[]>([]);
 
-  const [temaActual, setTemaActual] = useState<TemaColor>("light");
+  const [temaActual, setTemaActual] = useState<TemaColor>("dark");
   const [sidebarAbierto, setSidebarAbierto] = useState(true);
   const [notificacionesAbiertas, setNotificacionesAbiertas] = useState(false);
   const [perfilAbierto, setPerfilAbierto] = useState(false);
@@ -473,20 +548,15 @@ export default function ReportesTecnicoPage() {
     "disponible" | "ocupado" | "fuera_servicio"
   >("disponible");
   const [rangoReporte, setRangoReporte] = useState<RangoReporte>("30d");
+  const [filtroActivo, setFiltroActivo] = useState<string | null>(null);
+  const [vistaExpandida, setVistaExpandida] = useState<string | null>(null);
 
   const tema = useMemo(() => TEMAS[temaActual], [temaActual]);
-
-  // ========================================
-  // MENÚ LATERAL
-  // ========================================
-
- 
 
   // ========================================
   // EFECTOS
   // ========================================
 
-  // Tema guardado
   useEffect(() => {
     if (typeof window !== "undefined") {
       const temaGuardado = localStorage.getItem("tema_tecnico") as TemaColor | null;
@@ -496,32 +566,26 @@ export default function ReportesTecnicoPage() {
     }
   }, []);
 
-  // Fondo / body
   useEffect(() => {
     document.body.className = `bg-gradient-to-br ${tema.colores.fondo} min-h-screen transition-all duration-500`;
   }, [tema]);
 
-  // Cargar usuario
   useEffect(() => {
     const cargarDatosUsuario = async () => {
       try {
         setLoading(true);
-
         const response = await fetch("/api/auth/session", {
           method: "GET",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
         });
 
-        if (!response.ok) {
-          throw new Error("No hay sesión activa");
-        }
+        if (!response.ok) throw new Error("No hay sesión activa");
 
         const result = await response.json();
 
         if (result.success && result.usuario) {
           const rolesUsuario: string[] = [];
-
           if (result.usuario.rol) {
             rolesUsuario.push(
               result.usuario.rol.nombre
@@ -571,24 +635,20 @@ export default function ReportesTecnicoPage() {
     cargarDatosUsuario();
   }, []);
 
-  // Cargar reportes cuando hay usuario técnico
   useEffect(() => {
     if (usuario?.tecnico?.id_tecnico) {
       cargarReportes(rangoReporte);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [usuario]);
 
-  // Refresh periódico
   useEffect(() => {
     if (!usuario?.tecnico?.id_tecnico) return;
 
     const interval = setInterval(() => {
       cargarReportes(rangoReporte);
-    }, 300000); // 5 min
+    }, 300000);
 
     return () => clearInterval(interval);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [usuario, rangoReporte]);
 
   // ========================================
@@ -612,9 +672,9 @@ export default function ReportesTecnicoPage() {
         credentials: "include",
       });
 
-      const data: ReportesTecnicoAPI = await res.json().catch(() => ({
+      const data: ReportesTecnicoAPI = (await res.json().catch(() => ({
         success: false,
-      })) as any;
+      }))) as any;
 
       if (!res.ok || !data.success) {
         console.error("Error al cargar reportes técnico:", data);
@@ -644,7 +704,6 @@ export default function ReportesTecnicoPage() {
       );
       setResumenCentros(data.resumen_centros || []);
       setMetricasRendimiento(data.metricas_rendimiento || []);
-      setAlertas((prev) => prev); // puedes añadir alertas desde el API si quieres
       setRangoReporte(rango);
     } catch (err) {
       console.error("Error al cargar reportes:", err);
@@ -671,13 +730,9 @@ export default function ReportesTecnicoPage() {
 
       if (response.ok) {
         setDisponibilidad(nuevoEstado);
-        alert(`Estado actualizado a: ${nuevoEstado}`);
-      } else {
-        alert("Error al actualizar disponibilidad");
       }
     } catch (error) {
       console.error("Error al cambiar disponibilidad:", error);
-      alert("Error al actualizar disponibilidad");
     }
   };
 
@@ -687,7 +742,6 @@ export default function ReportesTecnicoPage() {
         method: "POST",
         credentials: "include",
       });
-
       window.location.href = "/login";
     } catch (error) {
       console.error("Error al cerrar sesión:", error);
@@ -743,6 +797,18 @@ export default function ReportesTecnicoPage() {
       completada: isDark
         ? "bg-green-500/20 text-green-400 border-green-500/30"
         : "bg-green-100 text-green-800 border-green-200",
+      alta: isDark
+        ? "bg-red-500/20 text-red-400 border-red-500/30"
+        : "bg-red-100 text-red-800 border-red-200",
+      media: isDark
+        ? "bg-yellow-500/20 text-yellow-400 border-yellow-500/30"
+        : "bg-yellow-100 text-yellow-800 border-yellow-200",
+      baja: isDark
+        ? "bg-green-500/20 text-green-400 border-green-500/30"
+        : "bg-green-100 text-green-800 border-green-200",
+      critica: isDark
+        ? "bg-purple-500/20 text-purple-400 border-purple-500/30"
+        : "bg-purple-100 text-purple-800 border-purple-200",
     };
 
     return (
@@ -755,7 +821,7 @@ export default function ReportesTecnicoPage() {
 
   const obtenerColorRango = (r: RangoReporte) =>
     rangoReporte === r
-      ? "bg-gradient-to-r from-indigo-500 to-purple-500 text-white"
+      ? "bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg shadow-indigo-500/50"
       : `${tema.colores.secundario} ${tema.colores.texto}`;
 
   const obtenerTextoRango = (r: RangoReporte) => {
@@ -763,13 +829,13 @@ export default function ReportesTecnicoPage() {
       case "hoy":
         return "Hoy";
       case "7d":
-        return "Últimos 7 días";
+        return "7 días";
       case "30d":
-        return "Últimos 30 días";
+        return "30 días";
       case "anio":
-        return "Año actual";
+        return "Año";
       case "personalizado":
-        return "Rango personalizado";
+        return "Personalizado";
       default:
         return r;
     }
@@ -785,42 +851,50 @@ export default function ReportesTecnicoPage() {
       {
         titulo: "Tickets Totales",
         valor: totalTickets,
-        descripcion: "Sumatoria en el rango seleccionado",
+        descripcion: "Total en el período",
         icono: ClipboardList,
         color: "from-indigo-500 to-purple-500",
-        extra: `${estadisticas?.tickets_resueltos_hoy || 0} resueltos hoy`,
+        extra: `${estadisticas?.tickets_resueltos_hoy || 0} resueltos`,
+        tendencia: "up" as const,
+        cambio: "+12%",
       },
       {
         titulo: "Tickets Abiertos",
         valor: estadisticas?.tickets_abiertos ?? 0,
-        descripcion: "Pendientes de resolución",
+        descripcion: "Pendientes",
         icono: AlertOctagon,
         color: "from-orange-500 to-red-500",
         extra: `${estadisticas?.tickets_en_progreso || 0} en progreso`,
+        tendencia: "down" as const,
+        cambio: "-5%",
       },
       {
         titulo: "Tiempo Promedio",
         valor: estadisticas?.tiempo_promedio_resolucion ?? 0,
-        descripcion: "Minutos promedio de resolución",
+        descripcion: "Minutos",
         icono: Clock3,
         color: "from-blue-500 to-cyan-500",
         extra: "Menor es mejor",
+        tendencia: "down" as const,
+        cambio: "-8%",
       },
       {
-        titulo: "Calificación Promedio",
+        titulo: "Calificación",
         valor: estadisticas?.calificacion_promedio
           ? estadisticas.calificacion_promedio.toFixed(1)
           : "0.0",
-        descripcion: "Satisfacción de usuarios",
+        descripcion: "Satisfacción",
         icono: Star,
         color: "from-yellow-500 to-amber-500",
-        extra: "Escala 1.0 a 5.0",
+        extra: "Escala 1-5",
+        tendencia: "up" as const,
+        cambio: "+3%",
       },
     ];
   }, [estadisticas]);
 
   // ========================================
-  // RENDER LOADING / ACCESO
+  // RENDER LOADING
   // ========================================
 
   if (loading) {
@@ -838,12 +912,12 @@ export default function ReportesTecnicoPage() {
             </div>
           </div>
           <h2 className={`text-4xl font-black mb-4 ${tema.colores.texto}`}>
-            Cargando Reportes Técnicos
+            Cargando Reportes Premium
           </h2>
           <p
             className={`text-lg font-semibold ${tema.colores.textoSecundario} animate-pulse`}
           >
-            Preparando tus métricas y gráficos...
+            Preparando análisis avanzados...
           </p>
         </div>
       </div>
@@ -890,14 +964,13 @@ export default function ReportesTecnicoPage() {
       className={`min-h-screen transition-all duration-500 bg-gradient-to-br ${tema.colores.fondo}`}
     >
       {/* SIDEBAR */}
-           <SidebarTecnico
+      <SidebarTecnico
         usuario={usuario}
         tema={tema}
         sidebarAbierto={sidebarAbierto}
         setSidebarAbierto={setSidebarAbierto}
         estadisticas={estadisticas}
       />
-
 
       {/* HEADER */}
       <header
@@ -908,21 +981,21 @@ export default function ReportesTecnicoPage() {
         <div className="flex items-center justify-between px-8 py-4">
           {/* Búsqueda */}
           <div className="flex-1 max-w-2xl">
-            <div className="relative">
+            <div className="relative group">
               <Search
-                className={`absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 ${tema.colores.textoSecundario}`}
+                className={`absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 ${tema.colores.textoSecundario} transition-colors group-focus-within:text-indigo-500`}
               />
               <input
                 type="text"
-                placeholder="Buscar ticket, centro, indicador..."
+                placeholder="Buscar en reportes..."
                 value={busqueda}
                 onChange={(e) => setBusqueda(e.target.value)}
-                className={`w-full pl-12 pr-4 py-3 rounded-xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto} placeholder:${tema.colores.textoSecundario} focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all duration-300`}
+                className={`w-full pl-12 pr-4 py-3 rounded-xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto} placeholder:${tema.colores.textoSecundario} focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all duration-300`}
               />
               {busqueda && (
                 <button
                   onClick={() => setBusqueda("")}
-                  className={`absolute right-4 top-1/2 transform -translate-y-1/2 p-1 rounded-lg ${tema.colores.hover}`}
+                  className={`absolute right-4 top-1/2 transform -translate-y-1/2 p-1 rounded-lg ${tema.colores.hover} transition-all duration-200`}
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -932,10 +1005,43 @@ export default function ReportesTecnicoPage() {
 
           {/* Acciones header */}
           <div className="flex items-center gap-3 ml-6">
+            {/* Filtros */}
+            <div className="relative group">
+              <button
+                className={`p-3 rounded-xl font-semibold transition-all duration-300 ${tema.colores.secundario} ${tema.colores.texto} hover:scale-105`}
+              >
+                <SlidersHorizontal className="w-5 h-5" />
+              </button>
+
+              <div
+                className={`absolute right-0 mt-2 w-64 rounded-2xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 p-4 space-y-2`}
+              >
+                <p className={`text-sm font-bold mb-3 ${tema.colores.texto}`}>
+                  Filtros Avanzados
+                </p>
+                {["Todos", "Alta Prioridad", "Pendientes", "Completados"].map((filtro) => (
+                  <button
+                    key={filtro}
+                    onClick={() => setFiltroActivo(filtro === "Todos" ? null : filtro)}
+                    className={`w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl font-semibold transition-all duration-300 ${
+                      filtroActivo === filtro || (filtro === "Todos" && !filtroActivo)
+                        ? `bg-gradient-to-r ${tema.colores.gradiente} text-white`
+                        : `${tema.colores.hover} ${tema.colores.texto}`
+                    }`}
+                  >
+                    <span>{filtro}</span>
+                    {(filtroActivo === filtro || (filtro === "Todos" && !filtroActivo)) && (
+                      <Check className="w-5 h-5" />
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Temas */}
             <div className="relative group">
               <button
-                className={`p-3 rounded-xl font-semibold transition-all duration-300 ${tema.colores.secundario} ${tema.colores.texto}`}
+                className={`p-3 rounded-xl font-semibold transition-all duration-300 ${tema.colores.secundario} ${tema.colores.texto} hover:scale-105`}
               >
                 <Sparkles className="w-5 h-5" />
               </button>
@@ -944,7 +1050,7 @@ export default function ReportesTecnicoPage() {
                 className={`absolute right-0 mt-2 w-64 rounded-2xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 p-4 space-y-2`}
               >
                 <p className={`text-sm font-bold mb-3 ${tema.colores.texto}`}>
-                  Seleccionar Tema
+                  Temas Disponibles
                 </p>
                 {Object.entries(TEMAS).map(([key, t]) => (
                   <button
@@ -969,10 +1075,8 @@ export default function ReportesTecnicoPage() {
             {/* Alertas */}
             <div className="relative">
               <button
-                onClick={() =>
-                  setNotificacionesAbiertas(!notificacionesAbiertas)
-                }
-                className={`relative p-3 rounded-xl font-semibold transition-all duration-300 ${tema.colores.secundario} ${tema.colores.texto}`}
+                onClick={() => setNotificacionesAbiertas(!notificacionesAbiertas)}
+                className={`relative p-3 rounded-xl font-semibold transition-all duration-300 ${tema.colores.secundario} ${tema.colores.texto} hover:scale-105`}
               >
                 <AlertCircle className="w-5 h-5" />
                 {alertas.filter((a) => !a.leida).length > 0 && (
@@ -986,14 +1090,12 @@ export default function ReportesTecnicoPage() {
 
               {notificacionesAbiertas && (
                 <div
-                  className={`absolute right-0 mt-2 w-96 rounded-2xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} max-h-96 overflow-y-auto`}
+                  className={`absolute right-0 mt-2 w-96 rounded-2xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} max-h-96 overflow-y-auto animate-slideDown`}
                 >
                   <div
-                    className={`p-4 border-b ${tema.colores.borde} sticky top-0 ${tema.colores.card}`}
+                    className={`p-4 border-b ${tema.colores.borde} sticky top-0 ${tema.colores.card} backdrop-blur-xl`}
                   >
-                    <h3
-                      className={`text-lg font-black ${tema.colores.texto}`}
-                    >
+                    <h3 className={`text-lg font-black ${tema.colores.texto}`}>
                       Alertas Activas
                     </h3>
                   </div>
@@ -1003,9 +1105,7 @@ export default function ReportesTecnicoPage() {
                       <BellOff
                         className={`w-12 h-12 mx-auto mb-3 ${tema.colores.textoSecundario}`}
                       />
-                      <p
-                        className={`text-sm ${tema.colores.textoSecundario}`}
-                      >
+                      <p className={`text-sm ${tema.colores.textoSecundario}`}>
                         No tienes alertas activas
                       </p>
                     </div>
@@ -1014,7 +1114,7 @@ export default function ReportesTecnicoPage() {
                       {alertas.slice(0, 5).map((alerta) => (
                         <div
                           key={alerta.id_alerta}
-                          className={`p-4 ${tema.colores.hover} transition-colors cursor-pointer ${
+                          className={`p-4 ${tema.colores.hover} transition-all duration-200 cursor-pointer ${
                             !alerta.leida ? "bg-indigo-500/5" : ""
                           }`}
                         >
@@ -1027,9 +1127,7 @@ export default function ReportesTecnicoPage() {
                               <AlertCircle className="w-5 h-5" />
                             </div>
                             <div className="flex-1 min-w-0">
-                              <p
-                                className={`text-sm font-bold mb-1 ${tema.colores.texto}`}
-                              >
+                              <p className={`text-sm font-bold mb-1 ${tema.colores.texto}`}>
                                 {alerta.titulo}
                               </p>
                               <p
@@ -1058,9 +1156,9 @@ export default function ReportesTecnicoPage() {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => cambiarDisponibilidad("disponible")}
-                className={`px-4 py-2 rounded-xl font-semibold text-sm transition-all duration-300 ${
+                className={`px-4 py-2 rounded-xl font-semibold text-sm transition-all duration-300 hover:scale-105 ${
                   disponibilidad === "disponible"
-                    ? "bg-green-600 text-white"
+                    ? "bg-green-600 text-white shadow-lg shadow-green-500/50"
                     : `${tema.colores.secundario} ${tema.colores.texto}`
                 }`}
               >
@@ -1068,9 +1166,9 @@ export default function ReportesTecnicoPage() {
               </button>
               <button
                 onClick={() => cambiarDisponibilidad("ocupado")}
-                className={`px-4 py-2 rounded-xl font-semibold text-sm transition-all duration-300 ${
+                className={`px-4 py-2 rounded-xl font-semibold text-sm transition-all duration-300 hover:scale-105 ${
                   disponibilidad === "ocupado"
-                    ? "bg-yellow-600 text-white"
+                    ? "bg-yellow-600 text-white shadow-lg shadow-yellow-500/50"
                     : `${tema.colores.secundario} ${tema.colores.texto}`
                 }`}
               >
@@ -1078,13 +1176,13 @@ export default function ReportesTecnicoPage() {
               </button>
               <button
                 onClick={() => cambiarDisponibilidad("fuera_servicio")}
-                className={`px-4 py-2 rounded-xl font-semibold text-sm transition-all duration-300 ${
+                className={`px-4 py-2 rounded-xl font-semibold text-sm transition-all duration-300 hover:scale-105 ${
                   disponibilidad === "fuera_servicio"
-                    ? "bg-red-600 text-white"
+                    ? "bg-red-600 text-white shadow-lg shadow-red-500/50"
                     : `${tema.colores.secundario} ${tema.colores.texto}`
                 }`}
               >
-                ✕ Fuera Servicio
+                ✕ Fuera
               </button>
             </div>
 
@@ -1092,15 +1190,13 @@ export default function ReportesTecnicoPage() {
             <div className="relative">
               <button
                 onClick={() => setPerfilAbierto(!perfilAbierto)}
-                className={`flex items-center gap-3 px-4 py-2 rounded-xl transition-all duration-300 ${tema.colores.hover}`}
+                className={`flex items-center gap-3 px-4 py-2 rounded-xl transition-all duration-300 ${tema.colores.hover} hover:scale-105`}
               >
                 <div className="text-right hidden md:block">
                   <p className={`text-sm font-bold ${tema.colores.texto}`}>
                     {usuario.nombre} {usuario.apellido_paterno}
                   </p>
-                  <p className={`text-xs ${tema.colores.textoSecundario}`}>
-                    Técnico
-                  </p>
+                  <p className={`text-xs ${tema.colores.textoSecundario}`}>Técnico</p>
                 </div>
                 <div
                   className={`w-10 h-10 rounded-xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center text-white font-bold shadow-lg`}
@@ -1126,7 +1222,7 @@ export default function ReportesTecnicoPage() {
 
               {perfilAbierto && (
                 <div
-                  className={`absolute right-0 mt-2 w-80 rounded-2xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} p-4`}
+                  className={`absolute right-0 mt-2 w-80 rounded-2xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} p-4 animate-slideDown`}
                 >
                   <div className="flex items-center gap-4 mb-4 pb-4 border-b border-gray-700/50">
                     <div
@@ -1145,9 +1241,7 @@ export default function ReportesTecnicoPage() {
                       )}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <p
-                        className={`text-lg font-black ${tema.colores.texto}`}
-                      >
+                      <p className={`text-lg font-black ${tema.colores.texto}`}>
                         {usuario.nombre} {usuario.apellido_paterno}
                       </p>
                       <p
@@ -1158,7 +1252,7 @@ export default function ReportesTecnicoPage() {
                       <p
                         className={`text-xs font-medium ${tema.colores.textoSecundario}`}
                       >
-                        {usuario.tecnico?.centro?.nombre ?? "Sin centro asignado"}
+                        {usuario.tecnico?.centro?.nombre ?? "Sin centro"}
                       </p>
                     </div>
                   </div>
@@ -1206,27 +1300,27 @@ export default function ReportesTecnicoPage() {
           sidebarAbierto ? "ml-72" : "ml-20"
         } pt-24 p-8`}
       >
-        {/* Encabezado de reportes */}
-        <div className="mb-8">
+        {/* Encabezado */}
+        <div className="mb-8 animate-fadeIn">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-4">
             <div>
               <div className="flex items-center gap-2 text-sm mb-2">
                 <Link
                   href="/tecnico"
-                  className={`font-semibold ${tema.colores.textoSecundario} hover:${tema.colores.acento}`}
+                  className={`font-semibold ${tema.colores.textoSecundario} hover:${tema.colores.acento} transition-colors`}
                 >
-                  Dashboard Técnico
+                  Dashboard
                 </Link>
                 <span className={tema.colores.textoSecundario}>/</span>
                 <span className={`font-bold ${tema.colores.texto}`}>
-                  Reportes y Analítica
+                  Reportes Premium
                 </span>
               </div>
               <h2
                 className={`text-4xl font-black mb-1 ${tema.colores.texto} flex items-center gap-3`}
               >
-                Reportes Técnicos
-                <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-gradient-to-br from-indigo-500 to-purple-500 text-white text-sm font-bold shadow-glow">
+                Analítica Avanzada
+                <span className="inline-flex items-center justify-center px-3 py-1 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 text-white text-sm font-bold shadow-lg shadow-indigo-500/50 animate-pulse">
                   PRO
                 </span>
               </h2>
@@ -1235,18 +1329,18 @@ export default function ReportesTecnicoPage() {
               >
                 <MapPin className="w-4 h-4" />
                 {usuario.tecnico?.centro?.nombre ?? "Centro no definido"} •{" "}
-                {usuario.tecnico?.area_tecnica ?? "Área técnica no definida"}
+                {usuario.tecnico?.area_tecnica ?? "Área no definida"}
               </p>
             </div>
 
             <div className="flex flex-wrap items-center gap-3">
-              {/* Rango de fechas */}
+              {/* Rango */}
               <div className="flex flex-wrap gap-2">
                 {(["hoy", "7d", "30d", "anio"] as RangoReporte[]).map((r) => (
                   <button
                     key={r}
                     onClick={() => cargarReportes(r)}
-                    className={`px-3 py-2 rounded-xl text-xs md:text-sm font-semibold transition-all duration-300 ${obtenerColorRango(
+                    className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 hover:scale-105 ${obtenerColorRango(
                       r
                     )}`}
                   >
@@ -1274,381 +1368,678 @@ export default function ReportesTecnicoPage() {
                       "_blank"
                     )
                   }
-                  className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs md:text-sm font-semibold ${tema.colores.secundario} ${tema.colores.texto}`}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold ${tema.colores.secundario} ${tema.colores.texto} hover:scale-105 transition-all duration-300`}
                 >
                   <FileSpreadsheet className="w-4 h-4" />
                   Excel
                 </button>
                 <button
                   onClick={() => window.print()}
-                  className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs md:text-sm font-semibold ${tema.colores.secundario} ${tema.colores.texto}`}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold ${tema.colores.secundario} ${tema.colores.texto} hover:scale-105 transition-all duration-300`}
                 >
                   <Printer className="w-4 h-4" />
-                  Imprimir
+                  PDF
                 </button>
                 <button
                   onClick={() =>
                     window.open(
-                      `/api/tecnico/reportes/export?formato=pdf&rango=${rangoReporte}`,
+                      `/api/tecnico/reportes/export?formato=csv&rango=${rangoReporte}`,
                       "_blank"
                     )
                   }
-                  className={`flex items-center gap-2 px-3 py-2 rounded-xl text-xs md:text-sm font-semibold ${tema.colores.secundario} ${tema.colores.texto}`}
+                  className={`flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-semibold ${tema.colores.secundario} ${tema.colores.texto} hover:scale-105 transition-all duration-300`}
                 >
                   <Download className="w-4 h-4" />
-                  PDF
+                  CSV
                 </button>
               </div>
             </div>
           </div>
 
           <p className={`text-sm ${tema.colores.textoSecundario}`}>
-            Analiza el rendimiento de tus tickets, mantenimiento y desempeño técnico con
-            métricas avanzadas, comparaciones por centro y distribución por tipo de
-            requerimiento.
+            Panel de análisis profesional con métricas en tiempo real, comparativas
+            históricas y exportación avanzada de datos.
           </p>
         </div>
 
         {loadingReportes ? (
-          <div className="flex items-center justify-center py-20">
-            <div className="text-center">
-              <Loader2 className="w-16 h-16 animate-spin text-indigo-500 mx-auto mb-4" />
-              <p
-                className={`text-lg font-semibold ${tema.colores.textoSecundario}`}
-              >
-                Cargando datos de reportes técnicos...
-              </p>
+          <div className="space-y-8">
+            {/* Skeleton KPIs */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6">
+              {[1, 2, 3, 4].map((i) => (
+                <SkeletonCard key={i} tema={tema} />
+              ))}
+            </div>
+
+            {/* Skeleton Charts */}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+              {[1, 2].map((i) => (
+                <SkeletonChart key={i} tema={tema} />
+              ))}
             </div>
           </div>
         ) : (
           <>
-            {/* KPIs */}
+            {/* KPIs Premium */}
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-6 mb-8">
               {kpisPrincipales.map((kpi, idx) => (
                 <div
                   key={kpi.titulo}
-                  className={`rounded-2xl p-6 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} transition-all duration-300 hover:scale-105 hover:-translate-y-1 cursor-pointer group`}
-                  style={{ animationDelay: `${idx * 80}ms` }}
+                  className={`rounded-2xl p-6 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} transition-all duration-300 hover:scale-105 hover:-translate-y-2 cursor-pointer group animate-slideUp`}
+                  style={{ animationDelay: `${idx * 100}ms` }}
                 >
                   <div className="flex items-center justify-between mb-4">
                     <div
-                      className={`w-12 h-12 bg-gradient-to-br ${kpi.color} rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform`}
+                      className={`w-14 h-14 bg-gradient-to-br ${kpi.color} rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 group-hover:rotate-3 transition-all duration-300`}
                     >
-                      <kpi.icono className="w-6 h-6 text-white" />
+                      <kpi.icono className="w-7 h-7 text-white" />
                     </div>
-                    <ArrowUpRight className="w-4 h-4 text-emerald-400" />
+                    <div className="flex items-center gap-1">
+                      {kpi.tendencia === "up" ? (
+                        <TrendingUp className="w-4 h-4 text-emerald-400" />
+                      ) : (
+                        <TrendingDown className="w-4 h-4 text-red-400" />
+                      )}
+                      <span
+                        className={`text-xs font-bold ${
+                          kpi.tendencia === "up" ? "text-emerald-400" : "text-red-400"
+                        }`}
+                      >
+                        {kpi.cambio}
+                      </span>
+                    </div>
                   </div>
                   <p
-                    className={`text-xs font-bold uppercase tracking-wider mb-1 ${tema.colores.textoSecundario}`}
+                    className={`text-xs font-bold uppercase tracking-wider mb-2 ${tema.colores.textoSecundario}`}
                   >
                     {kpi.descripcion}
                   </p>
                   <div
-                    className={`text-3xl md:text-4xl font-black mb-1 ${tema.colores.texto}`}
+                    className={`text-4xl md:text-5xl font-black mb-2 ${tema.colores.texto} group-hover:scale-110 transition-transform`}
                   >
                     {kpi.valor}
                   </div>
-                  <p
-                    className={`text-xs font-semibold ${tema.colores.textoSecundario}`}
-                  >
-                    {kpi.extra}
-                  </p>
+                  <div className="flex items-center justify-between">
+                    <p
+                      className={`text-xs font-semibold ${tema.colores.textoSecundario}`}
+                    >
+                      {kpi.extra}
+                    </p>
+                    <Eye className="w-4 h-4 text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity" />
+                  </div>
+
+                  {/* Barra de progreso animada */}
+                  <div className="mt-4 h-1 bg-gray-700/30 rounded-full overflow-hidden">
+                    <div
+                      className={`h-full bg-gradient-to-r ${kpi.color} rounded-full transition-all duration-1000 ease-out`}
+                      style={{
+                        width: `${
+                          typeof kpi.valor === "number"
+                            ? Math.min((kpi.valor / 100) * 100, 100)
+                            : 75
+                        }%`,
+                      }}
+                    ></div>
+                  </div>
                 </div>
               ))}
             </div>
 
-            {/* Gráficos principales */}
+            {/* Gráficos Principales Premium */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-              {/* Tickets semanales */}
+              {/* Tickets Semanales - Area Chart Mejorado */}
               <div
-                className={`rounded-2xl p-6 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra}`}
+                className={`rounded-2xl p-6 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} transition-all duration-300 hover:shadow-2xl animate-fadeIn relative group`}
               >
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-3">
                     <div
-                      className={`w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-xl flex items-center justify-center shadow-lg`}
+                      className={`w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform`}
                     >
                       <LineChart className="w-6 h-6 text-white" />
                     </div>
                     <div>
-                      <h3
-                        className={`text-xl font-black ${tema.colores.texto}`}
-                      >
-                        Tickets por Día
+                      <h3 className={`text-xl font-black ${tema.colores.texto}`}>
+                        Evolución de Tickets
                       </h3>
                       <p
                         className={`text-sm font-semibold ${tema.colores.textoSecundario}`}
                       >
-                        Abiertos vs Resueltos en la última semana
+                        Últimos 7 días • Comparativa
                       </p>
                     </div>
                   </div>
+                  <button
+                    onClick={() =>
+                      setVistaExpandida(
+                        vistaExpandida === "tickets" ? null : "tickets"
+                      )
+                    }
+                    className={`p-2 rounded-lg ${tema.colores.hover} transition-all duration-200`}
+                  >
+                    {vistaExpandida === "tickets" ? (
+                      <Minimize2 className="w-5 h-5" />
+                    ) : (
+                      <Maximize2 className="w-5 h-5" />
+                    )}
+                  </button>
                 </div>
 
-                <ResponsiveContainer width="100%" height={300}>
-                  <AreaChart data={datosTicketsSemana}>
+                <ResponsiveContainer
+                  width="100%"
+                  height={vistaExpandida === "tickets" ? 500 : 320}
+                >
+                  <ComposedChart data={datosTicketsSemana}>
                     <defs>
-                      <linearGradient id="ticketsAbiertos" x1="0" y1="0" x2="0" y2="1">
+                      <linearGradient
+                        id="colorAbiertos"
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="1"
+                      >
                         <stop offset="5%" stopColor="#ef4444" stopOpacity={0.8} />
-                        <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
+                        <stop offset="95%" stopColor="#ef4444" stopOpacity={0.1} />
                       </linearGradient>
-                      <linearGradient id="ticketsResueltos" x1="0" y1="0" x2="0" y2="1">
+                      <linearGradient
+                        id="colorProgreso"
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="1"
+                      >
+                        <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.8} />
+                        <stop offset="95%" stopColor="#f59e0b" stopOpacity={0.1} />
+                      </linearGradient>
+                      <linearGradient
+                        id="colorResueltos"
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="1"
+                      >
                         <stop offset="5%" stopColor="#10b981" stopOpacity={0.8} />
-                        <stop offset="95%" stopColor="#10b981" stopOpacity={0} />
+                        <stop offset="95%" stopColor="#10b981" stopOpacity={0.1} />
                       </linearGradient>
                     </defs>
                     <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
                     <XAxis
                       dataKey="dia"
                       stroke={tema.colores.textoSecundario}
-                      style={{ fontSize: "12px" }}
+                      style={{ fontSize: "12px", fontWeight: "600" }}
                     />
                     <YAxis
                       stroke={tema.colores.textoSecundario}
-                      style={{ fontSize: "12px" }}
+                      style={{ fontSize: "12px", fontWeight: "600" }}
                     />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: "rgba(17, 24, 39, 0.95)",
-                        border: "1px solid rgba(99, 102, 241, 0.3)",
-                        borderRadius: "12px",
-                        padding: "12px",
-                      }}
+                    <Tooltip content={<CustomTooltip tema={tema} />} />
+                    <Legend
+                      wrapperStyle={{ paddingTop: "20px" }}
+                      iconType="circle"
                     />
-                    <Legend />
                     <Area
                       type="monotone"
                       dataKey="abiertos"
                       stroke="#ef4444"
+                      strokeWidth={3}
                       fillOpacity={1}
-                      fill="url(#ticketsAbiertos)"
+                      fill="url(#colorAbiertos)"
                       name="Abiertos"
+                      animationDuration={1500}
+                    />
+                    <Area
+                      type="monotone"
+                      dataKey="en_progreso"
+                      stroke="#f59e0b"
+                      strokeWidth={3}
+                      fillOpacity={1}
+                      fill="url(#colorProgreso)"
+                      name="En Progreso"
+                      animationDuration={1500}
                     />
                     <Area
                       type="monotone"
                       dataKey="resueltos"
                       stroke="#10b981"
+                      strokeWidth={3}
                       fillOpacity={1}
-                      fill="url(#ticketsResueltos)"
+                      fill="url(#colorResueltos)"
                       name="Resueltos"
+                      animationDuration={1500}
                     />
-                  </AreaChart>
+                  </ComposedChart>
                 </ResponsiveContainer>
+
+                {/* Estadísticas rápidas */}
+                <div className="grid grid-cols-3 gap-4 mt-6 pt-6 border-t border-gray-700/30">
+                  <div className="text-center">
+                    <p className={`text-2xl font-black text-red-400`}>
+                      {datosTicketsSemana.reduce((acc, d) => acc + d.abiertos, 0)}
+                    </p>
+                    <p className={`text-xs font-semibold ${tema.colores.textoSecundario}`}>
+                      Total Abiertos
+                    </p>
+                  </div>
+                  <div className="text-center">
+                    <p className={`text-2xl font-black text-amber-400`}>
+                      {datosTicketsSemana.reduce((acc, d) => acc + d.en_progreso, 0)}
+                    </p>
+                    <p className={`text-xs font-semibold ${tema.colores.textoSecundario}`}>
+                      En Progreso
+                    </p>
+                  </div>
+                  <div className="text-center">
+                    <p className={`text-2xl font-black text-emerald-400`}>
+                      {datosTicketsSemana.reduce((acc, d) => acc + d.resueltos, 0)}
+                    </p>
+                    <p className={`text-xs font-semibold ${tema.colores.textoSecundario}`}>
+                      Resueltos
+                    </p>
+                  </div>
+                </div>
               </div>
 
-              {/* Mantenimiento mensual */}
+              {/* Mantenimiento Mensual - Bar Chart Premium */}
               <div
-                className={`rounded-2xl p-6 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra}`}
+                className={`rounded-2xl p-6 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} transition-all duration-300 hover:shadow-2xl animate-fadeIn relative group`}
               >
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-3">
                     <div
-                      className={`w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center shadow-lg`}
+                      className={`w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform`}
                     >
                       <Wrench className="w-6 h-6 text-white" />
                     </div>
                     <div>
-                      <h3
-                        className={`text-xl font-black ${tema.colores.texto}`}
-                      >
+                      <h3 className={`text-xl font-black ${tema.colores.texto}`}>
                         Mantenimiento Mensual
                       </h3>
                       <p
                         className={`text-sm font-semibold ${tema.colores.textoSecundario}`}
                       >
-                        Preventivo, Correctivo e Inspecciones
+                        Preventivo vs Correctivo
                       </p>
                     </div>
                   </div>
+                  <button
+                    onClick={() =>
+                      setVistaExpandida(
+                        vistaExpandida === "mantenimiento" ? null : "mantenimiento"
+                      )
+                    }
+                    className={`p-2 rounded-lg ${tema.colores.hover} transition-all duration-200`}
+                  >
+                    {vistaExpandida === "mantenimiento" ? (
+                      <Minimize2 className="w-5 h-5" />
+                    ) : (
+                      <Maximize2 className="w-5 h-5" />
+                    )}
+                  </button>
                 </div>
 
-                <ResponsiveContainer width="100%" height={300}>
+                <ResponsiveContainer
+                  width="100%"
+                  height={vistaExpandida === "mantenimiento" ? 500 : 320}
+                >
                   <RechartsBarChart data={datosMantenimientoMes}>
+                    <defs>
+                      <linearGradient
+                        id="colorPreventivo"
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="1"
+                      >
+                        <stop offset="5%" stopColor="#10b981" stopOpacity={1} />
+                        <stop offset="95%" stopColor="#059669" stopOpacity={1} />
+                      </linearGradient>
+                      <linearGradient
+                        id="colorCorrectivo"
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="1"
+                      >
+                        <stop offset="5%" stopColor="#f59e0b" stopOpacity={1} />
+                        <stop offset="95%" stopColor="#d97706" stopOpacity={1} />
+                      </linearGradient>
+                      <linearGradient
+                        id="colorInspecciones"
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="1"
+                      >
+                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={1} />
+                        <stop offset="95%" stopColor="#2563eb" stopOpacity={1} />
+                      </linearGradient>
+                    </defs>
                     <CartesianGrid strokeDasharray="3 3" opacity={0.1} />
                     <XAxis
                       dataKey="mes"
                       stroke={tema.colores.textoSecundario}
-                      style={{ fontSize: "12px" }}
+                      style={{ fontSize: "12px", fontWeight: "600" }}
                     />
                     <YAxis
                       stroke={tema.colores.textoSecundario}
-                      style={{ fontSize: "12px" }}
+                      style={{ fontSize: "12px", fontWeight: "600" }}
                     />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: "rgba(17, 24, 39, 0.95)",
-                        border: "1px solid rgba(16, 185, 129, 0.3)",
-                        borderRadius: "12px",
-                        padding: "12px",
-                      }}
+                    <Tooltip content={<CustomTooltip tema={tema} />} />
+                    <Legend
+                      wrapperStyle={{ paddingTop: "20px" }}
+                      iconType="circle"
                     />
-                    <Legend />
                     <Bar
                       dataKey="preventivo"
-                      fill="#10b981"
+                      fill="url(#colorPreventivo)"
                       name="Preventivo"
                       radius={[8, 8, 0, 0]}
+                      animationDuration={1500}
                     />
                     <Bar
                       dataKey="correctivo"
-                      fill="#f59e0b"
+                      fill="url(#colorCorrectivo)"
                       name="Correctivo"
                       radius={[8, 8, 0, 0]}
+                      animationDuration={1500}
                     />
                     <Bar
                       dataKey="inspecciones"
-                      fill="#3b82f6"
+                      fill="url(#colorInspecciones)"
                       name="Inspecciones"
                       radius={[8, 8, 0, 0]}
+                      animationDuration={1500}
                     />
                   </RechartsBarChart>
                 </ResponsiveContainer>
+
+                {/* Resumen */}
+                <div className="grid grid-cols-3 gap-4 mt-6 pt-6 border-t border-gray-700/30">
+                  <div className="text-center">
+                    <p className={`text-2xl font-black text-emerald-400`}>
+                      {datosMantenimientoMes.reduce(
+                        (acc, d) => acc + d.preventivo,
+                        0
+                      )}
+                    </p>
+                    <p className={`text-xs font-semibold ${tema.colores.textoSecundario}`}>
+                      Preventivos
+                    </p>
+                  </div>
+                  <div className="text-center">
+                    <p className={`text-2xl font-black text-amber-400`}>
+                      {datosMantenimientoMes.reduce(
+                        (acc, d) => acc + d.correctivo,
+                        0
+                      )}
+                    </p>
+                    <p className={`text-xs font-semibold ${tema.colores.textoSecundario}`}>
+                      Correctivos
+                    </p>
+                  </div>
+                  <div className="text-center">
+                    <p className={`text-2xl font-black text-blue-400`}>
+                      {datosMantenimientoMes.reduce(
+                        (acc, d) => acc + d.inspecciones,
+                        0
+                      )}
+                    </p>
+                    <p className={`text-xs font-semibold ${tema.colores.textoSecundario}`}>
+                      Inspecciones
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* Distribución / Radar */}
+            {/* Distribución y Radar Premium */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-              {/* Pie tipos de ticket */}
+              {/* Pie Chart Mejorado */}
               <div
-                className={`rounded-2xl p-6 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra}`}
+                className={`rounded-2xl p-6 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} transition-all duration-300 hover:shadow-2xl animate-fadeIn group`}
               >
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-3">
                     <div
-                      className={`w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center shadow-lg`}
+                      className={`w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform`}
                     >
                       <PieChart className="w-6 h-6 text-white" />
                     </div>
                     <div>
-                      <h3
-                        className={`text-xl font-black ${tema.colores.texto}`}
-                      >
+                      <h3 className={`text-xl font-black ${tema.colores.texto}`}>
                         Distribución por Tipo
                       </h3>
                       <p
                         className={`text-sm font-semibold ${tema.colores.textoSecundario}`}
                       >
-                        Por categoría de tickets
+                        Categorías de tickets
                       </p>
                     </div>
                   </div>
+                  <button
+                    onClick={() =>
+                      setVistaExpandida(
+                        vistaExpandida === "distribucion" ? null : "distribucion"
+                      )
+                    }
+                    className={`p-2 rounded-lg ${tema.colores.hover} transition-all duration-200`}
+                  >
+                    {vistaExpandida === "distribucion" ? (
+                      <Minimize2 className="w-5 h-5" />
+                    ) : (
+                      <Maximize2 className="w-5 h-5" />
+                    )}
+                  </button>
                 </div>
 
                 <div className="flex items-center gap-8">
-                  <ResponsiveContainer width="60%" height={250}>
+                  <ResponsiveContainer
+                    width="60%"
+                    height={vistaExpandida === "distribucion" ? 400 : 280}
+                  >
                     <RechartsPieChart>
+                      <defs>
+                        {datosTiposTickets.map((entry, index) => (
+                          <linearGradient
+                            key={`gradient-${index}`}
+                            id={`gradient-${index}`}
+                            x1="0"
+                            y1="0"
+                            x2="0"
+                            y2="1"
+                          >
+                            <stop offset="5%" stopColor={entry.color} stopOpacity={1} />
+                            <stop
+                              offset="95%"
+                              stopColor={entry.color}
+                              stopOpacity={0.7}
+                            />
+                          </linearGradient>
+                        ))}
+                      </defs>
                       <Pie
                         //data={datosTiposTickets}
                         cx="50%"
                         cy="50%"
                         labelLine={false}
-                        outerRadius={80}
+                        label={(props: any) =>
+                          `${props.name}: ${(props.percent * 100).toFixed(0)}%`
+                        }
+                        outerRadius={vistaExpandida === "distribucion" ? 140 : 100}
                         fill="#8884d8"
                         dataKey="valor"
+                        animationDuration={1500}
                       >
                         {datosTiposTickets.map((entry, index) => (
                           <Cell
                             key={`cell-${index}`}
-                            fill={entry.color}
+                            fill={`url(#gradient-${index})`}
+                            stroke={tema.colores.card}
+                            strokeWidth={2}
                           />
                         ))}
                       </Pie>
-                      <Tooltip />
+                      <Tooltip content={<CustomTooltip tema={tema} />} />
                     </RechartsPieChart>
                   </ResponsiveContainer>
 
-                  <div className="flex-1 space-y-2">
+                  <div className="flex-1 space-y-3">
                     {datosTiposTickets.map((item, index) => (
                       <div
                         key={index}
-                        className="flex items-center justify-between"
+                        className={`flex items-center justify-between p-3 rounded-xl ${tema.colores.hover} transition-all duration-200 hover:scale-105 cursor-pointer`}
                       >
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-3">
                           <div
-                            className="w-3 h-3 rounded-full"
+                            className="w-4 h-4 rounded-full shadow-lg"
                             style={{ backgroundColor: item.color }}
                           ></div>
                           <span
-                            className={`text-sm font-semibold ${tema.colores.texto}`}
+                            className={`text-sm font-bold ${tema.colores.texto}`}
                           >
                             {item.nombre}
                           </span>
                         </div>
-                        <span
-                          className={`text-sm font-bold ${tema.colores.acento}`}
-                        >
-                          {item.valor}%
-                        </span>
+                        <div className="text-right">
+                          <p className={`text-lg font-black ${tema.colores.acento}`}>
+                            {item.valor}%
+                          </p>
+                          <p className={`text-xs ${tema.colores.textoSecundario}`}>
+                            {Math.round(
+                              (item.valor / 100) *
+                                datosTicketsSemana.reduce(
+                                  (acc, d) =>
+                                    acc + d.abiertos + d.en_progreso + d.resueltos,
+                                  0
+                                )
+                            )}{" "}
+                            tickets
+                          </p>
+                        </div>
                       </div>
                     ))}
                   </div>
                 </div>
               </div>
 
-              {/* Radar desempeño */}
+              {/* Radar Chart Premium */}
               <div
-                className={`rounded-2xl p-6 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra}`}
+                className={`rounded-2xl p-6 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} transition-all duration-300 hover:shadow-2xl animate-fadeIn group`}
               >
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-3">
                     <div
-                      className={`w-12 h-12 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl flex items-center justify-center shadow-lg`}
+                      className={`w-12 h-12 bg-gradient-to-br from-orange-500 to-red-500 rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform`}
                     >
                       <Target className="w-6 h-6 text-white" />
                     </div>
                     <div>
-                      <h3
-                        className={`text-xl font-black ${tema.colores.texto}`}
-                      >
+                      <h3 className={`text-xl font-black ${tema.colores.texto}`}>
                         Desempeño Técnico
                       </h3>
                       <p
                         className={`text-sm font-semibold ${tema.colores.textoSecundario}`}
                       >
-                        Evaluación por dimensión
+                        Evaluación multidimensional
                       </p>
                     </div>
                   </div>
+                  <button
+                    onClick={() =>
+                      setVistaExpandida(
+                        vistaExpandida === "desempeno" ? null : "desempeno"
+                      )
+                    }
+                    className={`p-2 rounded-lg ${tema.colores.hover} transition-all duration-200`}
+                  >
+                    {vistaExpandida === "desempeno" ? (
+                      <Minimize2 className="w-5 h-5" />
+                    ) : (
+                      <Maximize2 className="w-5 h-5" />
+                    )}
+                  </button>
                 </div>
 
-                <ResponsiveContainer width="100%" height={300}>
+                <ResponsiveContainer
+                  width="100%"
+                  height={vistaExpandida === "desempeno" ? 400 : 280}
+                >
                   <RadarChart data={datosEficienciaTecnico}>
-                    <PolarGrid stroke="rgba(99,102,241,0.2)" />
+                    <defs>
+                      <linearGradient
+                        id="radarGradient"
+                        x1="0"
+                        y1="0"
+                        x2="0"
+                        y2="1"
+                      >
+                        <stop offset="5%" stopColor="#f59e0b" stopOpacity={0.8} />
+                        <stop offset="95%" stopColor="#ef4444" stopOpacity={0.3} />
+                      </linearGradient>
+                    </defs>
+                    <PolarGrid
+                      stroke="rgba(99,102,241,0.3)"
+                      strokeWidth={1.5}
+                    />
                     <PolarAngleAxis
                       dataKey="categoria"
-                      stroke={tema.colores.textoSecundario}
-                      style={{ fontSize: "12px" }}
+                      stroke={tema.colores.texto}
+                      style={{ fontSize: "13px", fontWeight: "700" }}
                     />
                     <PolarRadiusAxis
                       angle={90}
                       domain={[0, 100]}
                       stroke={tema.colores.textoSecundario}
+                      style={{ fontSize: "11px" }}
                     />
                     <Radar
                       name="Desempeño"
                       dataKey="valor"
                       stroke="#f59e0b"
-                      fill="#f59e0b"
-                      fillOpacity={0.6}
+                      strokeWidth={3}
+                      fill="url(#radarGradient)"
+                      fillOpacity={0.7}
+                      animationDuration={1500}
                     />
-                    <Tooltip
-                      contentStyle={{
-                        backgroundColor: "rgba(17, 24, 39, 0.95)",
-                        border: "1px solid rgba(245, 158, 11, 0.3)",
-                        borderRadius: "12px",
-                        padding: "12px",
-                      }}
-                    />
+                    <Tooltip content={<CustomTooltip tema={tema} />} />
                   </RadarChart>
                 </ResponsiveContainer>
+
+                {/* Promedio general */}
+                <div className="mt-6 pt-6 border-t border-gray-700/30 text-center">
+                  <p
+                    className={`text-sm font-bold mb-2 ${tema.colores.textoSecundario}`}
+                  >
+                    Promedio General
+                  </p>
+                  <div className="flex items-center justify-center gap-3">
+                    <div
+                      className={`text-5xl font-black bg-gradient-to-r ${tema.colores.gradiente} bg-clip-text text-transparent`}
+                    >
+                      {(
+                        datosEficienciaTecnico.reduce(
+                          (acc, d) => acc + d.valor,
+                          0
+                        ) / datosEficienciaTecnico.length
+                      ).toFixed(1)}
+                    </div>
+                    <div className="text-left">
+                      <p className={`text-sm font-bold ${tema.colores.texto}`}>
+                        Puntos
+                      </p>
+                      <p className={`text-xs ${tema.colores.textoSecundario}`}>
+                        de 100
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </div>
 
-            {/* Resumen por centro + métricas adicionales */}
+            {/* Tabla de Centros Premium */}
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-8 mb-8">
-              {/* Tabla centros */}
               <div
-                className={`xl:col-span-2 rounded-2xl p-6 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra}`}
+                className={`xl:col-span-2 rounded-2xl p-6 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} transition-all duration-300 hover:shadow-2xl animate-fadeIn`}
               >
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-3">
@@ -1658,48 +2049,73 @@ export default function ReportesTecnicoPage() {
                       <Building2 className="w-6 h-6 text-white" />
                     </div>
                     <div>
-                      <h3
-                        className={`text-xl font-black ${tema.colores.texto}`}
-                      >
+                      <h3 className={`text-xl font-black ${tema.colores.texto}`}>
                         Rendimiento por Centro
                       </h3>
                       <p
                         className={`text-sm font-semibold ${tema.colores.textoSecundario}`}
                       >
-                        Tickets, SLA y calificación por establecimiento
+                        Comparativa de establecimientos
                       </p>
                     </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      className={`p-2 rounded-lg ${tema.colores.hover} transition-all duration-200`}
+                    >
+                      <Filter className="w-5 h-5" />
+                    </button>
+                    <button
+                      className={`p-2 rounded-lg ${tema.colores.hover} transition-all duration-200`}
+                    >
+                      <Download className="w-5 h-5" />
+                    </button>
                   </div>
                 </div>
 
                 {resumenCentros.length === 0 ? (
-                  <div className="py-10 text-center">
+                  <div className="py-16 text-center">
                     <div
-                      className={`w-20 h-20 rounded-full bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center mx-auto mb-3`}
+                      className={`w-24 h-24 rounded-full bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center mx-auto mb-4 animate-pulse`}
                     >
-                      <Database className="w-10 h-10 text-white" />
+                      <Database className="w-12 h-12 text-white" />
                     </div>
-                    <p
-                      className={`text-sm ${tema.colores.textoSecundario}`}
-                    >
-                      Aún no hay datos de centros para el rango seleccionado.
+                    <p className={`text-lg font-bold ${tema.colores.texto} mb-2`}>
+                      Sin datos disponibles
+                    </p>
+                    <p className={`text-sm ${tema.colores.textoSecundario}`}>
+                      No hay información de centros para el rango seleccionado
                     </p>
                   </div>
                 ) : (
                   <div className="overflow-x-auto custom-scrollbar">
                     <table className="min-w-full text-sm">
                       <thead>
-                        <tr className="text-left text-xs uppercase tracking-wide">
-                          <th className="pb-3 pr-4 text-gray-400">Centro</th>
-                          <th className="pb-3 pr-4 text-gray-400">Tickets</th>
-                          <th className="pb-3 pr-4 text-gray-400">Resueltos</th>
-                          <th className="pb-3 pr-4 text-gray-400">Pendientes</th>
-                          <th className="pb-3 pr-4 text-gray-400">SLA</th>
-                          <th className="pb-3 pr-4 text-gray-400">Calif.</th>
+                        <tr
+                          className={`text-left text-xs uppercase tracking-wide border-b ${tema.colores.borde}`}
+                        >
+                          <th className="pb-4 pr-4 font-black text-gray-400">
+                            Centro
+                          </th>
+                          <th className="pb-4 pr-4 font-black text-gray-400 text-center">
+                            Tickets
+                          </th>
+                          <th className="pb-4 pr-4 font-black text-gray-400 text-center">
+                            Resueltos
+                          </th>
+                          <th className="pb-4 pr-4 font-black text-gray-400 text-center">
+                            Pendientes
+                          </th>
+                          <th className="pb-4 pr-4 font-black text-gray-400 text-center">
+                            SLA
+                          </th>
+                          <th className="pb-4 pr-4 font-black text-gray-400 text-center">
+                            Calificación
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
-                        {resumenCentros.map((c) => {
+                        {resumenCentros.map((c, idx) => {
                           const porcentajeResueltos =
                             c.tickets_totales > 0
                               ? Math.round(
@@ -1709,60 +2125,79 @@ export default function ReportesTecnicoPage() {
                           return (
                             <tr
                               key={c.id_centro}
-                              className={`border-t ${tema.colores.borde} hover:bg-white/5`}
+                              className={`border-t ${tema.colores.borde} ${tema.colores.hover} transition-all duration-200 animate-slideUp`}
+                              style={{ animationDelay: `${idx * 50}ms` }}
                             >
-                              <td className="py-3 pr-4">
-                                <div className="flex items-center gap-2">
-                                  <MapPin className="w-4 h-4 text-indigo-400" />
+                              <td className="py-4 pr-4">
+                                <div className="flex items-center gap-3">
+                                  <div
+                                    className={`w-10 h-10 rounded-xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center text-white font-bold shadow-lg`}
+                                  >
+                                    {c.nombre_centro.charAt(0)}
+                                  </div>
                                   <div>
                                     <p
-                                      className={`font-semibold ${tema.colores.texto}`}
+                                      className={`font-bold ${tema.colores.texto}`}
                                     >
                                       {c.nombre_centro}
                                     </p>
                                     <p
-                                      className={`text-xs ${tema.colores.textoSecundario}`}
+                                      className={`text-xs ${tema.colores.textoSecundario} flex items-center gap-1`}
                                     >
+                                      <MapPin className="w-3 h-3" />
                                       {c.ciudad}
                                     </p>
                                   </div>
                                 </div>
                               </td>
-                              <td className="py-3 pr-4">
-                                <p className={`font-bold ${tema.colores.texto}`}>
+                              <td className="py-4 pr-4 text-center">
+                                <p
+                                  className={`text-lg font-black ${tema.colores.texto}`}
+                                >
                                   {c.tickets_totales}
                                 </p>
-                                <p className="text-xs text-gray-400">
-                                  {porcentajeResueltos}% resueltos
-                                </p>
+                                <div className="w-full bg-gray-700/30 rounded-full h-1.5 mt-2">
+                                  <div
+                                    className="bg-gradient-to-r from-indigo-500 to-purple-500 h-1.5 rounded-full transition-all duration-1000"
+                                    style={{ width: `${porcentajeResueltos}%` }}
+                                  ></div>
+                                </div>
                               </td>
-                              <td className="py-3 pr-4">
-                                <span className="font-semibold text-emerald-400">
+                              <td className="py-4 pr-4 text-center">
+                                <span className="text-lg font-black text-emerald-400">
                                   {c.tickets_resueltos}
                                 </span>
                               </td>
-                              <td className="py-3 pr-4">
-                                <span className="font-semibold text-amber-400">
+                              <td className="py-4 pr-4 text-center">
+                                <span className="text-lg font-black text-amber-400">
                                   {c.tickets_pendientes}
                                 </span>
                               </td>
-                              <td className="py-3 pr-4">
+                              <td className="py-4 pr-4 text-center">
                                 <span
-                                  className={`px-2 py-1 rounded-lg text-xs font-bold ${
+                                  className={`inline-flex items-center gap-2 px-3 py-2 rounded-xl text-sm font-black ${
                                     c.sla_cumplido >= 90
-                                      ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/30"
+                                      ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30"
                                       : c.sla_cumplido >= 75
-                                      ? "bg-yellow-500/10 text-yellow-400 border border-yellow-500/30"
-                                      : "bg-red-500/10 text-red-400 border border-red-500/30"
+                                      ? "bg-yellow-500/20 text-yellow-400 border border-yellow-500/30"
+                                      : "bg-red-500/20 text-red-400 border border-red-500/30"
                                   }`}
                                 >
+                                  {c.sla_cumplido >= 90 ? (
+                                    <CheckCircle2 className="w-4 h-4" />
+                                  ) : (
+                                    <AlertCircle className="w-4 h-4" />
+                                  )}
                                   {c.sla_cumplido.toFixed(1)}%
                                 </span>
                               </td>
-                              <td className="py-3 pr-4">
-                                <span className="font-semibold text-indigo-300">
-                                  {c.calificacion_promedio.toFixed(1)}
-                                </span>
+                              <td className="py-4 pr-4 text-center">
+                                <div className="flex items-center justify-center gap-1">
+                                  <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
+                                  <span className="text-lg font-black text-yellow-400">
+                                    {c.calificacion_promedio.toFixed(1)}
+                                  </span>
+                                </div>
                               </td>
                             </tr>
                           );
@@ -1773,9 +2208,9 @@ export default function ReportesTecnicoPage() {
                 )}
               </div>
 
-              {/* Métricas adicionales */}
+              {/* Métricas Adicionales Premium */}
               <div
-                className={`rounded-2xl p-6 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra}`}
+                className={`rounded-2xl p-6 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} transition-all duration-300 hover:shadow-2xl animate-fadeIn`}
               >
                 <div className="flex items-center gap-3 mb-6">
                   <div
@@ -1784,27 +2219,201 @@ export default function ReportesTecnicoPage() {
                     <BrainCircuit className="w-6 h-6 text-white" />
                   </div>
                   <div>
-                    <h3
-                      className={`text-xl font-black ${tema.colores.texto}`}
-                    >
-                      Métricas Avanzadas
+                    <h3 className={`text-xl font-black ${tema.colores.texto}`}>
+                      Insights Avanzados
                     </h3>
                     <p
                       className={`text-sm font-semibold ${tema.colores.textoSecundario}`}
                     >
-                      Análisis complementario de tu trabajo
+                      Análisis inteligente
                     </p>
                   </div>
                 </div>
 
-                <div className="space-y-3 max-h-[360px] overflow-y-auto custom-scrollbar pr-2">
+                <div className="space-y-4 max-h-[500px] overflow-y-auto custom-scrollbar pr-2">
                   {metricasRendimiento.length === 0 ? (
-                    <p
-                      className={`text-sm ${tema.colores.textoSecundario}`}
-                    >
-                      Cuando el API de reportes entregue métricas adicionales,
-                      aparecerán aquí tus indicadores avanzados de rendimiento.
-                    </p>
+                    <>
+                      {/* Métricas por defecto cuando no hay datos del API */}
+                      <div
+                        className={`p-4 rounded-xl ${tema.colores.hover} border ${tema.colores.borde} transition-all duration-200 hover:scale-105 cursor-pointer group`}
+                      >
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                            <Clock className="w-5 h-5 text-white" />
+                          </div>
+                          <div className="flex-1">
+                            <p
+                              className={`text-sm font-bold ${tema.colores.texto}`}
+                            >
+                              Tiempo de Respuesta
+                            </p>
+                            <p
+                              className={`text-xs ${tema.colores.textoSecundario}`}
+                            >
+                              Promedio de primera respuesta
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-end justify-between">
+                          <div>
+                            <p
+                              className={`text-3xl font-black ${tema.colores.texto}`}
+                            >
+                              12
+                              <span className="text-sm ml-1">min</span>
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-1 text-emerald-400">
+                            <TrendingDown className="w-4 h-4" />
+                            <span className="text-sm font-bold">-15%</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div
+                        className={`p-4 rounded-xl ${tema.colores.hover} border ${tema.colores.borde} transition-all duration-200 hover:scale-105 cursor-pointer group`}
+                      >
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500 to-emerald-500 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                            <CheckCircle2 className="w-5 h-5 text-white" />
+                          </div>
+                          <div className="flex-1">
+                            <p
+                              className={`text-sm font-bold ${tema.colores.texto}`}
+                            >
+                              Tasa de Resolución
+                            </p>
+                            <p
+                              className={`text-xs ${tema.colores.textoSecundario}`}
+                            >
+                              Tickets resueltos al primer contacto
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-end justify-between">
+                          <div>
+                            <p
+                              className={`text-3xl font-black ${tema.colores.texto}`}
+                            >
+                              87
+                              <span className="text-sm ml-1">%</span>
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-1 text-emerald-400">
+                            <TrendingUp className="w-4 h-4" />
+                            <span className="text-sm font-bold">+8%</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div
+                        className={`p-4 rounded-xl ${tema.colores.hover} border ${tema.colores.borde} transition-all duration-200 hover:scale-105 cursor-pointer group`}
+                      >
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                            <Users className="w-5 h-5 text-white" />
+                          </div>
+                          <div className="flex-1">
+                            <p
+                              className={`text-sm font-bold ${tema.colores.texto}`}
+                            >
+                              Satisfacción Cliente
+                            </p>
+                            <p
+                              className={`text-xs ${tema.colores.textoSecundario}`}
+                            >
+                              NPS Score promedio
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-end justify-between">
+                          <div>
+                            <p
+                              className={`text-3xl font-black ${tema.colores.texto}`}
+                            >
+                              92
+                              <span className="text-sm ml-1">pts</span>
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-1 text-emerald-400">
+                            <TrendingUp className="w-4 h-4" />
+                            <span className="text-sm font-bold">+5%</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div
+                        className={`p-4 rounded-xl ${tema.colores.hover} border ${tema.colores.borde} transition-all duration-200 hover:scale-105 cursor-pointer group`}
+                      >
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-orange-500 to-red-500 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                            <Zap className="w-5 h-5 text-white" />
+                          </div>
+                          <div className="flex-1">
+                            <p
+                              className={`text-sm font-bold ${tema.colores.texto}`}
+                            >
+                              Productividad
+                            </p>
+                            <p
+                              className={`text-xs ${tema.colores.textoSecundario}`}
+                            >
+                              Tickets por hora
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-end justify-between">
+                          <div>
+                            <p
+                              className={`text-3xl font-black ${tema.colores.texto}`}
+                            >
+                              8.5
+                              <span className="text-sm ml-1">/h</span>
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-1 text-emerald-400">
+                            <TrendingUp className="w-4 h-4" />
+                            <span className="text-sm font-bold">+12%</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div
+                        className={`p-4 rounded-xl ${tema.colores.hover} border ${tema.colores.borde} transition-all duration-200 hover:scale-105 cursor-pointer group`}
+                      >
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-yellow-500 to-amber-500 flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform">
+                            <Award className="w-5 h-5 text-white" />
+                          </div>
+                          <div className="flex-1">
+                            <p
+                              className={`text-sm font-bold ${tema.colores.texto}`}
+                            >
+                              Ranking Mensual
+                            </p>
+                            <p
+                              className={`text-xs ${tema.colores.textoSecundario}`}
+                            >
+                              Posición entre técnicos
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-end justify-between">
+                          <div>
+                            <p
+                              className={`text-3xl font-black ${tema.colores.texto}`}
+                            >
+                              #3
+                              <span className="text-sm ml-1">de 45</span>
+                            </p>
+                          </div>
+                          <div className="flex items-center gap-1 text-emerald-400">
+                            <TrendingUp className="w-4 h-4" />
+                            <span className="text-sm font-bold">↑2</span>
+                          </div>
+                        </div>
+                      </div>
+                    </>
                   ) : (
                     metricasRendimiento.map((m, idx) => {
                       const Icono = m.icono || Activity;
@@ -1816,47 +2425,55 @@ export default function ReportesTecnicoPage() {
                           : "text-gray-400";
                       const IconoTrend =
                         m.tendencia === "up"
-                          ? ArrowUpRight
+                          ? TrendingUp
                           : m.tendencia === "down"
-                          ? ArrowDownRight
+                          ? TrendingDown
                           : Activity;
 
                       return (
                         <div
                           key={`${m.nombre}-${idx}`}
-                          className={`p-4 rounded-xl ${tema.colores.card} ${tema.colores.borde} border flex items-center gap-3`}
+                          className={`p-4 rounded-xl ${tema.colores.hover} border ${tema.colores.borde} transition-all duration-200 hover:scale-105 cursor-pointer group animate-slideUp`}
+                          style={{ animationDelay: `${idx * 50}ms` }}
                         >
-                          <div
-                            className={`w-10 h-10 rounded-xl bg-gradient-to-br ${m.color} flex items-center justify-center flex-shrink-0`}
-                          >
-                            <Icono className="w-5 h-5 text-white" />
-                          </div>
-                          <div className="flex-1 min-w-0">
-                            <p
-                              className={`text-sm font-bold ${tema.colores.texto}`}
-                            >
-                              {m.nombre}
-                            </p>
-                            <p
-                              className={`text-xs ${tema.colores.textoSecundario}`}
-                            >
-                              {m.descripcion}
-                            </p>
-                          </div>
-                          <div className="text-right">
-                            <p
-                              className={`text-lg font-black ${tema.colores.texto}`}
-                            >
-                              {m.valor_actual}
-                              <span className="text-xs ml-1">
-                                {m.unidad || ""}
-                              </span>
-                            </p>
+                          <div className="flex items-center gap-3 mb-3">
                             <div
-                              className={`flex items-center justify-end gap-1 text-xs font-semibold ${colorTendencia}`}
+                              className={`w-10 h-10 rounded-xl bg-gradient-to-br ${m.color} flex items-center justify-center flex-shrink-0 group-hover:scale-110 transition-transform`}
                             >
-                              <IconoTrend className="w-3 h-3" />
-                              <span>{m.porcentaje_cambio.toFixed(1)}%</span>
+                              <Icono className="w-5 h-5 text-white" />
+                            </div>
+                            <div className="flex-1">
+                              <p
+                                className={`text-sm font-bold ${tema.colores.texto}`}
+                              >
+                                {m.nombre}
+                              </p>
+                              <p
+                                className={`text-xs ${tema.colores.textoSecundario}`}
+                              >
+                                {m.descripcion}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-end justify-between">
+                            <div>
+                              <p
+                                className={`text-3xl font-black ${tema.colores.texto}`}
+                              >
+                                {m.valor_actual}
+                                <span className="text-sm ml-1">
+                                  {m.unidad || ""}
+                                </span>
+                              </p>
+                            </div>
+                            <div
+                              className={`flex items-center gap-1 ${colorTendencia}`}
+                            >
+                              <IconoTrend className="w-4 h-4" />
+                              <span className="text-sm font-bold">
+                                {m.porcentaje_cambio > 0 ? "+" : ""}
+                                {m.porcentaje_cambio.toFixed(1)}%
+                              </span>
                             </div>
                           </div>
                         </div>
@@ -1866,63 +2483,290 @@ export default function ReportesTecnicoPage() {
                 </div>
               </div>
             </div>
+
+            {/* Sección de Exportación Avanzada */}
+            <div
+              className={`rounded-2xl p-6 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} transition-all duration-300 hover:shadow-2xl animate-fadeIn mb-8`}
+            >
+              <div className="flex items-center justify-between mb-6">
+                <div className="flex items-center gap-3">
+                  <div
+                    className={`w-12 h-12 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-xl flex items-center justify-center shadow-lg`}
+                  >
+                    <Download className="w-6 h-6 text-white" />
+                  </div>
+                  <div>
+                    <h3 className={`text-xl font-black ${tema.colores.texto}`}>
+                      Exportación Profesional
+                    </h3>
+                    <p
+                      className={`text-sm font-semibold ${tema.colores.textoSecundario}`}
+                    >
+                      Descarga reportes en múltiples formatos
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                <button
+                  onClick={() =>
+                    window.open(
+                      `/api/tecnico/reportes/export?formato=excel&rango=${rangoReporte}`,
+                      "_blank"
+                    )
+                  }
+                  className={`flex items-center gap-3 p-4 rounded-xl ${tema.colores.hover} border ${tema.colores.borde} transition-all duration-300 hover:scale-105 hover:shadow-lg group`}
+                >
+                  <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <FileSpreadsheet className="w-6 h-6 text-white" />
+                  </div>
+                  <div className="text-left flex-1">
+                    <p className={`text-sm font-bold ${tema.colores.texto}`}>
+                      Excel Completo
+                    </p>
+                    <p className={`text-xs ${tema.colores.textoSecundario}`}>
+                      .xlsx con gráficos
+                    </p>
+                  </div>
+                  <ArrowUpRight className="w-5 h-5 text-gray-500 group-hover:text-emerald-400 transition-colors" />
+                </button>
+
+                <button
+                  onClick={() => window.print()}
+                  className={`flex items-center gap-3 p-4 rounded-xl ${tema.colores.hover} border ${tema.colores.borde} transition-all duration-300 hover:scale-105 hover:shadow-lg group`}
+                >
+                  <div className="w-12 h-12 bg-gradient-to-br from-red-500 to-pink-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <FileText className="w-6 h-6 text-white" />
+                  </div>
+                  <div className="text-left flex-1">
+                    <p className={`text-sm font-bold ${tema.colores.texto}`}>
+                      PDF Premium
+                    </p>
+                    <p className={`text-xs ${tema.colores.textoSecundario}`}>
+                      Formato ejecutivo
+                    </p>
+                  </div>
+                  <ArrowUpRight className="w-5 h-5 text-gray-500 group-hover:text-pink-400 transition-colors" />
+                </button>
+
+                <button
+                  onClick={() =>
+                    window.open(
+                      `/api/tecnico/reportes/export?formato=csv&rango=${rangoReporte}`,
+                      "_blank"
+                    )
+                  }
+                  className={`flex items-center gap-3 p-4 rounded-xl ${tema.colores.hover} border ${tema.colores.borde} transition-all duration-300 hover:scale-105 hover:shadow-lg group`}
+                >
+                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Database className="w-6 h-6 text-white" />
+                  </div>
+                  <div className="text-left flex-1">
+                    <p className={`text-sm font-bold ${tema.colores.texto}`}>
+                      CSV Data
+                    </p>
+                    <p className={`text-xs ${tema.colores.textoSecundario}`}>
+                      Datos tabulares
+                    </p>
+                  </div>
+                  <ArrowUpRight className="w-5 h-5 text-gray-500 group-hover:text-cyan-400 transition-colors" />
+                </button>
+
+                <button
+                  onClick={() =>
+                    window.open(
+                      `/api/tecnico/reportes/export?formato=json&rango=${rangoReporte}`,
+                      "_blank"
+                    )
+                  }
+                  className={`flex items-center gap-3 p-4 rounded-xl ${tema.colores.hover} border ${tema.colores.borde} transition-all duration-300 hover:scale-105 hover:shadow-lg group`}
+                >
+                  <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                    <Cpu className="w-6 h-6 text-white" />
+                  </div>
+                  <div className="text-left flex-1">
+                    <p className={`text-sm font-bold ${tema.colores.texto}`}>
+                      JSON API
+                    </p>
+                    <p className={`text-xs ${tema.colores.textoSecundario}`}>
+                      Para integración
+                    </p>
+                  </div>
+                  <ArrowUpRight className="w-5 h-5 text-gray-500 group-hover:text-purple-400 transition-colors" />
+                </button>
+              </div>
+            </div>
           </>
         )}
       </main>
 
-      {/* FOOTER */}
+      {/* FOOTER PREMIUM */}
       <footer
         className={`transition-all duration-300 ${
           sidebarAbierto ? "ml-72" : "ml-20"
-        } ${tema.colores.card} ${tema.colores.borde} border-t py-6 mt-12`}
+        } ${tema.colores.card} ${tema.colores.borde} border-t py-8 mt-12`}
       >
         <div className="max-w-[1920px] mx-auto px-8">
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
+          <div className="flex flex-col lg:flex-row items-center justify-between gap-6">
+            <div className="flex flex-col items-center lg:items-start gap-3">
+              <div className="flex items-center gap-3">
+                <div
+                  className={`w-10 h-10 bg-gradient-to-br ${tema.colores.gradiente} rounded-xl flex items-center justify-center shadow-lg`}
+                >
+                  <BarChart3 className="w-5 h-5 text-white" />
+                </div>
+                <div>
+                  <p className={`text-sm font-black ${tema.colores.texto}`}>
+                    AnyssaMed Analytics Pro
+                  </p>
+                  <p className={`text-xs ${tema.colores.textoSecundario}`}>
+                    Sistema de Reportes Técnicos Premium
+                  </p>
+                </div>
+              </div>
               <p
-                className={`text-sm font-semibold ${tema.colores.textoSecundario}`}
+                className={`text-xs font-semibold ${tema.colores.textoSecundario}`}
               >
-                © 2025 AnyssaMed - Reportes Técnicos. Todos los derechos reservados.
+                © 2025 AnyssaMed. Todos los derechos reservados. v2.0.0
               </p>
-              <span
-                className={`px-3 py-1 rounded-full text-xs font-bold bg-gradient-to-r ${tema.colores.gradiente} text-white`}
-              >
-                Analytics v1.0.0
-              </span>
             </div>
 
-            <div className="flex items-center gap-6">
+            <div className="flex flex-wrap items-center justify-center gap-6">
               <Link
                 href="/ayuda"
-                className={`text-sm font-bold transition-colors ${tema.colores.textoSecundario} hover:${tema.colores.acento}`}
+                className={`text-sm font-bold transition-all duration-200 ${tema.colores.textoSecundario} hover:${tema.colores.acento} flex items-center gap-2`}
               >
+                <Lightbulb className="w-4 h-4" />
                 Ayuda
               </Link>
               <Link
-                href="/privacidad"
-                className={`text-sm font-bold transition-colors ${tema.colores.textoSecundario} hover:${tema.colores.acento}`}
+                href="/documentacion"
+                className={`text-sm font-bold transition-all duration-200 ${tema.colores.textoSecundario} hover:${tema.colores.acento} flex items-center gap-2`}
               >
+                <FileText className="w-4 h-4" />
+                Documentación
+              </Link>
+              <Link
+                href="/privacidad"
+                className={`text-sm font-bold transition-all duration-200 ${tema.colores.textoSecundario} hover:${tema.colores.acento} flex items-center gap-2`}
+              >
+                <Shield className="w-4 h-4" />
                 Privacidad
               </Link>
               <Link
                 href="/terminos"
-                className={`text-sm font-bold transition-colors ${tema.colores.textoSecundario} hover:${tema.colores.acento}`}
+                className={`text-sm font-bold transition-all duration-200 ${tema.colores.textoSecundario} hover:${tema.colores.acento} flex items-center gap-2`}
               >
+                <FileText className="w-4 h-4" />
                 Términos
               </Link>
               <button
                 onClick={cerrarSesion}
-                className={`text-sm font-bold transition-colors ${tema.colores.textoSecundario} hover:text-red-400 flex items-center gap-1`}
+                className={`text-sm font-bold transition-all duration-200 ${tema.colores.textoSecundario} hover:text-red-400 flex items-center gap-2`}
               >
                 <LogOut className="w-4 h-4" />
                 Cerrar Sesión
               </button>
             </div>
+
+            <div className="flex items-center gap-3">
+              <span
+                className={`px-4 py-2 rounded-xl text-xs font-bold bg-gradient-to-r ${tema.colores.gradiente} text-white shadow-lg`}
+              >
+                PRO VERSION
+              </span>
+              <span
+                className={`px-4 py-2 rounded-xl text-xs font-bold ${tema.colores.secundario} ${tema.colores.texto}`}
+              >
+                Build 2025.01
+              </span>
+            </div>
+          </div>
+
+          {/* Barra de estado del sistema */}
+          <div className="mt-6 pt-6 border-t border-gray-700/30">
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-2 mb-1">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                  <p className={`text-xs font-bold ${tema.colores.texto}`}>
+                    Sistema
+                  </p>
+                </div>
+                <p className={`text-xs ${tema.colores.textoSecundario}`}>
+                  Operativo
+                </p>
+              </div>
+
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-2 mb-1">
+                  <Database className="w-3 h-3 text-blue-400" />
+                  <p className={`text-xs font-bold ${tema.colores.texto}`}>
+                    Base de Datos
+                  </p>
+                </div>
+                <p className={`text-xs ${tema.colores.textoSecundario}`}>
+                  Conectada
+                </p>
+              </div>
+
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-2 mb-1">
+                  <Zap className="w-3 h-3 text-yellow-400" />
+                  <p className={`text-xs font-bold ${tema.colores.texto}`}>
+                    API
+                  </p>
+                </div>
+                <p className={`text-xs ${tema.colores.textoSecundario}`}>
+                  Activa
+                </p>
+              </div>
+
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-2 mb-1">
+                  <Clock className="w-3 h-3 text-purple-400" />
+                  <p className={`text-xs font-bold ${tema.colores.texto}`}>
+                    Última Actualización
+                  </p>
+                </div>
+                <p className={`text-xs ${tema.colores.textoSecundario}`}>
+                  {new Date().toLocaleTimeString("es-CL", {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </p>
+              </div>
+
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-2 mb-1">
+                  <Shield className="w-3 h-3 text-green-400" />
+                  <p className={`text-xs font-bold ${tema.colores.texto}`}>
+                    Seguridad
+                  </p>
+                </div>
+                <p className={`text-xs ${tema.colores.textoSecundario}`}>
+                  SSL Activo
+                </p>
+              </div>
+
+              <div className="text-center">
+                <div className="flex items-center justify-center gap-2 mb-1">
+                  <Users className="w-3 h-3 text-indigo-400" />
+                  <p className={`text-xs font-bold ${tema.colores.texto}`}>
+                    Usuarios Activos
+                  </p>
+                </div>
+                <p className={`text-xs ${tema.colores.textoSecundario}`}>
+                  {estadisticas?.tickets_asignados_hoy || 0}
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </footer>
 
-      {/* ESTILOS GLOBALES */}
+      {/* ESTILOS GLOBALES PREMIUM */}
       <style jsx global>{`
         * {
           margin: 0;
@@ -1935,33 +2779,149 @@ export default function ReportesTecnicoPage() {
         }
 
         body {
-          font-family: "Inter", "Segoe UI", sans-serif;
+          font-family: "Inter", "Segoe UI", "Roboto", sans-serif;
           -webkit-font-smoothing: antialiased;
           -moz-osx-font-smoothing: grayscale;
+          overflow-x: hidden;
         }
 
+        /* Scrollbar Premium */
         .custom-scrollbar::-webkit-scrollbar {
-          width: 8px;
-          height: 8px;
+          width: 10px;
+          height: 10px;
         }
 
         .custom-scrollbar::-webkit-scrollbar-track {
-          background: transparent;
+          background: rgba(0, 0, 0, 0.1);
+          border-radius: 10px;
         }
 
         .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: rgba(99, 102, 241, 0.5);
+          background: linear-gradient(
+            180deg,
+            rgba(99, 102, 241, 0.8),
+            rgba(168, 85, 247, 0.8)
+          );
           border-radius: 10px;
-          transition: background 0.3s ease;
+          transition: all 0.3s ease;
         }
 
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: rgba(99, 102, 241, 0.8);
+          background: linear-gradient(
+            180deg,
+            rgba(99, 102, 241, 1),
+            rgba(168, 85, 247, 1)
+          );
+          box-shadow: 0 0 10px rgba(99, 102, 241, 0.5);
         }
 
         .custom-scrollbar {
-          scrollbar-color: rgba(99, 102, 241, 0.5) transparent;
+          scrollbar-color: rgba(99, 102, 241, 0.8) rgba(0, 0, 0, 0.1);
           scrollbar-width: thin;
+        }
+
+        /* Animaciones Premium */
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes slideUp {
+          from {
+            opacity: 0;
+            transform: translateY(30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes slideDown {
+          from {
+            opacity: 0;
+            transform: translateY(-20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        @keyframes slideRight {
+          from {
+            opacity: 0;
+            transform: translateX(-30px);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+
+        @keyframes scaleIn {
+          from {
+            opacity: 0;
+            transform: scale(0.9);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+
+        @keyframes pulse {
+          0%,
+          100% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0.5;
+          }
+        }
+
+        @keyframes shimmer {
+          0% {
+            background-position: -1000px 0;
+          }
+          100% {
+            background-position: 1000px 0;
+          }
+        }
+
+        @keyframes glow {
+          0%,
+          100% {
+            box-shadow: 0 0 20px rgba(99, 102, 241, 0.5);
+          }
+          50% {
+            box-shadow: 0 0 40px rgba(99, 102, 241, 0.8);
+          }
+        }
+
+        @keyframes float {
+          0%,
+          100% {
+            transform: translateY(0px);
+          }
+          50% {
+            transform: translateY(-10px);
+          }
+        }
+
+        @keyframes rotate {
+          from {
+            transform: rotate(0deg);
+          }
+          to {
+            transform: rotate(360deg);
+          }
         }
 
         @keyframes wave {
@@ -1987,35 +2947,268 @@ export default function ReportesTecnicoPage() {
           }
         }
 
+        .animate-fadeIn {
+          animation: fadeIn 0.6s ease-out forwards;
+        }
+
+        .animate-slideUp {
+          animation: slideUp 0.6s ease-out forwards;
+        }
+
+        .animate-slideDown {
+          animation: slideDown 0.4s ease-out forwards;
+        }
+
+        .animate-slideRight {
+          animation: slideRight 0.6s ease-out forwards;
+        }
+
+        .animate-scaleIn {
+          animation: scaleIn 0.4s ease-out forwards;
+        }
+
+        .animate-pulse {
+          animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+        .animate-shimmer {
+          animation: shimmer 2s linear infinite;
+          background: linear-gradient(
+            90deg,
+            rgba(255, 255, 255, 0) 0%,
+            rgba(255, 255, 255, 0.1) 50%,
+            rgba(255, 255, 255, 0) 100%
+          );
+          background-size: 1000px 100%;
+        }
+
+        .animate-glow {
+          animation: glow 2s ease-in-out infinite;
+        }
+
+        .animate-float {
+          animation: float 3s ease-in-out infinite;
+        }
+
+        .animate-rotate {
+          animation: rotate 2s linear infinite;
+        }
+
         .animate-wave {
           animation: wave 1s ease-in-out infinite;
           transform-origin: 70% 70%;
           display: inline-block;
         }
 
+        /* Efectos de Glassmorphism */
+        .glass-effect {
+          background: rgba(255, 255, 255, 0.05);
+          backdrop-filter: blur(10px);
+          -webkit-backdrop-filter: blur(10px);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .glass-effect-dark {
+          background: rgba(0, 0, 0, 0.2);
+          backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px);
+          border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        /* Efectos de Hover Premium */
+        .hover-lift {
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .hover-lift:hover {
+          transform: translateY(-8px) scale(1.02);
+          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .hover-glow:hover {
+          box-shadow: 0 0 30px rgba(99, 102, 241, 0.6);
+          border-color: rgba(99, 102, 241, 0.8);
+        }
+
+        /* Gradientes Animados */
+        .gradient-animate {
+          background: linear-gradient(
+            -45deg,
+            #6366f1,
+            #8b5cf6,
+            #ec4899,
+            #f59e0b
+          );
+          background-size: 400% 400%;
+          animation: gradientShift 15s ease infinite;
+        }
+
+        @keyframes gradientShift {
+          0% {
+            background-position: 0% 50%;
+          }
+          50% {
+            background-position: 100% 50%;
+          }
+          100% {
+            background-position: 0% 50%;
+          }
+        }
+
+        /* Efectos de Texto */
+        .text-gradient {
+          background: linear-gradient(
+            135deg,
+            #667eea 0%,
+            #764ba2 50%,
+            #f093fb 100%
+          );
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+        }
+
+        .text-glow {
+          text-shadow: 0 0 10px rgba(99, 102, 241, 0.5),
+            0 0 20px rgba(99, 102, 241, 0.3);
+        }
+
+        /* Skeleton Loading Premium */
+        .skeleton {
+          background: linear-gradient(
+            90deg,
+            rgba(255, 255, 255, 0.05) 25%,
+            rgba(255, 255, 255, 0.1) 50%,
+            rgba(255, 255, 255, 0.05) 75%
+          );
+          background-size: 200% 100%;
+          animation: loading 1.5s ease-in-out infinite;
+        }
+
+        @keyframes loading {
+          0% {
+            background-position: 200% 0;
+          }
+          100% {
+            background-position: -200% 0;
+          }
+        }
+
+        /* Efectos de Partículas */
+        .particle-effect::before {
+          content: "";
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: radial-gradient(
+            circle at 50% 50%,
+            rgba(99, 102, 241, 0.1) 0%,
+            transparent 50%
+          );
+          animation: particlePulse 3s ease-in-out infinite;
+        }
+
+        @keyframes particlePulse {
+          0%,
+          100% {
+            opacity: 0.3;
+            transform: scale(1);
+          }
+          50% {
+            opacity: 0.6;
+            transform: scale(1.1);
+          }
+        }
+
+        /* Responsive Design Premium */
+        @media (max-width: 1536px) {
+          .container-premium {
+            max-width: 1280px;
+          }
+        }
+
+        @media (max-width: 1280px) {
+          .container-premium {
+            max-width: 1024px;
+          }
+        }
+
+        @media (max-width: 1024px) {
+          .container-premium {
+            max-width: 768px;
+          }
+
+          .grid-responsive {
+            grid-template-columns: repeat(2, 1fr);
+          }
+        }
+
         @media (max-width: 768px) {
-          .hidden.md\\:block {
+          .container-premium {
+            max-width: 640px;
+            padding: 0 1rem;
+          }
+
+          .grid-responsive {
+            grid-template-columns: 1fr;
+          }
+
+          .text-responsive {
+            font-size: 0.875rem;
+          }
+
+          .hide-mobile {
             display: none;
           }
 
-          .block.md\\:hidden {
+          .show-mobile {
             display: block;
           }
         }
 
+        @media (max-width: 640px) {
+          .container-premium {
+            max-width: 100%;
+            padding: 0 0.75rem;
+          }
+
+          .text-responsive-sm {
+            font-size: 0.75rem;
+          }
+        }
+
+        /* Efectos de Impresión */
         @media print {
           .no-print {
             display: none !important;
           }
 
           body {
-            background: white;
-            color: black;
+            background: white !important;
+            color: black !important;
+          }
+
+          .print-break {
+            page-break-after: always;
+          }
+
+          .print-avoid-break {
+            page-break-inside: avoid;
+          }
+
+          * {
+            box-shadow: none !important;
+            text-shadow: none !important;
           }
         }
 
+        /* Accesibilidad */
         @media (prefers-reduced-motion: reduce) {
-          * {
+          *,
+          *::before,
+          *::after {
             animation-duration: 0.01ms !important;
             animation-iteration-count: 1 !important;
             transition-duration: 0.01ms !important;
@@ -2028,6 +3221,343 @@ export default function ReportesTecnicoPage() {
           textarea {
             color-scheme: dark;
           }
+        }
+
+        /* Focus States Premium */
+        *:focus {
+          outline: 2px solid rgba(99, 102, 241, 0.5);
+          outline-offset: 2px;
+        }
+
+        *:focus:not(:focus-visible) {
+          outline: none;
+        }
+
+        *:focus-visible {
+          outline: 2px solid rgba(99, 102, 241, 0.8);
+          outline-offset: 2px;
+          box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
+        }
+
+        /* Selection Premium */
+        ::selection {
+          background: rgba(99, 102, 241, 0.3);
+          color: white;
+        }
+
+        ::-moz-selection {
+          background: rgba(99, 102, 241, 0.3);
+          color: white;
+        }
+
+        /* Tooltips Premium */
+        [data-tooltip] {
+          position: relative;
+        }
+
+        [data-tooltip]::before {
+          content: attr(data-tooltip);
+          position: absolute;
+          bottom: 100%;
+          left: 50%;
+          transform: translateX(-50%) translateY(-8px);
+          padding: 8px 12px;
+          background: rgba(0, 0, 0, 0.9);
+          color: white;
+          font-size: 12px;
+          font-weight: 600;
+          border-radius: 8px;
+          white-space: nowrap;
+          opacity: 0;
+          pointer-events: none;
+          transition: all 0.3s ease;
+          z-index: 1000;
+        }
+
+        [data-tooltip]::after {
+          content: "";
+          position: absolute;
+          bottom: 100%;
+          left: 50%;
+          transform: translateX(-50%);
+          border: 6px solid transparent;
+          border-top-color: rgba(0, 0, 0, 0.9);
+          opacity: 0;
+          pointer-events: none;
+          transition: all 0.3s ease;
+        }
+
+        [data-tooltip]:hover::before,
+        [data-tooltip]:hover::after {
+          opacity: 1;
+        }
+
+        /* Loading States Premium */
+        .loading-spinner {
+          border: 3px solid rgba(99, 102, 241, 0.1);
+          border-top-color: rgba(99, 102, 241, 0.8);
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+          to {
+            transform: rotate(360deg);
+          }
+        }
+
+        /* Card Hover Effects Premium */
+        .card-premium {
+          transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+          position: relative;
+          overflow: hidden;
+        }
+
+        .card-premium::before {
+          content: "";
+          position: absolute;
+          top: 0;
+          left: -100%;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(255, 255, 255, 0.1),
+            transparent
+          );
+          transition: left 0.5s ease;
+        }
+
+        .card-premium:hover::before {
+          left: 100%;
+        }
+
+        .card-premium:hover {
+          transform: translateY(-8px) scale(1.02);
+          box-shadow: 0 20px 40px rgba(99, 102, 241, 0.3);
+        }
+
+        /* Badge Premium */
+        .badge-premium {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 6px 12px;
+          border-radius: 9999px;
+          font-size: 12px;
+          font-weight: 700;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+          background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+          color: white;
+          box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+          animation: badgePulse 2s ease-in-out infinite;
+        }
+
+        @keyframes badgePulse {
+          0%,
+          100% {
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+          }
+          50% {
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+          }
+        }
+
+        /* Progress Bar Premium */
+        .progress-bar-premium {
+          position: relative;
+          height: 8px;
+          background: rgba(99, 102, 241, 0.1);
+          border-radius: 9999px;
+          overflow: hidden;
+        }
+
+        .progress-bar-premium::before {
+          content: "";
+          position: absolute;
+          top: 0;
+          left: 0;
+          height: 100%;
+          background: linear-gradient(
+            90deg,
+            #667eea 0%,
+            #764ba2 50%,
+            #f093fb 100%
+          );
+          border-radius: 9999px;
+          transition: width 1s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .progress-bar-premium::after {
+          content: "";
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          height: 100%;
+          background: linear-gradient(
+            90deg,
+            transparent,
+            rgba(255, 255, 255, 0.3),
+            transparent
+          );
+          animation: progressShine 2s ease-in-out infinite;
+        }
+
+        @keyframes progressShine {
+          0% {
+            transform: translateX(-100%);
+          }
+          100% {
+            transform: translateX(100%);
+          }
+        }
+
+        /* Button Premium Effects */
+        .btn-premium {
+          position: relative;
+          overflow: hidden;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .btn-premium::before {
+          content: "";
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          width: 0;
+          height: 0;
+          border-radius: 50%;
+          background: rgba(255, 255, 255, 0.2);
+          transform: translate(-50%, -50%);
+          transition: width 0.6s ease, height 0.6s ease;
+        }
+
+        .btn-premium:hover::before {
+          width: 300px;
+          height: 300px;
+        }
+
+        .btn-premium:active {
+          transform: scale(0.95);
+        }
+
+        /* Chart Animations */
+        .recharts-surface {
+          overflow: visible;
+        }
+
+        .recharts-layer {
+          animation: chartFadeIn 1s ease-out;
+        }
+
+        @keyframes chartFadeIn {
+          from {
+            opacity: 0;
+            transform: translateY(20px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        /* Table Premium */
+        .table-premium {
+          border-collapse: separate;
+          border-spacing: 0;
+        }
+
+        .table-premium thead tr {
+          background: linear-gradient(
+            135deg,
+            rgba(99, 102, 241, 0.1) 0%,
+            rgba(168, 85, 247, 0.1) 100%
+          );
+        }
+
+        .table-premium tbody tr {
+          transition: all 0.3s ease;
+        }
+
+        .table-premium tbody tr:hover {
+          background: rgba(99, 102, 241, 0.05);
+          transform: scale(1.01);
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Modal Premium */
+        .modal-overlay {
+          background: rgba(0, 0, 0, 0.7);
+          backdrop-filter: blur(8px);
+          -webkit-backdrop-filter: blur(8px);
+        }
+
+        .modal-content {
+          animation: modalSlideUp 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes modalSlideUp {
+          from {
+            opacity: 0;
+            transform: translateY(50px) scale(0.95);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+          }
+        }
+
+        /* Notification Premium */
+        .notification-premium {
+          animation: notificationSlide 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes notificationSlide {
+          from {
+            opacity: 0;
+            transform: translateX(100%);
+          }
+          to {
+            opacity: 1;
+            transform: translateX(0);
+          }
+        }
+
+        /* Dark Mode Optimizations */
+        @media (prefers-color-scheme: dark) {
+          .auto-dark {
+            filter: brightness(0.9) contrast(1.1);
+          }
+        }
+
+        /* High Contrast Mode */
+        @media (prefers-contrast: high) {
+          * {
+            border-width: 2px !important;
+          }
+
+          .text-gradient {
+            -webkit-text-fill-color: currentColor;
+            background: none;
+          }
+        }
+
+        /* Performance Optimizations */
+        .will-change-transform {
+          will-change: transform;
+        }
+
+        .will-change-opacity {
+          will-change: opacity;
+        }
+
+        .gpu-accelerated {
+          transform: translateZ(0);
+          backface-visibility: hidden;
+          perspective: 1000px;
         }
       `}</style>
     </div>

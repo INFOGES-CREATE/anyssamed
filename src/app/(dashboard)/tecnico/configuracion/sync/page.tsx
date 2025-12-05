@@ -16,13 +16,11 @@ import {
   Check,
   CheckCircle2,
   ChevronDown,
-  ClipboardList,
   Cloud,
   Database,
   HardDrive,
   Lightbulb,
   Loader2,
-  Lock,
   LogOut,
   MapPin,
   RefreshCw,
@@ -38,10 +36,11 @@ import {
   X,
   Zap as ZapIcon,
   AlertCircle as AlertCircleIcon,
-  MapPin as MapPinIcon,
   User,
   Link2,
   Clock3,
+  TrendingUp,
+  Layers,
 } from "lucide-react";
 
 // =====================================================
@@ -68,6 +67,8 @@ interface ConfiguracionTema {
     header: string;
     card: string;
     hover: string;
+    cardHover: string;
+    gradienteCard: string;
   };
 }
 
@@ -88,7 +89,6 @@ interface UsuarioSesion {
     id_tecnico: number;
     id_centro: number;
     id_sucursal: number | null;
-    id_departamento: number | null;
     area_tecnica: string;
     tipo_tecnico: "soporte" | "mantenimiento" | "ingenieria" | "biomedico";
     extension_telefonica: string | null;
@@ -141,7 +141,6 @@ interface AlertaTecnico {
   url_accion: string | null;
 }
 
-// motores de sincronización por centro
 export type MotorId =
   | "his"
   | "cmdb"
@@ -155,139 +154,137 @@ type PoliticaConflictos = "preferir_remoto" | "preferir_local" | "preguntar";
 interface ConfigSyncCentro {
   id_config_sync: number | null;
   id_centro: number;
-
   habilitado: boolean;
-
   motores: Record<MotorId, boolean>;
-
-  // frecuencia en minutos por motor
   frecuencia_minutos: Record<MotorId, number>;
-
-  // endpoints / conexiones básicas
   endpoints: Record<MotorId, string>;
-
-  // última ejecución conocida de cada motor
   ult_ejecuciones: Record<MotorId, string | null>;
-
   ventanas: {
-    horario_inicio: string; // "HH:MM"
-    horario_fin: string; // "HH:MM"
+    horario_inicio: string;
+    horario_fin: string;
     permitir_fuera_horario: boolean;
   };
-
   reintentos_maximos: number;
   politica_conflictos: PoliticaConflictos;
-
   enviar_alerta_falla: boolean;
   enviar_resumen_diario: boolean;
   pausar_sync_si_mantenimiento: boolean;
-
   ult_actualizacion: string | null;
 }
 
 // =====================================================
-// CONSTANTES
+// CONSTANTES - TEMAS PREMIUM
 // =====================================================
 
 const TEMAS: Record<TemaColor, ConfiguracionTema> = {
   light: {
-    nombre: "Claro",
+    nombre: "Claro Profesional",
     icono: Sun,
     colores: {
-      fondo: "from-slate-50 via-blue-50 to-indigo-50",
+      fondo: "from-slate-50 via-blue-50/30 to-indigo-50/40",
       fondoSecundario: "bg-white",
-      texto: "text-gray-900",
-      textoSecundario: "text-gray-600",
-      primario: "bg-indigo-600 hover:bg-indigo-700",
-      secundario: "bg-gray-200 hover:bg-gray-300",
+      texto: "text-slate-900",
+      textoSecundario: "text-slate-600",
+      primario: "bg-gradient-to-r from-indigo-600 to-indigo-700 hover:from-indigo-700 hover:to-indigo-800",
+      secundario: "bg-slate-100 hover:bg-slate-200",
       acento: "text-indigo-600",
-      borde: "border-gray-200",
-      sombra: "shadow-xl shadow-indigo-100/50",
-      gradiente: "from-indigo-500 via-purple-500 to-pink-500",
-      sidebar: "bg-white/95 backdrop-blur-xl border-gray-200",
-      header: "bg-white/80 backdrop-blur-xl border-gray-200",
-      card: "bg-white border-gray-200 hover:border-indigo-300",
-      hover: "hover:bg-gray-50",
+      borde: "border-slate-200/60",
+      sombra: "shadow-2xl shadow-indigo-500/10",
+      gradiente: "from-indigo-600 via-blue-600 to-cyan-600",
+      sidebar: "bg-white/95 backdrop-blur-2xl border-slate-200/60",
+      header: "bg-white/90 backdrop-blur-2xl border-slate-200/60",
+      card: "bg-white/80 backdrop-blur-sm border-slate-200/60",
+      hover: "hover:bg-slate-50/80",
+      cardHover: "hover:shadow-xl hover:shadow-indigo-500/20 hover:border-indigo-300/60",
+      gradienteCard: "from-indigo-50/50 to-blue-50/50",
     },
   },
   dark: {
-    nombre: "Oscuro",
+    nombre: "Oscuro Elegante",
     icono: Moon,
     colores: {
-      fondo: "from-slate-950 via-indigo-950 to-purple-950",
-      fondoSecundario: "bg-gray-900",
-      texto: "text-white",
-      textoSecundario: "text-gray-400",
-      primario: "bg-indigo-600 hover:bg-indigo-700",
-      secundario: "bg-gray-800 hover:bg-gray-700",
+      fondo: "from-slate-950 via-slate-900 to-slate-950",
+      fondoSecundario: "bg-slate-900/95",
+      texto: "text-slate-50",
+      textoSecundario: "text-slate-400",
+      primario: "bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700",
+      secundario: "bg-slate-800/80 hover:bg-slate-700/80",
       acento: "text-indigo-400",
-      borde: "border-gray-800",
+      borde: "border-slate-800/60",
       sombra: "shadow-2xl shadow-indigo-500/20",
-      gradiente: "from-indigo-500 via-purple-500 to-pink-500",
-      sidebar: "bg-gray-900/95 backdrop-blur-xl border-gray-800",
-      header: "bg-gray-900/80 backdrop-blur-xl border-gray-800",
-      card: "bg-gray-800/50 border-gray-700 hover:border-indigo-500/50",
-      hover: "hover:bg-gray-800",
+      gradiente: "from-indigo-600 via-purple-600 to-pink-600",
+      sidebar: "bg-slate-900/95 backdrop-blur-2xl border-slate-800/60",
+      header: "bg-slate-900/90 backdrop-blur-2xl border-slate-800/60",
+      card: "bg-slate-900/60 backdrop-blur-sm border-slate-800/60",
+      hover: "hover:bg-slate-800/60",
+      cardHover: "hover:shadow-xl hover:shadow-indigo-500/30 hover:border-indigo-500/60",
+      gradienteCard: "from-slate-900/80 to-slate-800/80",
     },
   },
   blue: {
-    nombre: "Azul Técnico",
+    nombre: "Azul Corporativo",
     icono: Wifi,
     colores: {
-      fondo: "from-blue-950 via-cyan-950 to-teal-950",
-      fondoSecundario: "bg-blue-900",
-      texto: "text-white",
-      textoSecundario: "text-cyan-300",
-      primario: "bg-cyan-600 hover:bg-cyan-700",
-      secundario: "bg-blue-800 hover:bg-blue-700",
+      fondo: "from-blue-950 via-cyan-950/80 to-slate-950",
+      fondoSecundario: "bg-blue-900/95",
+      texto: "text-cyan-50",
+      textoSecundario: "text-cyan-300/80",
+      primario: "bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700",
+      secundario: "bg-blue-900/80 hover:bg-blue-800/80",
       acento: "text-cyan-400",
-      borde: "border-cyan-800",
+      borde: "border-cyan-900/60",
       sombra: "shadow-2xl shadow-cyan-500/20",
-      gradiente: "from-cyan-500 via-blue-500 to-indigo-500",
-      sidebar: "bg-blue-900/95 backdrop-blur-xl border-cyan-800",
-      header: "bg-blue-900/80 backdrop-blur-xl border-cyan-800",
-      card: "bg-blue-800/50 border-cyan-700 hover:border-cyan-500/50",
-      hover: "hover:bg-blue-800",
+      gradiente: "from-cyan-600 via-blue-600 to-indigo-600",
+      sidebar: "bg-blue-950/95 backdrop-blur-2xl border-cyan-900/60",
+      header: "bg-blue-950/90 backdrop-blur-2xl border-cyan-900/60",
+      card: "bg-blue-900/60 backdrop-blur-sm border-cyan-900/60",
+      hover: "hover:bg-blue-900/60",
+      cardHover: "hover:shadow-xl hover:shadow-cyan-500/30 hover:border-cyan-500/60",
+      gradienteCard: "from-blue-950/80 to-cyan-950/80",
     },
   },
   purple: {
-    nombre: "Púrpura Industrial",
+    nombre: "Púrpura Premium",
     icono: Sparkles,
     colores: {
-      fondo: "from-purple-950 via-fuchsia-950 to-pink-950",
-      fondoSecundario: "bg-purple-900",
-      texto: "text-white",
-      textoSecundario: "text-purple-300",
-      primario: "bg-fuchsia-600 hover:bg-fuchsia-700",
-      secundario: "bg-purple-800 hover:bg-purple-700",
+      fondo: "from-purple-950 via-fuchsia-950/80 to-slate-950",
+      fondoSecundario: "bg-purple-900/95",
+      texto: "text-purple-50",
+      textoSecundario: "text-purple-300/80",
+      primario: "bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-700 hover:to-purple-700",
+      secundario: "bg-purple-900/80 hover:bg-purple-800/80",
       acento: "text-fuchsia-400",
-      borde: "border-purple-800",
+      borde: "border-purple-900/60",
       sombra: "shadow-2xl shadow-fuchsia-500/20",
-      gradiente: "from-fuchsia-500 via-purple-500 to-pink-500",
-      sidebar: "bg-purple-900/95 backdrop-blur-xl border-purple-800",
-      header: "bg-purple-900/80 backdrop-blur-xl border-purple-800",
-      card: "bg-purple-800/50 border-purple-700 hover:border-fuchsia-500/50",
-      hover: "hover:bg-purple-800",
+      gradiente: "from-fuchsia-600 via-purple-600 to-pink-600",
+      sidebar: "bg-purple-950/95 backdrop-blur-2xl border-purple-900/60",
+      header: "bg-purple-950/90 backdrop-blur-2xl border-purple-900/60",
+      card: "bg-purple-900/60 backdrop-blur-sm border-purple-900/60",
+      hover: "hover:bg-purple-900/60",
+      cardHover: "hover:shadow-xl hover:shadow-fuchsia-500/30 hover:border-fuchsia-500/60",
+      gradienteCard: "from-purple-950/80 to-fuchsia-950/80",
     },
   },
   green: {
     nombre: "Verde Operacional",
-    icono: Sparkles,
+    icono: Activity,
     colores: {
-      fondo: "from-emerald-950 via-teal-950 to-cyan-950",
-      fondoSecundario: "bg-emerald-900",
-      texto: "text-white",
-      textoSecundario: "text-emerald-300",
-      primario: "bg-emerald-600 hover:bg-emerald-700",
-      secundario: "bg-teal-800 hover:bg-teal-700",
+      fondo: "from-emerald-950 via-teal-950/80 to-slate-950",
+      fondoSecundario: "bg-emerald-900/95",
+      texto: "text-emerald-50",
+      textoSecundario: "text-emerald-300/80",
+      primario: "bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700",
+      secundario: "bg-emerald-900/80 hover:bg-emerald-800/80",
       acento: "text-emerald-400",
-      borde: "border-emerald-800",
+      borde: "border-emerald-900/60",
       sombra: "shadow-2xl shadow-emerald-500/20",
-      gradiente: "from-emerald-500 via-teal-500 to-cyan-500",
-      sidebar: "bg-emerald-900/95 backdrop-blur-xl border-emerald-800",
-      header: "bg-emerald-900/80 backdrop-blur-xl border-emerald-800",
-      card: "bg-emerald-800/50 border-emerald-700 hover:border-emerald-500/50",
-      hover: "hover:bg-emerald-800",
+      gradiente: "from-emerald-600 via-teal-600 to-cyan-600",
+      sidebar: "bg-emerald-950/95 backdrop-blur-2xl border-emerald-900/60",
+      header: "bg-emerald-950/90 backdrop-blur-2xl border-emerald-900/60",
+      card: "bg-emerald-900/60 backdrop-blur-sm border-emerald-900/60",
+      hover: "hover:bg-emerald-900/60",
+      cardHover: "hover:shadow-xl hover:shadow-emerald-500/30 hover:border-emerald-500/60",
+      gradienteCard: "from-emerald-950/80 to-teal-950/80",
     },
   },
 };
@@ -556,7 +553,7 @@ export default function ConfiguracionSyncCentroPage() {
   }, [usuario]);
 
   useEffect(() => {
-    document.body.className = `bg-gradient-to-br ${tema.colores.fondo} min-h-screen transition-all duration-500`;
+    document.body.className = `bg-gradient-to-br ${tema.colores.fondo} min-h-screen transition-all duration-700`;
   }, [tema]);
 
   useEffect(() => {
@@ -564,7 +561,7 @@ export default function ConfiguracionSyncCentroPage() {
     const t = setTimeout(() => {
       setMensajeConfig(null);
       setErrorConfig(null);
-    }, 4500);
+    }, 5000);
     return () => clearTimeout(t);
   }, [mensajeConfig, errorConfig]);
 
@@ -910,7 +907,7 @@ export default function ConfiguracionSyncCentroPage() {
       setConfigSync(nuevaConfig);
       setConfigOriginal(nuevaConfig);
       setMensajeConfig(
-        "Configuración de sincronización del centro guardada correctamente."
+        "✓ Configuración de sincronización del centro guardada correctamente."
       );
     } catch (err) {
       console.error("Error al guardar config sync:", err);
@@ -942,10 +939,10 @@ export default function ConfiguracionSyncCentroPage() {
 
   const obtenerColorDisponibilidad = () => {
     if (disponibilidad === "disponible")
-      return "bg-green-500/20 text-green-300 border-green-400/40";
+      return "bg-emerald-500/20 text-emerald-200 border-emerald-400/50";
     if (disponibilidad === "ocupado")
-      return "bg-yellow-500/20 text-yellow-200 border-yellow-400/40";
-    return "bg-red-500/20 text-red-200 border-red-400/40";
+      return "bg-amber-500/20 text-amber-200 border-amber-400/50";
+    return "bg-red-500/20 text-red-200 border-red-400/50";
   };
 
   const resumenMotor = (motor: MotorId) => {
@@ -955,14 +952,14 @@ export default function ConfiguracionSyncCentroPage() {
     const ultima = configSync.ult_ejecuciones[motor];
 
     if (!activo) {
-      return { estado: "Desactivado", clase: "bg-gray-500/20 text-gray-300" };
+      return { estado: "Desactivado", clase: "bg-slate-500/20 text-slate-300 border-slate-400/30" };
     }
 
     if (!ultima) {
-      return { estado: "Pendiente primera sync", clase: "bg-amber-500/20 text-amber-300" };
+      return { estado: "Pendiente primera sync", clase: "bg-amber-500/20 text-amber-200 border-amber-400/40" };
     }
 
-    return { estado: `Última sync: ${formatearFecha(ultima)}`, clase: "bg-emerald-500/20 text-emerald-300" };
+    return { estado: `Última sync: ${formatearFecha(ultima)}`, clase: "bg-emerald-500/20 text-emerald-200 border-emerald-400/40" };
   };
 
   // =====================================================
@@ -976,9 +973,9 @@ export default function ConfiguracionSyncCentroPage() {
       >
         <div className="text-center">
           <div className="relative mb-8">
-            <div className="w-32 h-32 border-4 border-indigo-400 border-t-transparent rounded-full animate-spin" />
+            <div className="w-32 h-32 border-4 border-indigo-400/30 border-t-indigo-500 rounded-full animate-spin" />
             <div
-              className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-20 h-20 bg-gradient-to-br ${tema.colores.gradiente} rounded-full flex items-center justify-center animate-pulse`}
+              className={`absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-20 h-20 bg-gradient-to-br ${tema.colores.gradiente} rounded-full flex items-center justify-center animate-pulse shadow-2xl`}
             >
               <Cloud className="w-10 h-10 text-white" />
             </div>
@@ -1005,7 +1002,7 @@ export default function ConfiguracionSyncCentroPage() {
           className={`text-center max-w-md mx-auto p-8 rounded-3xl ${tema.colores.card} ${tema.colores.sombra} ${tema.colores.borde} border`}
         >
           <div
-            className={`w-24 h-24 bg-gradient-to-br ${tema.colores.gradiente} rounded-3xl flex items-center justify-center mx-auto mb-6 animate-pulse`}
+            className={`w-24 h-24 bg-gradient-to-br ${tema.colores.gradiente} rounded-3xl flex items-center justify-center mx-auto mb-6 animate-pulse shadow-2xl`}
           >
             <AlertTriangle className="w-12 h-12 text-white" />
           </div>
@@ -1034,7 +1031,7 @@ export default function ConfiguracionSyncCentroPage() {
 
   return (
     <div
-      className={`min-h-screen transition-all duration-500 bg-gradient-to-br ${tema.colores.fondo}`}
+      className={`min-h-screen transition-all duration-700 bg-gradient-to-br ${tema.colores.fondo}`}
     >
       {/* SIDEBAR */}
       <SidebarTecnico
@@ -1054,21 +1051,21 @@ export default function ConfiguracionSyncCentroPage() {
         <div className="flex items-center justify-between px-8 py-4">
           {/* Búsqueda */}
           <div className="flex-1 max-w-2xl">
-            <div className="relative">
+            <div className="relative group">
               <Search
-                className={`absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 ${tema.colores.textoSecundario}`}
+                className={`absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 ${tema.colores.textoSecundario} transition-colors group-focus-within:text-indigo-400`}
               />
               <input
                 type="text"
                 placeholder="Buscar conectores, endpoints o parámetros de sync..."
                 value={busqueda}
                 onChange={(e) => setBusqueda(e.target.value)}
-                className={`w-full pl-12 pr-4 py-3 rounded-xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto} placeholder:${tema.colores.textoSecundario} focus:outline-none focus:ring-2 focus:ring-indigo-500/50 transition-all duration-300`}
+                className={`w-full pl-12 pr-4 py-3 rounded-xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto} placeholder:${tema.colores.textoSecundario} focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-400/60 transition-all duration-300`}
               />
               {busqueda && (
                 <button
                   onClick={() => setBusqueda("")}
-                  className={`absolute right-4 top-1/2 transform -translate-y-1/2 p-1 rounded-lg ${tema.colores.hover}`}
+                  className={`absolute right-4 top-1/2 transform -translate-y-1/2 p-1 rounded-lg ${tema.colores.hover} transition-all`}
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -1081,7 +1078,7 @@ export default function ConfiguracionSyncCentroPage() {
             {/* Temas */}
             <div className="relative group">
               <button
-                className={`p-3 rounded-xl font-semibold transition-all duration-300 ${tema.colores.secundario} ${tema.colores.texto}`}
+                className={`p-3 rounded-xl font-semibold transition-all duration-300 ${tema.colores.secundario} ${tema.colores.texto} hover:scale-105`}
               >
                 <Sparkles className="w-5 h-5" />
               </button>
@@ -1097,7 +1094,7 @@ export default function ConfiguracionSyncCentroPage() {
                     onClick={() => cambiarTema(key as TemaColor)}
                     className={`w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl font-semibold transition-all duration-300 ${
                       temaActual === key
-                        ? `bg-gradient-to-r ${t.colores.gradiente} text-white`
+                        ? `bg-gradient-to-r ${t.colores.gradiente} text-white shadow-lg`
                         : `${tema.colores.hover} ${tema.colores.texto}`
                     }`}
                   >
@@ -1117,11 +1114,11 @@ export default function ConfiguracionSyncCentroPage() {
                 onClick={() =>
                   setNotificacionesAbiertas(!notificacionesAbiertas)
                 }
-                className={`relative p-3 rounded-xl font-semibold transition-all duration-300 ${tema.colores.secundario} ${tema.colores.texto}`}
+                className={`relative p-3 rounded-xl font-semibold transition-all duration-300 ${tema.colores.secundario} ${tema.colores.texto} hover:scale-105`}
               >
                 <AlertCircle className="w-5 h-5" />
                 {alertas.filter((a) => !a.leida).length > 0 && (
-                  <span className="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center animate-pulse">
+                  <span className="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center animate-pulse shadow-lg">
                     {alertas.filter((a) => !a.leida).length > 9
                       ? "9+"
                       : alertas.filter((a) => !a.leida).length}
@@ -1131,10 +1128,10 @@ export default function ConfiguracionSyncCentroPage() {
 
               {notificacionesAbiertas && (
                 <div
-                  className={`absolute right-0 mt-2 w-96 rounded-2xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} max-h-96 overflow-y-auto z-50`}
+                  className={`absolute right-0 mt-2 w-96 rounded-2xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} max-h-96 overflow-y-auto z-50 animate-slideDown`}
                 >
                   <div
-                    className={`p-4 border-b ${tema.colores.borde} sticky top-0 ${tema.colores.card}`}
+                    className={`p-4 border-b ${tema.colores.borde} sticky top-0 ${tema.colores.card} backdrop-blur-xl`}
                   >
                     <h3
                       className={`text-lg font-black ${tema.colores.texto}`}
@@ -1159,7 +1156,7 @@ export default function ConfiguracionSyncCentroPage() {
                       {alertas.slice(0, 5).map((alerta) => (
                         <div
                           key={alerta.id_alerta}
-                          className={`p-4 ${tema.colores.hover} transition-colors cursor-pointer ${
+                          className={`p-4 ${tema.colores.hover} transition-all cursor-pointer ${
                             !alerta.leida ? "bg-indigo-500/5" : ""
                           }`}
                         >
@@ -1210,9 +1207,9 @@ export default function ConfiguracionSyncCentroPage() {
             {/* Disponibilidad */}
             <div className="hidden lg:flex items-center gap-2">
               <span
-                className={`px-3 py-2 rounded-xl text-xs font-semibold border ${obtenerColorDisponibilidad()}`}
+                className={`px-3 py-2 rounded-xl text-xs font-semibold border ${obtenerColorDisponibilidad()} transition-all duration-300`}
               >
-                Estado: {disponibilidad?.toUpperCase() ?? "NO DEFINIDO"}
+                {disponibilidad?.toUpperCase() ?? "NO DEFINIDO"}
               </span>
             </div>
 
@@ -1220,7 +1217,7 @@ export default function ConfiguracionSyncCentroPage() {
             <div className="relative">
               <button
                 onClick={() => setPerfilAbierto(!perfilAbierto)}
-                className={`flex items-center gap-3 px-4 py-2 rounded-xl transition-all duration-300 ${tema.colores.hover}`}
+                className={`flex items-center gap-3 px-4 py-2 rounded-xl transition-all duration-300 ${tema.colores.hover} hover:scale-105`}
               >
                 <div className="text-right hidden md:block">
                   <p className={`text-sm font-bold ${tema.colores.texto}`}>
@@ -1246,7 +1243,7 @@ export default function ConfiguracionSyncCentroPage() {
                   )}
                 </div>
                 <ChevronDown
-                  className={`w-4 h-4 ${tema.colores.texto} transition-transform ${
+                  className={`w-4 h-4 ${tema.colores.texto} transition-transform duration-300 ${
                     perfilAbierto ? "rotate-180" : ""
                   }`}
                 />
@@ -1254,9 +1251,9 @@ export default function ConfiguracionSyncCentroPage() {
 
               {perfilAbierto && (
                 <div
-                  className={`absolute right-0 mt-2 w-80 rounded-2xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} p-4 z-50`}
+                  className={`absolute right-0 mt-2 w-80 rounded-2xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} p-4 z-50 animate-slideDown`}
                 >
-                  <div className="flex items-center gap-4 mb-4 pb-4 border-b border-gray-700/50">
+                  <div className="flex items-center gap-4 mb-4 pb-4 border-b border-opacity-20" style={{ borderColor: tema.colores.borde }}>
                     <div
                       className={`w-16 h-16 rounded-xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center text-white font-bold text-xl shadow-lg`}
                     >
@@ -1316,7 +1313,7 @@ export default function ConfiguracionSyncCentroPage() {
                     </Link>
                     <button
                       onClick={cerrarSesion}
-                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all duration-300 ${tema.colores.hover} text-red-500 hover:text-red-400`}
+                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all duration-300 ${tema.colores.hover} text-red-400 hover:text-red-300`}
                     >
                       <LogOut className="w-5 h-5" />
                       <span>Cerrar Sesión</span>
@@ -1348,23 +1345,22 @@ export default function ConfiguracionSyncCentroPage() {
               className={`text-lg font-semibold ${tema.colores.textoSecundario}`}
             >
               Orquesta cómo se sincronizan los sistemas externos del centro:
-              conectores, frecuencias, ventanas horarias y alertas, sin tocar la
-              configuración global comunal.
+              conectores, frecuencias, ventanas horarias y alertas.
             </p>
             <div className="mt-3 flex flex-wrap items-center gap-2 text-xs md:text-sm">
               <span
-                className={`inline-flex items-center gap-2 px-3 py-1 rounded-full border ${tema.colores.borde} ${tema.colores.textoSecundario} bg-black/10`}
+                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border ${tema.colores.borde} ${tema.colores.textoSecundario} bg-black/5 backdrop-blur-sm`}
               >
-                <Building2 className="w-3 h-3" />
-                Centro actual:
-                <span className={tema.colores.texto}>
+                <Building2 className="w-3.5 h-3.5" />
+                Centro:
+                <span className={`${tema.colores.texto} font-semibold`}>
                   {usuario.tecnico?.centro?.nombre ?? "Sin centro asignado"}
                 </span>
               </span>
               <span
-                className={`inline-flex items-center gap-2 px-3 py-1 rounded-full border ${tema.colores.borde} ${tema.colores.textoSecundario} bg-black/10`}
+                className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full border ${tema.colores.borde} ${tema.colores.textoSecundario} bg-black/5 backdrop-blur-sm`}
               >
-                <MapPinIcon className="w-3 h-3" />
+                <MapPin className="w-3.5 h-3.5" />
                 {usuario.tecnico?.centro?.ciudad ?? "Sin ciudad"},{" "}
                 {usuario.tecnico?.centro?.region ?? "Sin región"}
               </span>
@@ -1375,13 +1371,13 @@ export default function ConfiguracionSyncCentroPage() {
             <div className="flex flex-wrap items-center gap-3">
               <button
                 onClick={cargarConfiguracionSync}
-                className={`flex items-center gap-2 px-5 py-3 ${tema.colores.secundario} rounded-xl font-semibold text-sm ${tema.colores.texto} transition-all duration-300 hover:scale-105`}
+                className={`flex items-center gap-2 px-5 py-3 ${tema.colores.secundario} rounded-xl font-semibold text-sm ${tema.colores.texto} transition-all duration-300 hover:scale-105 disabled:opacity-50`}
                 disabled={loadingConfig}
               >
                 <RefreshCw
                   className={`w-4 h-4 ${loadingConfig ? "animate-spin" : ""}`}
                 />
-                Recargar configuración
+                Recargar
               </button>
               <button
                 onClick={guardarConfiguracionSync}
@@ -1390,8 +1386,8 @@ export default function ConfiguracionSyncCentroPage() {
               >
                 <Save className="w-4 h-4" />
                 {guardandoConfig
-                  ? "Guardando cambios..."
-                  : "Guardar configuración de sync"}
+                  ? "Guardando..."
+                  : "Guardar configuración"}
               </button>
             </div>
 
@@ -1399,19 +1395,19 @@ export default function ConfiguracionSyncCentroPage() {
               {ultimaActualizacion ? (
                 <p className={tema.colores.textoSecundario}>
                   Última actualización:{" "}
-                  <span className={tema.colores.texto}>
+                  <span className={`${tema.colores.texto} font-semibold`}>
                     {formatearFecha(ultimaActualizacion)}
                   </span>
                 </p>
               ) : (
                 <p className={tema.colores.textoSecundario}>
-                  Esta configuración aún no se ha guardado en la base de datos.
+                  Esta configuración aún no se ha guardado.
                 </p>
               )}
               {hayCambios && (
-                <p className="text-amber-400 flex items-center gap-1">
+                <p className="text-amber-400 flex items-center gap-1 font-semibold">
                   <AlertTriangle className="w-3 h-3" />
-                  Hay cambios sin guardar.
+                  Hay cambios sin guardar
                 </p>
               )}
             </div>
@@ -1421,10 +1417,10 @@ export default function ConfiguracionSyncCentroPage() {
         {/* Mensajes */}
         {(mensajeConfig || errorConfig) && (
           <div
-            className={`mb-6 rounded-2xl px-4 py-3 flex items-center gap-3 ${
+            className={`mb-6 rounded-2xl px-4 py-3 flex items-center gap-3 border transition-all duration-300 ${
               mensajeConfig
-                ? "bg-emerald-500/10 border border-emerald-500/40"
-                : "bg-red-500/10 border border-red-500/40"
+                ? "bg-emerald-500/10 border-emerald-500/50"
+                : "bg-red-500/10 border-red-500/50"
             }`}
           >
             {mensajeConfig ? (
@@ -1433,7 +1429,7 @@ export default function ConfiguracionSyncCentroPage() {
               <AlertCircle className="w-5 h-5 text-red-400" />
             )}
             <p
-              className={`text-sm ${
+              className={`text-sm font-semibold ${
                 mensajeConfig ? "text-emerald-100" : "text-red-100"
               }`}
             >
@@ -1450,15 +1446,16 @@ export default function ConfiguracionSyncCentroPage() {
             titulo="Conectores activos"
             valor={resumen.conectoresActivos}
             chip="Integraciones habilitadas"
-            color="from-cyan-500 to-blue-500"
+            color="from-cyan-500 to-blue-600"
           />
-          <ResumenCard
+
+                    <ResumenCard
             tema={tema}
             icono={Clock3}
             titulo="Frecuencia promedio"
             valor={resumen.freqPromedio}
             chip="Minutos por ciclo"
-            color="from-indigo-500 to-purple-500"
+            color="from-indigo-500 to-purple-600"
           />
           <ResumenCard
             tema={tema}
@@ -1466,15 +1463,15 @@ export default function ConfiguracionSyncCentroPage() {
             titulo="Conectores críticos"
             valor={resumen.conectoresCriticos}
             chip="HIS / CMDB / Monitoreo"
-            color="from-red-500 to-orange-500"
+            color="from-red-500 to-orange-600"
           />
           <ResumenCard
             tema={tema}
-            icono={Activity}
+            icono={TrendingUp}
             titulo="Score de salud"
             valor={resumen.scoreSalud}
             chip={etiquetaScore}
-            color="from-emerald-500 to-teal-500"
+            color="from-emerald-500 to-teal-600"
           />
           <ResumenCard
             tema={tema}
@@ -1486,7 +1483,7 @@ export default function ConfiguracionSyncCentroPage() {
                 ? "Alertando fallas de sync"
                 : "Sin alertas locales"
             }
-            color="from-amber-500 to-yellow-500"
+            color="from-amber-500 to-yellow-600"
           />
         </div>
 
@@ -1494,7 +1491,10 @@ export default function ConfiguracionSyncCentroPage() {
         {loadingConfig || !configSync ? (
           <div className="flex items-center justify-center py-20">
             <div className="text-center">
-              <Loader2 className="w-16 h-16 animate-spin text-indigo-500 mx-auto mb-4" />
+              <div className="relative mb-8">
+                <Loader2 className="w-16 h-16 animate-spin text-indigo-500 mx-auto" />
+                <div className="absolute inset-0 blur-xl bg-indigo-500/20 animate-pulse" />
+              </div>
               <p
                 className={`text-lg font-semibold ${tema.colores.textoSecundario}`}
               >
@@ -1508,233 +1508,279 @@ export default function ConfiguracionSyncCentroPage() {
             <div className="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-10">
               {/* Estado general sync */}
               <div
-                className={`rounded-2xl p-5 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra}`}
+                className={`rounded-2xl p-6 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} transition-all duration-300 ${tema.colores.cardHover} group`}
               >
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center justify-between mb-5">
                   <div className="flex items-center gap-3">
                     <div
-                      className={`w-10 h-10 rounded-xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center text-white`}
+                      className={`w-12 h-12 rounded-xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform duration-300`}
                     >
-                      <Cloud className="w-5 h-5" />
+                      <Cloud className="w-6 h-6" />
                     </div>
                     <div>
                       <h3
                         className={`text-lg font-black ${tema.colores.texto}`}
                       >
-                        Estado del módulo de sincronización
+                        Estado del módulo
                       </h3>
                       <p
                         className={`text-xs ${tema.colores.textoSecundario}`}
                       >
-                        Activa o pausa la orquestación de integraciones en este
-                        centro.
+                        Control de sincronización
                       </p>
                     </div>
                   </div>
                 </div>
 
-                <div className="space-y-4 text-xs md:text-sm">
-                  <label className="flex items-start gap-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      className="mt-1 w-4 h-4 accent-emerald-500"
-                      checked={configSync.habilitado}
-                      onChange={(e) =>
-                        actualizarConfigSync({ habilitado: e.target.checked })
-                      }
-                    />
-                    <div>
-                      <p
-                        className={`text-sm font-semibold ${tema.colores.texto}`}
-                      >
-                        Habilitar sincronización automática en este centro
-                      </p>
-                      <p className={tema.colores.textoSecundario}>
-                        Si desmarcas, el centro dejará de ejecutar tareas de sync
-                        locales, pero no afecta la configuración comunal.
-                      </p>
-                    </div>
-                  </label>
-
-                  <label className="flex items-start gap-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      className="mt-1 w-4 h-4 accent-emerald-500"
-                      checked={configSync.pausar_sync_si_mantenimiento}
-                      onChange={(e) =>
-                        actualizarConfigSync({
-                          pausar_sync_si_mantenimiento: e.target.checked,
-                        })
-                      }
-                    />
-                    <div>
-                      <p
-                        className={`text-sm font-semibold ${tema.colores.texto}`}
-                      >
-                        Pausar sincronización durante mantenimiento del centro
-                      </p>
-                      <p className={tema.colores.textoSecundario}>
-                        Si el centro se marca en mantenimiento, se pausarán los
-                        jobs locales de sync hasta que termine la ventana.
-                      </p>
-                    </div>
-                  </label>
-
-                  <div className="flex items-center justify-between gap-3">
-                    <p
-                      className={`text-xs font-semibold ${tema.colores.texto}`}
-                    >
-                      Reintentos máximos por job
-                    </p>
-                    <div className="flex items-center gap-2">
+                <div className="space-y-4">
+                  <label className="flex items-start gap-3 cursor-pointer group/item">
+                    <div className="relative">
                       <input
-                        type="number"
-                        min={0}
-                        max={10}
-                        value={configSync.reintentos_maximos}
+                        type="checkbox"
+                        className="peer sr-only"
+                        checked={configSync.habilitado}
+                        onChange={(e) =>
+                          actualizarConfigSync({ habilitado: e.target.checked })
+                        }
+                      />
+                      <div className="w-11 h-6 bg-slate-700/50 rounded-full peer-checked:bg-gradient-to-r peer-checked:from-emerald-500 peer-checked:to-emerald-600 transition-all duration-300 shadow-inner"></div>
+                      <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform duration-300 peer-checked:translate-x-5 shadow-lg"></div>
+                    </div>
+                    <div className="flex-1">
+                      <p
+                        className={`text-sm font-semibold ${tema.colores.texto} mb-1`}
+                      >
+                        Habilitar sincronización automática
+                      </p>
+                      <p className={`text-xs ${tema.colores.textoSecundario}`}>
+                        Activa la orquestación de integraciones en este centro.
+                      </p>
+                    </div>
+                  </label>
+
+                  <div className={`h-px bg-gradient-to-r ${tema.colores.gradiente} opacity-20`} />
+
+                  <label className="flex items-start gap-3 cursor-pointer group/item">
+                    <div className="relative">
+                      <input
+                        type="checkbox"
+                        className="peer sr-only"
+                        checked={configSync.pausar_sync_si_mantenimiento}
                         onChange={(e) =>
                           actualizarConfigSync({
-                            reintentos_maximos: Math.max(
-                              0,
-                              parseInt(e.target.value || "0", 10)
-                            ),
+                            pausar_sync_si_mantenimiento: e.target.checked,
                           })
                         }
-                        className={`w-20 px-2 py-1 rounded-lg text-right ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto}`}
                       />
-                      <span className={tema.colores.textoSecundario}>
-                        intentos
-                      </span>
+                      <div className="w-11 h-6 bg-slate-700/50 rounded-full peer-checked:bg-gradient-to-r peer-checked:from-amber-500 peer-checked:to-amber-600 transition-all duration-300 shadow-inner"></div>
+                      <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform duration-300 peer-checked:translate-x-5 shadow-lg"></div>
                     </div>
+                    <div className="flex-1">
+                      <p
+                        className={`text-sm font-semibold ${tema.colores.texto} mb-1`}
+                      >
+                        Pausar durante mantenimiento
+                      </p>
+                      <p className={`text-xs ${tema.colores.textoSecundario}`}>
+                        Suspende jobs locales en ventanas de mantenimiento.
+                      </p>
+                    </div>
+                  </label>
+
+                  <div className={`h-px bg-gradient-to-r ${tema.colores.gradiente} opacity-20`} />
+
+                  <div className={`rounded-xl p-4 bg-gradient-to-br ${tema.colores.gradienteCard} border ${tema.colores.borde}`}>
+                    <div className="flex items-center justify-between mb-3">
+                      <p
+                        className={`text-sm font-bold ${tema.colores.texto} flex items-center gap-2`}
+                      >
+                        <Layers className="w-4 h-4" />
+                        Reintentos máximos por job
+                      </p>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() =>
+                            actualizarConfigSync({
+                              reintentos_maximos: Math.max(
+                                0,
+                                configSync.reintentos_maximos - 1
+                              ),
+                            })
+                          }
+                          className={`w-8 h-8 rounded-lg ${tema.colores.secundario} flex items-center justify-center font-bold transition-all duration-300 hover:scale-110`}
+                        >
+                          -
+                        </button>
+                        <input
+                          type="number"
+                          min={0}
+                          max={10}
+                          value={configSync.reintentos_maximos}
+                          onChange={(e) =>
+                            actualizarConfigSync({
+                              reintentos_maximos: Math.max(
+                                0,
+                                parseInt(e.target.value || "0", 10)
+                              ),
+                            })
+                          }
+                          className={`w-16 px-3 py-2 rounded-lg text-center font-bold ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto} focus:ring-2 focus:ring-indigo-500/50 transition-all`}
+                        />
+                        <button
+                          onClick={() =>
+                            actualizarConfigSync({
+                              reintentos_maximos: Math.min(
+                                10,
+                                configSync.reintentos_maximos + 1
+                              ),
+                            })
+                          }
+                          className={`w-8 h-8 rounded-lg ${tema.colores.secundario} flex items-center justify-center font-bold transition-all duration-300 hover:scale-110`}
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+                    <p className={`text-xs ${tema.colores.textoSecundario}`}>
+                      Número de intentos antes de marcar un job como fallido.
+                    </p>
                   </div>
                 </div>
               </div>
 
               {/* Ventana horaria + política de conflictos */}
               <div
-                className={`rounded-2xl p-5 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra}`}
+                className={`rounded-2xl p-6 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} transition-all duration-300 ${tema.colores.cardHover} group`}
               >
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center justify-between mb-5">
                   <div className="flex items-center gap-3">
                     <div
-                      className={`w-10 h-10 rounded-xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center text-white`}
+                      className={`w-12 h-12 rounded-xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform duration-300`}
                     >
-                      <Clock3 className="w-5 h-5" />
+                      <Clock3 className="w-6 h-6" />
                     </div>
                     <div>
                       <h3
                         className={`text-lg font-black ${tema.colores.texto}`}
                       >
-                        Ventana horaria y conflictos
+                        Ventana horaria
                       </h3>
                       <p
                         className={`text-xs ${tema.colores.textoSecundario}`}
                       >
-                        Define rango horario y qué sistema manda ante conflictos.
+                        Rango de operación
                       </p>
                     </div>
                   </div>
                 </div>
 
-                <div className="space-y-4 text-xs md:text-sm">
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={`text-[11px] ${tema.colores.textoSecundario}`}
-                      >
-                        Desde
-                      </span>
-                      <input
-                        type="time"
-                        value={configSync.ventanas.horario_inicio}
-                        onChange={(e) =>
-                          actualizarConfigSync({
-                            ventanas: {
-                              ...configSync.ventanas,
-                              horario_inicio: e.target.value,
-                            },
-                          })
-                        }
-                        className={`px-2 py-1 rounded-lg ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto}`}
-                      />
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={`text-[11px] ${tema.colores.textoSecundario}`}
-                      >
-                        Hasta
-                      </span>
-                      <input
-                        type="time"
-                        value={configSync.ventanas.horario_fin}
-                        onChange={(e) =>
-                          actualizarConfigSync({
-                            ventanas: {
-                              ...configSync.ventanas,
-                              horario_fin: e.target.value,
-                            },
-                          })
-                        }
-                        className={`px-2 py-1 rounded-lg ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto}`}
-                      />
+                <div className="space-y-4">
+                  <div className={`rounded-xl p-4 bg-gradient-to-br ${tema.colores.gradienteCard} border ${tema.colores.borde}`}>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className={`text-xs font-semibold ${tema.colores.texto} mb-2 block`}>
+                          Hora inicio
+                        </label>
+                        <input
+                          type="time"
+                          value={configSync.ventanas.horario_inicio}
+                          onChange={(e) =>
+                            actualizarConfigSync({
+                              ventanas: {
+                                ...configSync.ventanas,
+                                horario_inicio: e.target.value,
+                              },
+                            })
+                          }
+                          className={`w-full px-3 py-2 rounded-lg ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto} focus:ring-2 focus:ring-indigo-500/50 transition-all font-mono`}
+                        />
+                      </div>
+                      <div>
+                        <label className={`text-xs font-semibold ${tema.colores.texto} mb-2 block`}>
+                          Hora fin
+                        </label>
+                        <input
+                          type="time"
+                          value={configSync.ventanas.horario_fin}
+                          onChange={(e) =>
+                            actualizarConfigSync({
+                              ventanas: {
+                                ...configSync.ventanas,
+                                horario_fin: e.target.value,
+                              },
+                            })
+                          }
+                          className={`w-full px-3 py-2 rounded-lg ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto} focus:ring-2 focus:ring-indigo-500/50 transition-all font-mono`}
+                        />
+                      </div>
                     </div>
                   </div>
 
-                  <label className="flex items-start gap-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      className="mt-1 w-4 h-4 accent-indigo-500"
-                      checked={configSync.ventanas.permitir_fuera_horario}
-                      onChange={(e) =>
-                        actualizarConfigSync({
-                          ventanas: {
-                            ...configSync.ventanas,
-                            permitir_fuera_horario: e.target.checked,
-                          },
-                        })
-                      }
-                    />
-                    <div>
+                  <label className="flex items-start gap-3 cursor-pointer group/item">
+                    <div className="relative">
+                      <input
+                        type="checkbox"
+                        className="peer sr-only"
+                        checked={configSync.ventanas.permitir_fuera_horario}
+                        onChange={(e) =>
+                          actualizarConfigSync({
+                            ventanas: {
+                              ...configSync.ventanas,
+                              permitir_fuera_horario: e.target.checked,
+                            },
+                          })
+                        }
+                      />
+                      <div className="w-11 h-6 bg-slate-700/50 rounded-full peer-checked:bg-gradient-to-r peer-checked:from-indigo-500 peer-checked:to-indigo-600 transition-all duration-300 shadow-inner"></div>
+                      <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform duration-300 peer-checked:translate-x-5 shadow-lg"></div>
+                    </div>
+                    <div className="flex-1">
                       <p
-                        className={`text-sm font-semibold ${tema.colores.texto}`}
+                        className={`text-sm font-semibold ${tema.colores.texto} mb-1`}
                       >
-                        Permitir jobs fuera de la ventana definida
+                        Permitir jobs fuera de horario
                       </p>
-                      <p className={tema.colores.textoSecundario}>
-                        Ideal para sincronizaciones críticas de monitoreo o
-                        incidentes que no pueden esperar al horario hábil.
+                      <p className={`text-xs ${tema.colores.textoSecundario}`}>
+                        Para sincronizaciones críticas 24/7.
                       </p>
                     </div>
                   </label>
 
-                  <div className="border-t border-dashed border-gray-600/40 pt-3">
+                  <div className={`h-px bg-gradient-to-r ${tema.colores.gradiente} opacity-20`} />
+
+                  <div>
                     <p
-                      className={`text-xs font-semibold ${tema.colores.texto}`}
+                      className={`text-sm font-bold ${tema.colores.texto} mb-3 flex items-center gap-2`}
                     >
-                      Política de resolución de conflictos:
+                      <Shield className="w-4 h-4" />
+                      Política de conflictos
                     </p>
-                    <div className="mt-2 grid grid-cols-1 gap-2">
+                    <div className="space-y-2">
                       {(
                         [
                           {
                             id: "preferir_remoto",
-                            label: "Preferir datos del sistema remoto",
-                            desc: "El dato remoto se considera la verdad, sobreescribe lo local.",
+                            label: "Preferir remoto",
+                            desc: "El sistema remoto es la verdad.",
+                            icon: Cloud,
                           },
                           {
                             id: "preferir_local",
-                            label: "Preferir datos locales del centro",
-                            desc: "Se mantiene lo que está en el centro, salvo errores críticos.",
+                            label: "Preferir local",
+                            desc: "Mantener datos del centro.",
+                            icon: Database,
                           },
                           {
                             id: "preguntar",
-                            label: "Solicitar decisión (cuando aplique)",
-                            desc: "Se registran conflictos para revisión manual o flujos posteriores.",
+                            label: "Solicitar decisión",
+                            desc: "Revisión manual de conflictos.",
+                            icon: AlertCircle,
                           },
                         ] as {
                           id: PoliticaConflictos;
                           label: string;
                           desc: string;
+                          icon: any;
                         }[]
                       ).map((opt) => (
                         <button
@@ -1744,23 +1790,30 @@ export default function ConfiguracionSyncCentroPage() {
                               politica_conflictos: opt.id,
                             })
                           }
-                          className={`w-full text-left px-3 py-2 rounded-xl border text-xs transition-all ${
+                          className={`w-full text-left px-4 py-3 rounded-xl border transition-all duration-300 ${
                             configSync.politica_conflictos === opt.id
-                              ? "border-indigo-400 bg-indigo-500/20 text-indigo-100"
-                              : `${tema.colores.borde} ${tema.colores.hover} ${tema.colores.textoSecundario}`
+                              ? `border-indigo-400/60 bg-gradient-to-r ${tema.colores.gradiente} text-white shadow-lg scale-105`
+                              : `${tema.colores.borde} ${tema.colores.hover} ${tema.colores.texto}`
                           }`}
                         >
-                          <div className="flex items-center gap-2">
-                            {configSync.politica_conflictos === opt.id ? (
-                              <Check className="w-3 h-3" />
-                            ) : (
-                              <span className="w-3 h-3 rounded-full border border-white/30" />
-                            )}
-                            <span className="font-semibold text-xs">
-                              {opt.label}
-                            </span>
+                          <div className="flex items-center gap-3">
+                            <opt.icon className="w-5 h-5" />
+                            <div className="flex-1">
+                              <div className="flex items-center gap-2">
+                                {configSync.politica_conflictos === opt.id ? (
+                                  <Check className="w-4 h-4" />
+                                ) : (
+                                  <span className="w-4 h-4 rounded-full border-2 border-current opacity-50" />
+                                )}
+                                <span className="font-bold text-sm">
+                                  {opt.label}
+                                </span>
+                              </div>
+                              <p className={`text-xs mt-1 ${configSync.politica_conflictos === opt.id ? 'text-white/80' : tema.colores.textoSecundario}`}>
+                                {opt.desc}
+                              </p>
+                            </div>
                           </div>
-                          <p className="mt-1 text-[11px]">{opt.desc}</p>
                         </button>
                       ))}
                     </div>
@@ -1770,84 +1823,123 @@ export default function ConfiguracionSyncCentroPage() {
 
               {/* Alertas y resumen */}
               <div
-                className={`rounded-2xl p-5 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra}`}
+                className={`rounded-2xl p-6 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} transition-all duration-300 ${tema.colores.cardHover} group`}
               >
-                <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center justify-between mb-5">
                   <div className="flex items-center gap-3">
                     <div
-                      className={`w-10 h-10 rounded-xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center text-white`}
+                      className={`w-12 h-12 rounded-xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform duration-300`}
                     >
-                      <Bell className="w-5 h-5" />
+                      <Bell className="w-6 h-6" />
                     </div>
                     <div>
                       <h3
                         className={`text-lg font-black ${tema.colores.texto}`}
                       >
-                        Alertas y observabilidad
+                        Alertas y logs
                       </h3>
                       <p
                         className={`text-xs ${tema.colores.textoSecundario}`}
                       >
-                        Ajusta cómo se alerta ante fallas de jobs y resúmenes.
+                        Observabilidad local
                       </p>
                     </div>
                   </div>
                 </div>
 
-                <div className="space-y-4 text-xs md:text-sm">
-                  <label className="flex items-start gap-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      className="mt-1 w-4 h-4 accent-red-500"
-                      checked={configSync.enviar_alerta_falla}
-                      onChange={(e) =>
-                        actualizarConfigSync({
-                          enviar_alerta_falla: e.target.checked,
-                        })
-                      }
-                    />
-                    <div>
+                <div className="space-y-4">
+                  <label className="flex items-start gap-3 cursor-pointer group/item">
+                    <div className="relative">
+                      <input
+                        type="checkbox"
+                        className="peer sr-only"
+                        checked={configSync.enviar_alerta_falla}
+                        onChange={(e) =>
+                          actualizarConfigSync({
+                            enviar_alerta_falla: e.target.checked,
+                          })
+                        }
+                      />
+                      <div className="w-11 h-6 bg-slate-700/50 rounded-full peer-checked:bg-gradient-to-r peer-checked:from-red-500 peer-checked:to-red-600 transition-all duration-300 shadow-inner"></div>
+                      <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform duration-300 peer-checked:translate-x-5 shadow-lg"></div>
+                    </div>
+                    <div className="flex-1">
                       <p
-                        className={`text-sm font-semibold ${tema.colores.texto}`}
+                        className={`text-sm font-semibold ${tema.colores.texto} mb-1`}
                       >
-                        Enviar alertas ante fallas de sincronización
+                        Alertas ante fallas de sync
                       </p>
-                      <p className={tema.colores.textoSecundario}>
-                        Cuando un job falla después de los reintentos, se enviará
-                        una alerta al correo configurado para el centro.
+                      <p className={`text-xs ${tema.colores.textoSecundario}`}>
+                        Notificación inmediata cuando un job falla.
                       </p>
                     </div>
                   </label>
 
-                  <label className="flex items-start gap-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      className="mt-1 w-4 h-4 accent-emerald-500"
-                      checked={configSync.enviar_resumen_diario}
-                      onChange={(e) =>
-                        actualizarConfigSync({
-                          enviar_resumen_diario: e.target.checked,
-                        })
-                      }
-                    />
-                    <div>
+                  <div className={`h-px bg-gradient-to-r ${tema.colores.gradiente} opacity-20`} />
+
+                  <label className="flex items-start gap-3 cursor-pointer group/item">
+                    <div className="relative">
+                      <input
+                        type="checkbox"
+                        className="peer sr-only"
+                        checked={configSync.enviar_resumen_diario}
+                        onChange={(e) =>
+                          actualizarConfigSync({
+                            enviar_resumen_diario: e.target.checked,
+                          })
+                        }
+                      />
+                      <div className="w-11 h-6 bg-slate-700/50 rounded-full peer-checked:bg-gradient-to-r peer-checked:from-emerald-500 peer-checked:to-emerald-600 transition-all duration-300 shadow-inner"></div>
+                      <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full transition-transform duration-300 peer-checked:translate-x-5 shadow-lg"></div>
+                    </div>
+                    <div className="flex-1">
                       <p
-                        className={`text-sm font-semibold ${tema.colores.texto}`}
+                        className={`text-sm font-semibold ${tema.colores.texto} mb-1`}
                       >
-                        Enviar resumen diario de sync
+                        Resumen diario de sincronización
                       </p>
-                      <p className={tema.colores.textoSecundario}>
-                        Resumen con jobs ejecutados, fallidos y próximos,
-                        pensado para jefaturas y equipos técnicos locales.
+                      <p className={`text-xs ${tema.colores.textoSecundario}`}>
+                        Reporte consolidado enviado cada día.
                       </p>
                     </div>
                   </label>
+
+                  <div className={`h-px bg-gradient-to-r ${tema.colores.gradiente} opacity-20`} />
 
                   <div
-                    className={`mt-2 rounded-xl p-3 bg-black/10 border border-white/10 text-[11px] ${tema.colores.textoSecundario}`}
+                    className={`rounded-xl p-4 bg-gradient-to-br ${tema.colores.gradienteCard} border ${tema.colores.borde}`}
                   >
-                    Estas alertas son{" "}
-                    <span className={tema.colores.texto}>
+                    <div className="flex items-center gap-3 mb-3">
+                      <div className={`w-10 h-10 rounded-lg bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center text-white shadow-lg`}>
+                        <TrendingUp className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <p className={`text-sm font-bold ${tema.colores.texto}`}>
+                          Score de salud: {resumen.scoreSalud}/13
+                        </p>
+                        <p className={`text-xs ${tema.colores.textoSecundario}`}>
+                          {etiquetaScore}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="w-full h-2 bg-black/20 rounded-full overflow-hidden">
+                      <div
+                        className={`h-full bg-gradient-to-r ${tema.colores.gradiente} transition-all duration-700 rounded-full`}
+                        style={{
+                          width: `${Math.min(
+                            100,
+                            (resumen.scoreSalud / 13) * 100
+                          )}%`,
+                        }}
+                      />
+                    </div>
+                  </div>
+
+                  <div
+                    className={`mt-3 rounded-xl p-3 bg-black/10 border ${tema.colores.borde} text-xs ${tema.colores.textoSecundario}`}
+                  >
+                    💡 Estas alertas son{" "}
+                    <span className={`${tema.colores.texto} font-semibold`}>
                       específicas de este centro
                     </span>
                     . La observabilidad comunal sigue disponible en paneles
@@ -1858,177 +1950,242 @@ export default function ConfiguracionSyncCentroPage() {
             </div>
 
             {/* Bloque 2: Matriz de conectores */}
-            <div
-              className={`rounded-2xl p-5 mb-10 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra}`}
+<div
+  className={`rounded-2xl p-6 mb-10 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} transition-all duration-300 ${tema.colores.cardHover}`}
+>
+  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-6">
+    <div className="flex items-center gap-3">
+      <div
+        className={`w-12 h-12 rounded-xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center text-white shadow-lg`}
+      >
+        <Link2 className="w-6 h-6" />
+      </div>
+      <div>
+        <h3 className="text-xl font-black text-black dark:text-white">
+          Conectores y frecuencia de sincronización
+        </h3>
+        <p className="text-sm text-black/70 dark:text-white/70">
+          Habilita conectores, ajusta frecuencia y endpoints por tipo de motor.
+        </p>
+      </div>
+    </div>
+
+    {/* selector rápido de motor */}
+    <div className="flex items-center gap-2">
+      <span className="text-sm text-black/70 dark:text-white/70 hidden md:inline">
+        Vista rápida:
+      </span>
+      <select
+        value={motorFocus}
+        onChange={(e) => setMotorFocus(e.target.value as MotorId)}
+        className={`
+          px-4 py-2 rounded-xl text-sm font-semibold
+          ${tema.colores.card} ${tema.colores.borde} border
+          text-black dark:text-white
+          focus:ring-2 focus:ring-indigo-500/50 transition-all cursor-pointer
+        `}
+      >
+        {MOTORES_DEF.map((m) => (
+          <option key={m.id} value={m.id} className="text-black dark:text-white">
+            {m.label}
+          </option>
+        ))}
+      </select>
+    </div>
+  </div>
+
+  {/* tabla conectores */}
+  <div className="overflow-x-auto rounded-xl border border-black/10 dark:border-white/10 mb-6 custom-scrollbar">
+    <table className="min-w-full text-sm">
+      <thead className={`bg-gradient-to-r ${tema.colores.gradiente}`}>
+        <tr className="text-xs uppercase tracking-wide text-white">
+          <th className="px-4 py-3 text-left font-bold">Conector</th>
+          <th className="px-4 py-3 text-center font-bold">Activo</th>
+          <th className="px-4 py-3 text-center font-bold">Tipo</th>
+          <th className="px-4 py-3 text-center font-bold">Frecuencia (min)</th>
+          <th className="px-4 py-3 text-left font-bold">Endpoint / origen</th>
+          <th className="px-4 py-3 text-left font-bold">Estado</th>
+        </tr>
+      </thead>
+
+      <tbody>
+        {MOTORES_DEF.map((m, idx) => {
+          const matchBusqueda =
+            !busqueda.trim() ||
+            m.label.toLowerCase().includes(busqueda.toLowerCase()) ||
+            m.desc.toLowerCase().includes(busqueda.toLowerCase()) ||
+            configSync.endpoints[m.id]?.toLowerCase().includes(busqueda.toLowerCase());
+
+          if (!matchBusqueda) return null;
+
+          const info = resumenMotor(m.id);
+          const freq = configSync.frecuencia_minutos[m.id];
+
+          return (
+            <tr
+              key={m.id}
+              className={`
+                border-t border-black/10 dark:border-white/10
+                transition-all duration-300
+                ${motorFocus === m.id ? "bg-indigo-500/10" : "hover:bg-black/5 dark:hover:bg-white/10"}
+              `}
+              style={{ animationDelay: `${idx * 50}ms` }}
             >
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-3">
+              {/* Columna: Icono + Nombre */}
+              <td className="px-4 py-4">
+                <div className="flex items-start gap-3">
                   <div
-                    className={`w-10 h-10 rounded-xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center text-white`}
+                    className={`
+                      w-10 h-10 rounded-xl bg-gradient-to-br ${tema.colores.gradiente}
+                      flex items-center justify-center text-white shadow-lg flex-shrink-0
+                    `}
                   >
-                    <Link2 className="w-5 h-5" />
+                    <m.icon className="w-5 h-5" />
                   </div>
                   <div>
-                    <h3
-                      className={`text-lg font-black ${tema.colores.texto}`}
-                    >
-                      Conectores y frecuencia de sincronización
-                    </h3>
-                    <p
-                      className={`text-xs ${tema.colores.textoSecundario}`}
-                    >
-                      Habilita conectores, ajusta frecuencia y endpoints por
-                      tipo de motor.
-                    </p>
+                    <div className="font-bold text-black dark:text-white">{m.label}</div>
+                    <div className="text-xs text-black/60 dark:text-white/60 mt-1">
+                      {m.desc}
+                    </div>
                   </div>
                 </div>
+              </td>
 
-                {/* selector rápido de motor */}
-                <div className="hidden md:flex items-center gap-2 text-xs">
-                  <span className={tema.colores.textoSecundario}>
-                    Vista rápida:
-                  </span>
-                  <select
-                    value={motorFocus}
-                    onChange={(e) => setMotorFocus(e.target.value as MotorId)}
-                    className={`px-3 py-2 rounded-lg text-xs ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto}`}
+              {/* Activo */}
+              <td className="px-4 py-4 text-center">
+  <label className="inline-flex items-center cursor-pointer relative">
+    <input
+      type="checkbox"
+      checked={configSync.motores[m.id]}
+      onChange={(e) =>
+        actualizarMotor(m.id, { habilitado: e.target.checked })
+      }
+      className="sr-only peer"
+    />
+
+    {/* FONDO DEL SWITCH */}
+    <span
+      className="
+        w-11 h-6 rounded-full
+        bg-gray-300 dark:bg-gray-700
+        peer-checked:bg-green-500
+        transition-all duration-300
+      "
+    />
+
+    {/* BOLITA */}
+    <span
+      className="
+        absolute left-1 top-1
+        w-4 h-4 rounded-full bg-white shadow
+        transition-all duration-300
+        peer-checked:translate-x-5
+      "
+    />
+  </label>
+</td>
+
+
+              {/* Tipo */}
+              <td className="px-4 py-4 text-center">
+                <span
+                  className={`
+                    inline-flex px-3 py-1 rounded-full text-xs font-bold border
+                    ${
+                      m.tipo === "critico"
+                        ? "bg-red-100 text-red-800 border-red-400"
+                        : m.tipo === "operacional"
+                        ? "bg-blue-100 text-blue-800 border-blue-400"
+                        : "bg-green-100 text-green-800 border-green-400"
+                    }
+                  `}
+                >
+                  {m.tipo.toUpperCase()}
+                </span>
+              </td>
+
+              {/* Frecuencia */}
+              <td className="px-4 py-4 text-center">
+                <div className="flex items-center justify-center gap-2">
+                  <button
+                    onClick={() =>
+                      actualizarMotor(m.id, { frecuencia: Math.max(1, freq - 1) })
+                    }
+                    className="w-7 h-7 rounded-lg bg-gray-200 dark:bg-gray-700 text-black dark:text-white hover:scale-110 transition"
                   >
-                    {MOTORES_DEF.map((m) => (
-                      <option key={m.id} value={m.id}>
-                        {m.label}
-                      </option>
-                    ))}
-                  </select>
+                    -
+                  </button>
+
+                  <input
+                    type="number"
+                    min={1}
+                    value={freq}
+                    onChange={(e) =>
+                      actualizarMotor(m.id, {
+                        frecuencia: Math.max(1, parseInt(e.target.value || "1")),
+                      })
+                    }
+                    className="
+                      w-20 px-3 py-2 rounded-lg text-center font-bold
+                      bg-white dark:bg-gray-800 text-black dark:text-white
+                      border border-black/20 dark:border-white/20
+                      focus:ring-2 focus:ring-indigo-500/50
+                    "
+                  />
+
+                  <button
+                    onClick={() =>
+                      actualizarMotor(m.id, { frecuencia: freq + 1 })
+                    }
+                    className="w-7 h-7 rounded-lg bg-gray-200 dark:bg-gray-700 text-black dark:text-white hover:scale-110 transition"
+                  >
+                    +
+                  </button>
                 </div>
-              </div>
+              </td>
 
-              {/* tabla conectores */}
-              <div className="overflow-x-auto rounded-xl border border-white/10 mb-4">
-                <table className="min-w-full text-[11px]">
-                  <thead className="bg-black/20">
-                    <tr className="text-[10px] uppercase tracking-wide text-white/70">
-                      <th className="px-3 py-2 text-left">Conector</th>
-                      <th className="px-3 py-2 text-center">Activo</th>
-                      <th className="px-3 py-2 text-center">Tipo</th>
-                      <th className="px-3 py-2 text-center">Frecuencia (min)</th>
-                      <th className="px-3 py-2 text-left">Endpoint / origen</th>
-                      <th className="px-3 py-2 text-left">Estado</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {MOTORES_DEF.map((m) => {
-                      const matchBusqueda =
-                        !busqueda.trim() ||
-                        m.label
-                          .toLowerCase()
-                          .includes(busqueda.toLowerCase()) ||
-                        m.desc
-                          .toLowerCase()
-                          .includes(busqueda.toLowerCase()) ||
-                        configSync.endpoints[m.id]
-                          ?.toLowerCase()
-                          .includes(busqueda.toLowerCase());
+              {/* Endpoint */}
+              <td className="px-4 py-4">
+                <input
+                  type="text"
+                  value={configSync.endpoints[m.id] || ""}
+                  onChange={(e) =>
+                    actualizarMotor(m.id, { endpoint: e.target.value })
+                  }
+                  className="
+                    w-full px-3 py-2 rounded-lg text-xs font-mono
+                    bg-white dark:bg-gray-800
+                    border border-black/20 dark:border-white/20
+                    text-black dark:text-white
+                    focus:ring-2 focus:ring-indigo-500/50
+                  "
+                  placeholder="URL / servidor / host..."
+                />
+              </td>
 
-                      if (!matchBusqueda) return null;
+              {/* Estado */}
+              <td className="px-4 py-4">
+                <span
+                  className={`
+                    inline-flex px-3 py-1 rounded-full text-xs font-semibold border
+                    text-black dark:text-white
+                  `}
+                >
+                  {info.estado}
+                </span>
+              </td>
+            </tr>
+          );
+        })}
+      </tbody>
+    </table>
+  </div>
 
-                      const info = resumenMotor(m.id);
-                      const freq = configSync.frecuencia_minutos[m.id];
 
-                      return (
-                        <tr
-                          key={m.id}
-                          className={`border-t border-white/10 hover:bg-white/5 ${
-                            motorFocus === m.id ? "bg-white/5" : ""
-                          }`}
-                        >
-                          <td className="px-3 py-2">
-                            <div className="flex items-start gap-2">
-                              <div
-                                className={`w-7 h-7 rounded-lg bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center text-white`}
-                              >
-                                <m.icon className="w-4 h-4" />
-                              </div>
-                              <div>
-                                <div className="font-semibold">{m.label}</div>
-                                <div
-                                  className={`text-[10px] ${tema.colores.textoSecundario}`}
-                                >
-                                  {m.desc}
-                                </div>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-3 py-2 text-center">
-                            <input
-                              type="checkbox"
-                              className="w-4 h-4 accent-emerald-500"
-                              checked={configSync.motores[m.id]}
-                              onChange={(e) =>
-                                actualizarMotor(m.id, {
-                                  habilitado: e.target.checked,
-                                })
-                              }
-                            />
-                          </td>
-                          <td className="px-3 py-2 text-center">
-                            <span
-                              className={`px-2 py-1 rounded-full text-[10px] ${
-                                m.tipo === "critico"
-                                  ? "bg-red-500/20 text-red-300"
-                                  : m.tipo === "operacional"
-                                  ? "bg-blue-500/20 text-blue-300"
-                                  : "bg-emerald-500/20 text-emerald-300"
-                              }`}
-                            >
-                              {m.tipo.toUpperCase()}
-                            </span>
-                          </td>
-                          <td className="px-3 py-2 text-center align-middle">
-                            <input
-                              type="number"
-                              min={1}
-                              value={freq}
-                              onChange={(e) =>
-                                actualizarMotor(m.id, {
-                                  frecuencia: Math.max(
-                                    1,
-                                    parseInt(e.target.value || "1", 10)
-                                  ),
-                                })
-                              }
-                              className={`w-20 px-2 py-1 rounded-lg text-right ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto}`}
-                            />
-                          </td>
-                          <td className="px-3 py-2 text-left align-middle">
-                            <input
-                              type="text"
-                              value={configSync.endpoints[m.id] || ""}
-                              onChange={(e) =>
-                                actualizarMotor(m.id, {
-                                  endpoint: e.target.value,
-                                })
-                              }
-                              className={`w-full px-2 py-1 rounded-lg ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto}`}
-                              placeholder="URL / servidor / host.."
-                            />
-                          </td>
-                          <td className="px-3 py-2 text-left align-middle">
-                            <span
-                              className={`inline-flex px-2 py-1 rounded-full ${info.clase}`}
-                            >
-                              {info.estado}
-                            </span>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
 
               {/* Detalle del motor seleccionado */}
               <div
-                className={`mt-4 rounded-xl p-4 bg-black/10 border border-white/10 text-[11px]`}
+                className={`rounded-xl p-5 bg-gradient-to-br ${tema.colores.gradienteCard} border ${tema.colores.borde}`}
               >
                 {(() => {
                   const def = MOTORES_DEF.find((m) => m.id === motorFocus)!;
@@ -2036,25 +2193,25 @@ export default function ConfiguracionSyncCentroPage() {
                   const freq = configSync.frecuencia_minutos[motorFocus];
 
                   return (
-                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
-                      <div className="flex items-start gap-3">
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                      <div className="flex items-start gap-4">
                         <div
-                          className={`w-9 h-9 rounded-lg bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center text-white`}
+                          className={`w-12 h-12 rounded-xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center text-white shadow-lg flex-shrink-0`}
                         >
-                          <def.icon className="w-5 h-5" />
+                          <def.icon className="w-6 h-6" />
                         </div>
                         <div>
                           <p
-                            className={`text-xs font-bold ${tema.colores.texto}`}
+                            className={`text-base font-black ${tema.colores.texto} mb-1`}
                           >
                             {def.label}
                           </p>
-                          <p className={tema.colores.textoSecundario}>
+                          <p className={`text-sm ${tema.colores.textoSecundario} mb-2`}>
                             {def.desc}
                           </p>
-                          <p className="mt-1">
+                          <p className={`text-xs ${tema.colores.textoSecundario}`}>
                             Endpoint actual:{" "}
-                            <span className={tema.colores.texto}>
+                            <span className={`${tema.colores.texto} font-mono font-semibold`}>
                               {configSync.endpoints[motorFocus] ||
                                 "No definido"}
                             </span>
@@ -2063,25 +2220,25 @@ export default function ConfiguracionSyncCentroPage() {
                       </div>
                       <div className="flex flex-wrap items-center gap-2">
                         <span
-                          className={`px-2 py-1 rounded-full ${info.clase}`}
+                          className={`px-3 py-1.5 rounded-full text-xs font-semibold border ${info.clase}`}
                         >
                           {info.estado}
                         </span>
                         <span
-                          className={`px-2 py-1 rounded-full bg-indigo-500/20 text-indigo-100`}
+                          className={`px-3 py-1.5 rounded-full text-xs font-semibold bg-indigo-500/20 text-indigo-200 border border-indigo-400/40`}
                         >
                           Frecuencia: {freq} min
                         </span>
                         <span
-                          className={`px-2 py-1 rounded-full ${
+                          className={`px-3 py-1.5 rounded-full text-xs font-semibold ${
                             configSync.motores[motorFocus]
-                              ? "bg-emerald-500/20 text-emerald-200"
-                              : "bg-gray-500/20 text-gray-200"
+                              ? "bg-emerald-500/20 text-emerald-200 border border-emerald-400/40"
+                              : "bg-slate-500/20 text-slate-300 border border-slate-400/40"
                           }`}
                         >
                           {configSync.motores[motorFocus]
-                            ? "Conector activo"
-                            : "Conector desactivado"}
+                            ? "✓ Conector activo"
+                            : "○ Conector desactivado"}
                         </span>
                       </div>
                     </div>
@@ -2092,35 +2249,40 @@ export default function ConfiguracionSyncCentroPage() {
 
             {/* Barra inferior */}
             <div
-              className={`mt-6 rounded-2xl px-5 py-4 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} flex flex-col md:flex-row items-center justify-between gap-3`}
+              className={`mt-8 rounded-2xl px-6 py-5 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} flex flex-col md:flex-row items-center justify-between gap-4`}
             >
-              <div className="text-xs md:text-sm">
-                <p className={tema.colores.textoSecundario}>
-                  Esta página controla únicamente la{" "}
-                  <span className={tema.colores.texto}>
-                    estrategia de sincronización de tu centro
-                  </span>
-                  . No modifica las integraciones globales ni la topología
-                  comunal definida por la administración central.
-                </p>
+              <div className="flex items-center gap-3">
+                <div className={`w-10 h-10 rounded-xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center text-white shadow-lg`}>
+                  <Lightbulb className="w-5 h-5" />
+                </div>
+                <div className="text-sm">
+                  <p className={tema.colores.textoSecundario}>
+                    Esta página controla únicamente la{" "}
+                    <span className={`${tema.colores.texto} font-bold`}>
+                      estrategia de sincronización de tu centro
+                    </span>
+                    . No modifica las integraciones globales ni la topología
+                    comunal definida por la administración central.
+                  </p>
+                </div>
               </div>
               <div className="flex flex-wrap items-center gap-3">
                 <button
                   onClick={restaurarDesdeOriginal}
-                  className={`px-4 py-2 rounded-xl text-xs md:text-sm font-semibold ${tema.colores.hover} ${tema.colores.texto} disabled:opacity-50 disabled:cursor-not-allowed`}
+                  className={`px-5 py-2.5 rounded-xl text-sm font-semibold ${tema.colores.secundario} ${tema.colores.texto} transition-all duration-300 hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed`}
                   disabled={!hayCambios}
                 >
                   Deshacer cambios
                 </button>
                 <button
                   onClick={restaurarRecomendados}
-                  className={`px-4 py-2 rounded-xl text-xs md:text-sm font-semibold ${tema.colores.hover} ${tema.colores.texto}`}
+                  className={`px-5 py-2.5 rounded-xl text-sm font-semibold ${tema.colores.secundario} ${tema.colores.texto} transition-all duration-300 hover:scale-105`}
                 >
-                  Valores recomendados del sistema
+                  Valores recomendados
                 </button>
                 <button
                   onClick={guardarConfiguracionSync}
-                  className={`flex items-center gap-2 px-5 py-2 rounded-xl text-xs md:text-sm font-bold ${tema.colores.primario} text-white ${tema.colores.sombra} disabled:opacity-60 disabled:cursor-not-allowed`}
+                  className={`flex items-center gap-2 px-6 py-2.5 rounded-xl text-sm font-bold ${tema.colores.primario} text-white ${tema.colores.sombra} transition-all duration-300 hover:scale-105 disabled:opacity-60 disabled:cursor-not-allowed`}
                   disabled={!hayCambios || guardandoConfig}
                 >
                   <Save className="w-4 h-4" />
@@ -2136,13 +2298,13 @@ export default function ConfiguracionSyncCentroPage() {
           className={`transition-all duration-300 mt-10 rounded-2xl px-6 py-4 ${tema.colores.card} ${tema.colores.borde} border`}
         >
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 text-xs md:text-sm">
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
               <p className={tema.colores.textoSecundario}>
                 © 2025 AnyssaMed / INFOGES – Configuración de Sincronización de
                 Centro.
               </p>
               <span
-                className={`px-3 py-1 rounded-full text-[10px] font-bold bg-gradient-to-r ${tema.colores.gradiente} text-white`}
+                className={`px-3 py-1 rounded-full text-xs font-bold bg-gradient-to-r ${tema.colores.gradiente} text-white shadow-lg`}
               >
                 Módulo Centro · Sync
               </span>
@@ -2178,7 +2340,7 @@ export default function ConfiguracionSyncCentroPage() {
         </footer>
       </main>
 
-      {/* ESTILOS GLOBALES */}
+      {/* ESTILOS GLOBALES PREMIUM */}
       <style jsx global>{`
         * {
           margin: 0;
@@ -2191,9 +2353,10 @@ export default function ConfiguracionSyncCentroPage() {
         }
 
         body {
-          font-family: "Inter", "Segoe UI", sans-serif;
+          font-family: "Inter", "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
           -webkit-font-smoothing: antialiased;
           -moz-osx-font-smoothing: grayscale;
+          text-rendering: optimizeLegibility;
         }
 
         .custom-scrollbar::-webkit-scrollbar {
@@ -2201,18 +2364,19 @@ export default function ConfiguracionSyncCentroPage() {
           height: 8px;
         }
         .custom-scrollbar::-webkit-scrollbar-track {
-          background: transparent;
+          background: rgba(0, 0, 0, 0.1);
+          border-radius: 10px;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: rgba(99, 102, 241, 0.5);
+          background: linear-gradient(135deg, rgba(99, 102, 241, 0.6), rgba(139, 92, 246, 0.6));
           border-radius: 10px;
           transition: background 0.3s ease;
         }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: rgba(99, 102, 241, 0.8);
+          background: linear-gradient(135deg, rgba(99, 102, 241, 0.9), rgba(139, 92, 246, 0.9));
         }
         .custom-scrollbar {
-          scrollbar-color: rgba(99, 102, 241, 0.5) transparent;
+          scrollbar-color: rgba(99, 102, 241, 0.6) rgba(0, 0, 0, 0.1);
           scrollbar-width: thin;
         }
 
@@ -2239,9 +2403,42 @@ export default function ConfiguracionSyncCentroPage() {
           }
         }
         .animate-wave {
-          animation: wave 1s ease-in-out infinite;
+          animation: wave 1.5s ease-in-out infinite;
           transform-origin: 70% 70%;
           display: inline-block;
+        }
+
+        @keyframes slideDown {
+          from {
+            opacity: 0;
+            transform: translateY(-10px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .animate-slideDown {
+          animation: slideDown 0.3s ease-out;
+        }
+
+        @keyframes pulse {
+          0%,
+          100% {
+            opacity: 1;
+          }
+          50% {
+            opacity: 0.7;
+          }
+        }
+
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
         }
 
         @media (max-width: 768px) {
@@ -2263,6 +2460,11 @@ export default function ConfiguracionSyncCentroPage() {
           }
         }
 
+ body, * {
+    color: #000 !important;
+  }
+
+
         @media (prefers-reduced-motion: reduce) {
           * {
             animation-duration: 0.01ms !important;
@@ -2278,13 +2480,58 @@ export default function ConfiguracionSyncCentroPage() {
             color-scheme: dark;
           }
         }
+
+        /* Animaciones personalizadas */
+        @keyframes shimmer {
+          0% {
+            background-position: -1000px 0;
+          }
+          100% {
+            background-position: 1000px 0;
+          }
+        }
+
+        .animate-shimmer {
+          animation: shimmer 3s infinite linear;
+          background: linear-gradient(
+            to right,
+            transparent 0%,
+            rgba(255, 255, 255, 0.1) 50%,
+            transparent 100%
+          );
+          background-size: 1000px 100%;
+        }
+
+        /* Efectos de hover premium */
+        .hover-lift {
+          transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .hover-lift:hover {
+          transform: translateY(-4px);
+        }
+
+        /* Gradientes animados */
+        @keyframes gradient-shift {
+          0%,
+          100% {
+            background-position: 0% 50%;
+          }
+          50% {
+            background-position: 100% 50%;
+          }
+        }
+
+        .animate-gradient {
+          background-size: 200% 200%;
+          animation: gradient-shift 8s ease infinite;
+        }
       `}</style>
     </div>
   );
 }
 
 // =====================================================
-// COMPONENTE RESUMEN
+// COMPONENTE RESUMEN PREMIUM
 // =====================================================
 
 function ResumenCard({
@@ -2304,31 +2551,50 @@ function ResumenCard({
 }) {
   return (
     <div
-      className={`rounded-2xl p-4 md:p-5 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} transition-all duration-300 hover:scale-105 hover:-translate-y-1 cursor-pointer group`}
+      className={`rounded-2xl p-5 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} transition-all duration-500 hover:scale-105 hover:-translate-y-2 cursor-pointer group overflow-hidden relative`}
     >
-      <div className="flex items-center justify-between mb-3">
+      {/* Efecto de brillo en hover */}
+      <div className="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500 bg-gradient-to-br from-white/5 to-transparent pointer-events-none" />
+      
+      <div className="relative z-10">
+        <div className="flex items-center justify-between mb-4">
+          <div
+            className={`w-12 h-12 bg-gradient-to-br ${color} rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 group-hover:rotate-6 transition-all duration-500`}
+          >
+            <Icono className="w-6 h-6 text-white" />
+          </div>
+          <div className={`w-8 h-8 rounded-lg bg-gradient-to-br ${color} opacity-10 group-hover:opacity-20 transition-opacity duration-500`} />
+        </div>
+        
+        <div className={`text-4xl font-black mb-2 ${tema.colores.texto} group-hover:scale-105 transition-transform duration-300`}>
+          {isNaN(valor) ? 0 : valor}
+        </div>
+        
         <div
-          className={`w-10 h-10 bg-gradient-to-br ${color} rounded-xl flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform`}
+          className={`text-xs font-bold uppercase tracking-wider mb-3 ${tema.colores.textoSecundario}`}
         >
-          <Icono className="w-5 h-5 text-white" />
+          {titulo}
+        </div>
+        
+        <div className="flex items-center gap-2">
+          <span
+            className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-gradient-to-r ${color} text-white shadow-md group-hover:shadow-lg transition-all duration-300`}
+          >
+            <ZapIcon className="w-3 h-3" />
+            {chip}
+          </span>
         </div>
       </div>
-      <div className={`text-3xl font-black mb-1 ${tema.colores.texto}`}>
-        {isNaN(valor) ? 0 : valor}
-      </div>
-      <div
-        className={`text-xs font-bold uppercase tracking-wider ${tema.colores.textoSecundario}`}
-      >
-        {titulo}
-      </div>
-      <div className="mt-2">
-        <span
-          className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-[10px] font-semibold ${tema.colores.hover}`}
-        >
-          <ZapIcon className="w-3 h-3" />
-          {chip}
-        </span>
+      
+      {/* Indicador de progreso decorativo */}
+      <div className="absolute bottom-0 left-0 right-0 h-1 bg-black/10">
+        <div
+          className={`h-full bg-gradient-to-r ${color} transition-all duration-700 group-hover:w-full`}
+          style={{ width: "30%" }}
+        />
       </div>
     </div>
   );
 }
+
+          

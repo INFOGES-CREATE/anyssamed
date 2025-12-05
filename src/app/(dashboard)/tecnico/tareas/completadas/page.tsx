@@ -1,81 +1,71 @@
-// src/app/(dashboard)/secretaria/tareas/completadas/page.tsx
+// src/app/(dashboard)/tecnico/tareas/completadas/page.tsx
 "use client";
 
-import {
-  useState,
-  useEffect,
-  useMemo,
-} from "react";
+import { useState, useEffect, useMemo } from "react";
+import SidebarTecnico from "@/components/tecnico/SidebarTecnico";
 import Link from "next/link";
 import Image from "next/image";
-import { usePathname, useRouter } from "next/navigation";
-import SidebarTecnico from "@/components/tecnico/SidebarTecnico";
-
+import { useRouter } from "next/navigation";
 
 import {
-   Activity,
+  Activity,
   AlertCircle,
   AlertTriangle,
-  CalendarPlus ,
-  Archive,
-  CalendarClock ,
-  X,
-  CalendarCheck,
-  BarChart3,
-  Stethoscope,
-  FileText,
-  Send,
-  FileSpreadsheet ,
-  Video,
+  ArrowLeft,
+  ArrowUpRight,
+  ArrowDownRight,
   Award,
-  Square,
-  TrendingUp,
-  ClipboardCheck,   
-  Pill,
-  UserCog, 
-  UserPlus,
   Bell,
   BellOff,
-  PhoneOutgoing ,
-  PhoneIncoming,
   Calendar,
-  Trophy,
-  Download,
-  CalendarDays ,
   Check,
   CheckCircle2,
   CheckSquare2,
   ChevronDown,
   ChevronRight,
-  ClipboardList,
   Clock,
+  ClipboardCheck,
+  ClipboardList,
+  Download,
+  Edit,
+  Eye,
+  FileSpreadsheet,
+  FileText,
   Filter,
   Flame,
   Home,
+  Layers,
+  Loader2,
   LogOut,
-  Mail,
-  MessageSquare,
-  Phone,
-  PieChart,
+  MapPin,
+  Medal,
+  MoreVertical,
+  Moon,
   Plus,
+  RefreshCw,
   Search,
   Settings,
   Shield,
   Sparkles,
+  Star,
   Sun,
-  Moon,
-  User,
-  UserCheck,
-  Users,
   Target,
-  Paperclip,
-  Trash,  
-
+  ThumbsUp,
+  Trash,
+  TrendingUp,
+  Trophy,
+  User,
+  Users,
+  X,
+  Zap,
+  Radio,
+  Building2,
+  BarChart3,
 } from "lucide-react";
 
-// ========================================
+// ================================
 // TIPOS
-// ========================================
+// ================================
 
 type TemaColor = "light" | "dark" | "blue" | "purple" | "green";
 
@@ -108,16 +98,72 @@ interface UsuarioSesion {
   apellido_paterno: string;
   apellido_materno: string | null;
   foto_perfil_url: string | null;
-  rol?: {
+  rol: {
     id_rol: number;
     nombre: string;
     nivel_jerarquia: number;
   };
-  roles?: Array<{
-    id_rol: number;
+  tecnico?: {
+    id_tecnico: number;
+    id_centro: number;
+    id_sucursal: number | null;
+    id_departamento: number | null;
+    area_tecnica: string;
+    tipo_tecnico: "soporte" | "mantenimiento" | "ingenieria" | "biomedico";
+    extension_telefonica: string | null;
+    estado: "activo" | "inactivo" | "suspendido" | "vacaciones";
+    disponibilidad: "disponible" | "ocupado" | "fuera_servicio";
+    turno: "matutino" | "vespertino" | "nocturno" | "rotativo";
+    nivel_acceso: "basico" | "intermedio" | "avanzado" | "administrador";
+    pais: string;
+    region: string;
+    zona_horaria: string;
+    centro: {
+      id_centro: number;
+      nombre: string;
+      logo_url: string | null;
+      ciudad: string;
+      region: string;
+    };
+    es_global: boolean;
+  };
+}
+
+type TareaPrioridad = "baja" | "media" | "alta" | "urgente" | "critica";
+
+interface Tarea {
+  id_tarea: number;
+  titulo: string;
+  descripcion: string;
+  prioridad: TareaPrioridad;
+  estado: string;
+  tipo: string;
+  centro: {
+    id_centro: number;
     nombre: string;
-    nivel_jerarquia: number;
-  }>;
+  } | null;
+  sucursal: {
+    id_sucursal: number;
+    nombre: string;
+  } | null;
+  creador: {
+    id_usuario: number;
+    nombre_completo: string;
+    rol: string;
+  };
+  responsable: {
+    id_usuario: number;
+    nombre_completo: string;
+    rol: string;
+  };
+  fecha_creacion: string;
+  fecha_limite: string | null;
+  fecha_completada: string | null;
+  tags: string[];
+  puede_editar?: boolean;
+  puede_cambiar_estado?: boolean;
+  puede_eliminar?: boolean;
+  tiempo_resolucion_horas?: number;
 }
 
 interface EstadisticasTecnico {
@@ -136,90 +182,6 @@ interface EstadisticasTecnico {
   alertas_activas: number;
 }
 
-type TareaPrioridad = "baja" | "media" | "alta" | "critica";
-
-type TareaEstado =
-  | "pendiente"
-  | "en_progreso"
-  | "en_revision"
-  | "en_espera"
-  | "rechazada"
-  | "resuelta"
-  | "cerrada";
-
-type TipoTarea = "tecnico" | "secretaria" | "administrativo" | "sistema";
-
-type EstadoAsignacion = "asignado" | "aceptado" | "rechazado" | "finalizado";
-type RolAsignado = "tecnico" | "secretaria" | "administrativo" | "supervisor";
-
-interface CentroResumen {
-  id_centro: number;
-  nombre: string;
-}
-
-interface SucursalResumen {
-  id_sucursal: number;
-  nombre: string;
-  id_centro: number;
-}
-
-interface UsuarioAsignable {
-  id_usuario: number;
-  nombre_completo: string;
-  rol: string;
-  centro?: CentroResumen | null;
-  sucursal?: SucursalResumen | null;
-}
-
-interface CategoriaTarea {
-  id_categoria: number;
-  nombre: string;
-  color: string;
-  icono: string | null;
-  activo: boolean;
-}
-
-interface OpcionesTareas {
-  centros: CentroResumen[];
-  sucursales: SucursalResumen[];
-  posibles_responsables: UsuarioAsignable[];
-  categorias: CategoriaTarea[];
-}
-
-interface TareaCompletada {
-  id_tarea: number;
-  titulo: string;
-  descripcion: string | null;
-  prioridad: TareaPrioridad;
-  estado: TareaEstado;
-  tipo_tarea: TipoTarea;
-  fecha_creacion: string;
-  fecha_limite: string | null;
-  fecha_resolucion: string | null;
-
-  centro?: CentroResumen | null;
-  sucursal?: SucursalResumen | null;
-
-  responsable?: UsuarioAsignable | null;
-  creador?: UsuarioAsignable | null;
-
-  tags?: string[] | null;
-
-  subtareas_totales?: number;
-  subtareas_completadas?: number;
-  comentarios_totales?: number;
-  adjuntos_totales?: number;
-
-  // asignación específica al usuario
-  estado_asignacion?: EstadoAsignacion;
-  rol_asignado?: RolAsignado;
-  es_principal?: boolean;
-  fecha_asignacion?: string | null;
-
-  // métrica opcional desde el backend
-  tiempo_resolucion_horas?: number | null;
-}
-
 interface NotificacionSistema {
   id_notificacion: number;
   titulo: string;
@@ -229,272 +191,251 @@ interface NotificacionSistema {
   prioridad: "baja" | "media" | "alta";
 }
 
-interface MenuItem {
-  titulo: string;
-  icono: any;
-  url: string;
-  badge?: number;
-  submenu?: MenuItem[];
-  activo?: boolean;
-  target?: string;
-  rel?: string;
-}
-
-// ========================================
-// TEMAS
-// ========================================
+// ================================
+// TEMAS ULTRA PREMIUM
+// ================================
 
 const TEMAS: Record<TemaColor, ConfiguracionTema> = {
   light: {
-    nombre: "Claro",
+    nombre: "Claro Profesional",
     icono: Sun,
     colores: {
       fondo: "from-slate-50 via-blue-50 to-indigo-50",
       fondoSecundario: "bg-white",
       texto: "text-gray-900",
       textoSecundario: "text-gray-600",
-      primario: "bg-indigo-600 hover:bg-indigo-700",
-      secundario: "bg-gray-200 hover:bg-gray-300",
+      primario:
+        "bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700",
+      secundario: "bg-gray-100 hover:bg-gray-200",
       acento: "text-indigo-600",
       borde: "border-gray-200",
-      sombra: "shadow-xl shadow-indigo-100/50",
+      sombra: "shadow-2xl shadow-indigo-500/10",
       gradiente: "from-indigo-500 via-purple-500 to-pink-500",
-      sidebar: "bg-white/95 backdrop-blur-xl border-gray-200",
-      header: "bg-white/80 backdrop-blur-xl border-gray-200",
-      card: "bg-white border-gray-200 hover:border-indigo-300",
-      hover: "hover:bg-gray-50",
+      sidebar: "bg-white/95 backdrop-blur-2xl border-gray-200",
+      header: "bg-white/90 backdrop-blur-2xl border-gray-200",
+      card: "bg-white/80 backdrop-blur-sm border-gray-200 hover:border-indigo-300 hover:shadow-xl hover:shadow-indigo-500/10",
+      hover: "hover:bg-gradient-to-r hover:from-indigo-50 hover:to-purple-50",
     },
   },
   dark: {
-    nombre: "Oscuro",
+    nombre: "Oscuro Elite",
     icono: Moon,
     colores: {
       fondo: "from-slate-950 via-indigo-950 to-purple-950",
       fondoSecundario: "bg-gray-900",
       texto: "text-white",
       textoSecundario: "text-gray-400",
-      primario: "bg-indigo-600 hover:bg-indigo-700",
-      secundario: "bg-gray-800 hover:bg-gray-700",
+      primario:
+        "bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500",
+      secundario: "bg-gray-800/50 hover:bg-gray-700/50 backdrop-blur-sm",
       acento: "text-indigo-400",
       borde: "border-gray-800",
       sombra: "shadow-2xl shadow-indigo-500/20",
       gradiente: "from-indigo-500 via-purple-500 to-pink-500",
-      sidebar: "bg-gray-900/95 backdrop-blur-xl border-gray-800",
-      header: "bg-gray-900/80 backdrop-blur-xl border-gray-800",
-      card: "bg-gray-800/50 border-gray-700 hover:border-indigo-500/50",
-      hover: "hover:bg-gray-800",
+      sidebar: "bg-gray-900/95 backdrop-blur-2xl border-gray-800",
+      header: "bg-gray-900/90 backdrop-blur-2xl border-gray-800",
+      card: "bg-gray-800/50 backdrop-blur-sm border-gray-700 hover:border-indigo-500/50 hover:shadow-2xl hover:shadow-indigo-500/20",
+      hover: "hover:bg-gradient-to-r hover:from-gray-800/80 hover:to-indigo-900/30",
     },
   },
   blue: {
-    nombre: "Azul Océano",
-    icono: Sparkles,
+    nombre: "Azul Técnico Pro",
+    icono: Zap,
     colores: {
       fondo: "from-blue-950 via-cyan-950 to-teal-950",
       fondoSecundario: "bg-blue-900",
       texto: "text-white",
       textoSecundario: "text-cyan-300",
-      primario: "bg-cyan-600 hover:bg-cyan-700",
-      secundario: "bg-blue-800 hover:bg-blue-700",
+      primario:
+        "bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500",
+      secundario: "bg-blue-800/50 hover:bg-blue-700/50 backdrop-blur-sm",
       acento: "text-cyan-400",
       borde: "border-cyan-800",
       sombra: "shadow-2xl shadow-cyan-500/20",
       gradiente: "from-cyan-500 via-blue-500 to-indigo-500",
-      sidebar: "bg-blue-900/95 backdrop-blur-xl border-cyan-800",
-      header: "bg-blue-900/80 backdrop-blur-xl border-cyan-800",
-      card: "bg-blue-800/50 border-cyan-700 hover:border-cyan-500/50",
-      hover: "hover:bg-blue-800",
+      sidebar: "bg-blue-900/95 backdrop-blur-2xl border-cyan-800",
+      header: "bg-blue-900/90 backdrop-blur-2xl border-cyan-800",
+      card: "bg-blue-800/50 backdrop-blur-sm border-cyan-700 hover:border-cyan-500/50 hover:shadow-2xl hover:shadow-cyan-500/20",
+      hover: "hover:bg-gradient-to-r hover:from-blue-800/80 hover:to-cyan-900/30",
     },
   },
   purple: {
-    nombre: "Púrpura Real",
+    nombre: "Púrpura Industrial Elite",
     icono: Sparkles,
     colores: {
       fondo: "from-purple-950 via-fuchsia-950 to-pink-950",
       fondoSecundario: "bg-purple-900",
       texto: "text-white",
       textoSecundario: "text-purple-300",
-      primario: "bg-fuchsia-600 hover:bg-fuchsia-700",
-      secundario: "bg-purple-800 hover:bg-purple-700",
+      primario:
+        "bg-gradient-to-r from-fuchsia-600 to-purple-600 hover:from-fuchsia-500 hover:to-purple-500",
+      secundario: "bg-purple-800/50 hover:bg-purple-700/50 backdrop-blur-sm",
       acento: "text-fuchsia-400",
       borde: "border-purple-800",
       sombra: "shadow-2xl shadow-fuchsia-500/20",
       gradiente: "from-fuchsia-500 via-purple-500 to-pink-500",
-      sidebar: "bg-purple-900/95 backdrop-blur-xl border-purple-800",
-      header: "bg-purple-900/80 backdrop-blur-xl border-purple-800",
-      card: "bg-purple-800/50 border-purple-700 hover:border-fuchsia-500/50",
-      hover: "hover:bg-purple-800",
+      sidebar: "bg-purple-900/95 backdrop-blur-2xl border-purple-800",
+      header: "bg-purple-900/90 backdrop-blur-2xl border-purple-800",
+      card: "bg-purple-800/50 backdrop-blur-sm border-purple-700 hover:border-fuchsia-500/50 hover:shadow-2xl hover:shadow-fuchsia-500/20",
+      hover:
+        "hover:bg-gradient-to-r hover:from-purple-800/80 hover:to-fuchsia-900/30",
     },
   },
   green: {
-    nombre: "Verde Médico",
-    icono: Users,
+    nombre: "Verde Operacional Pro",
+    icono: Activity,
     colores: {
       fondo: "from-emerald-950 via-teal-950 to-cyan-950",
       fondoSecundario: "bg-emerald-900",
       texto: "text-white",
       textoSecundario: "text-emerald-300",
-      primario: "bg-emerald-600 hover:bg-emerald-700",
-      secundario: "bg-teal-800 hover:bg-teal-700",
+      primario:
+        "bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500",
+      secundario: "bg-teal-800/50 hover:bg-teal-700/50 backdrop-blur-sm",
       acento: "text-emerald-400",
       borde: "border-emerald-800",
       sombra: "shadow-2xl shadow-emerald-500/20",
       gradiente: "from-emerald-500 via-teal-500 to-cyan-500",
-      sidebar: "bg-emerald-900/95 backdrop-blur-xl border-emerald-800",
-      header: "bg-emerald-900/80 backdrop-blur-xl border-emerald-800",
-      card: "bg-emerald-800/50 border-emerald-700 hover:border-emerald-500/50",
-      hover: "hover:bg-emerald-800",
+      sidebar: "bg-emerald-900/95 backdrop-blur-2xl border-emerald-800",
+      header: "bg-emerald-900/90 backdrop-blur-2xl border-emerald-800",
+      card: "bg-emerald-800/50 backdrop-blur-sm border-emerald-700 hover:border-emerald-500/50 hover:shadow-2xl hover:shadow-emerald-500/20",
+      hover:
+        "hover:bg-gradient-to-r hover:from-emerald-800/80 hover:to-teal-900/30",
     },
   },
 };
 
-// ========================================
-// COMPONENTE
-// ========================================
+// ================================
+// COMPONENTE PRINCIPAL
+// ================================
 
-export default function TareasCompletadasSecretariaPage() {
-  const pathname = usePathname();
+export default function TareasCompletadasPage() {
   const router = useRouter();
-  const roleParam = "secretaria";
 
   const [usuario, setUsuario] = useState<UsuarioSesion | null>(null);
-  const [loadingUsuario, setLoadingUsuario] = useState(true);
+  const [loadingSesion, setLoadingSesion] = useState(true);
+  const [loadingTareas, setLoadingTareas] = useState(true);
 
-  const [temaActual, setTemaActual] = useState<TemaColor>("light");
+  const [temaActual, setTemaActual] = useState<TemaColor>("dark");
   const tema = useMemo(() => TEMAS[temaActual], [temaActual]);
 
   const [sidebarAbierto, setSidebarAbierto] = useState(true);
+  const [perfilAbierto, setPerfilAbierto] = useState(false);
+  const [notificacionesAbiertas, setNotificacionesAbiertas] = useState(false);
 
+  const [disponibilidad, setDisponibilidad] = useState<
+    "disponible" | "ocupado" | "fuera_servicio"
+  >("disponible");
 
+  const [tareas, setTareas] = useState<Tarea[]>([]);
+  const [estadisticas, setEstadisticas] = useState<EstadisticasTecnico | null>(
+    null
+  );
   const [notificaciones, setNotificaciones] = useState<NotificacionSistema[]>(
     []
   );
-  const [notificacionesAbiertas, setNotificacionesAbiertas] = useState(false);
-  const [perfilAbierto, setPerfilAbierto] = useState(false);
 
-  
-  const [opciones, setOpciones] = useState<OpcionesTareas | null>(null);
-  const [loadingOpciones, setLoadingOpciones] = useState(true);
-
-  const [tareas, setTareas] = useState<TareaCompletada[]>([]);
-  const [loadingTareas, setLoadingTareas] = useState(true);
-  
-  const [errorTareas, setErrorTareas] = useState<string | null>(null);
-
-  // Filtros
   const [busqueda, setBusqueda] = useState("");
-  const [filtroPrioridad, setFiltroPrioridad] = useState<
-    "" | TareaPrioridad
-  >("");
-  const [filtroEstado, setFiltroEstado] = useState<"" | TareaEstado>("");
-  const [filtroCentro, setFiltroCentro] = useState<string>("");
-  const [filtroSucursal, setFiltroSucursal] = useState<string>("");
-  const [filtroResponsable, setFiltroResponsable] = useState<string>("");
+  const [filtroPrioridad, setFiltroPrioridad] = useState<string>("todas");
+  const [filtroCentro, setFiltroCentro] = useState<string>("todos");
+  const [filtroFecha, setFiltroFecha] = useState<string>("todas"); // hoy, semana, mes, todas
 
-  type RangoTiempo = "hoy" | "7d" | "30d" | "anio" | "todos";
-  const [filtroRango, setFiltroRango] = useState<RangoTiempo>("30d");
+  const [tareaMenuAbierta, setTareaMenuAbierta] = useState<number | null>(null);
+  const [tareaAEliminar, setTareaAEliminar] = useState<Tarea | null>(null);
+  const [eliminando, setEliminando] = useState(false);
 
-  const [orden, setOrden] = useState<"resolucion" | "creacion" | "prioridad">(
-    "resolucion"
-  );
-
-      const [estadisticas, setEstadisticas] = useState<EstadisticasTecnico | null>(null);
-  
-  const [enActualizacionEstado, setEnActualizacionEstado] = useState<
-    number | null
-  >(null);
-
-  const roleLabel = "Secretaria";
-
-  const pathnameActual = usePathname();
-
-const seccionActiva = useMemo(() => {
-  if (!pathnameActual) return "";
-
-  if (pathnameActual.includes("/confirmaciones")) return "confirmaciones";
-  if (pathnameActual.includes("/llamadas")) return "llamadas";
-  if (pathnameActual.includes("/pacientes")) return "pacientes";
-  if (pathnameActual.includes("/medicos")) return "medicos";
-  if (pathnameActual.includes("/recordatorios")) return "recordatorios";
-  if (pathnameActual.includes("/documentos")) return "documentos";
-  if (pathnameActual.includes("/mensajes")) return "mensajes";
-  if (pathnameActual.includes("/telemedicina")) return "telemedicina";
-  if (pathnameActual.includes("/tareas")) return "tareas";
-  if (pathnameActual.includes("/reportes")) return "reportes";
-  if (pathnameActual.includes("/perfil")) return "perfil";
-  if (pathnameActual.includes("/configuracion")) return "configuracion";
-  if (pathnameActual.includes("/agenda")) return "agenda";
-
-  return "dashboard";
-}, [pathnameActual]);
-
-  // ========================================
-  // MENU
-  // ========================================
-
- 
-
-
-  // ========================================
+  // ================================
   // EFECTOS
-  // ========================================
+  // ================================
 
   useEffect(() => {
-    document.body.className = `bg-gradient-to-br ${tema.colores.fondo} min-h-screen transition-all duration-500`;
+    document.body.className = `bg-gradient-to-br ${tema.colores.fondo} min-h-screen transition-all duration-700`;
   }, [tema]);
 
   useEffect(() => {
-    const key = `tema_tareas_${roleParam}`;
     if (typeof window !== "undefined") {
-      const guardado = window.localStorage.getItem(key) as TemaColor | null;
-      if (guardado && TEMAS[guardado]) {
-        setTemaActual(guardado);
+      const temaGuardado = localStorage.getItem(
+        "tema_tecnico"
+      ) as TemaColor | null;
+      if (temaGuardado && TEMAS[temaGuardado]) {
+        setTemaActual(temaGuardado);
       }
     }
   }, []);
 
-  // Usuario
   useEffect(() => {
     const cargarUsuario = async () => {
       try {
-        setLoadingUsuario(true);
-        const response = await fetch("/api/auth/session", {
+        setLoadingSesion(true);
+        const res = await fetch("/api/auth/session", {
           method: "GET",
           headers: { "Content-Type": "application/json" },
           credentials: "include",
         });
 
-        if (!response.ok) {
-          window.location.href = "/login";
+        if (!res.ok) {
+          throw new Error("No hay sesión activa");
+        }
+
+        const data = await res.json();
+        if (!data.success || !data.usuario) {
+          throw new Error("Sesión inválida");
+        }
+
+        const rolesUsuario: string[] = [];
+
+        if (data.usuario.rol?.nombre) {
+          rolesUsuario.push(
+            data.usuario.rol.nombre
+              .normalize("NFD")
+              .replace(/[\u0300-\u036f]/g, "")
+              .trim()
+              .toUpperCase()
+          );
+        }
+
+        const esTecnico = rolesUsuario.some((r) => r.includes("TECNICO"));
+
+        if (!esTecnico) {
+          alert(
+            `Acceso denegado. Módulo exclusivo para TÉCNICOS.\nRoles actuales: ${rolesUsuario.join(
+              ", "
+            )}`
+          );
+          window.location.href = "/";
           return;
         }
 
-        const result = await response.json();
-        if (!result.success || !result.usuario) {
-          window.location.href = "/login";
+        if (!data.usuario.tecnico) {
+          alert(
+            "Tu usuario tiene rol de TÉCNICO pero no está vinculado a un registro de técnico. Contacta al administrador."
+          );
+          window.location.href = "/";
           return;
         }
 
-        setUsuario(result.usuario);
-      } catch (error) {
-        console.error("Error al cargar usuario:", error);
+        setUsuario(data.usuario);
+        setDisponibilidad(data.usuario.tecnico.disponibilidad);
+      } catch (err) {
+        console.error("Error sesión técnico:", err);
+        alert("Error al verificar sesión. Serás redirigido al login.");
         window.location.href = "/login";
       } finally {
-        setLoadingUsuario(false);
+        setLoadingSesion(false);
       }
     };
 
     cargarUsuario();
   }, []);
 
-  // Opciones (centros, sucursales, responsables, categorías)
   useEffect(() => {
     if (!usuario) return;
 
-    const cargarOpciones = async () => {
+    const cargarTareas = async () => {
       try {
-        setLoadingOpciones(true);
+        setLoadingTareas(true);
         const res = await fetch(
-          `/api/tareas/opciones?usuario=${usuario.id_usuario}&rol=secretaria`,
+          `/api/tareas?usuario=${usuario.id_usuario}&rol=tecnico&estado=completada`,
           {
             method: "GET",
             headers: { "Content-Type": "application/json" },
@@ -504,104 +445,31 @@ const seccionActiva = useMemo(() => {
 
         const data = await res.json().catch(() => ({}));
         if (!res.ok || !data.success) {
-          console.error("Error al cargar opciones tareas:", data);
+          console.error("Error al cargar tareas:", data);
           return;
         }
 
-        setOpciones({
-          centros: data.centros || [],
-          sucursales: data.sucursales || [],
-          posibles_responsables: data.posibles_responsables || [],
-          categorias: data.categorias || [],
-        });
+        setTareas((data.tareas || []) as Tarea[]);
       } catch (error) {
-        console.error("Error opciones:", error);
-      } finally {
-        setLoadingOpciones(false);
-      }
-    };
-
-    cargarOpciones();
-  }, [usuario]);
-
-  // Tareas completadas
-  useEffect(() => {
-    if (!usuario) return;
-
-    const cargarTareas = async () => {
-      try {
-        setLoadingTareas(true);
-        setErrorTareas(null);
-
-        const params = new URLSearchParams();
-        params.set("usuario", String(usuario.id_usuario));
-        params.set("rol", "secretaria");
-        params.set("solo_completadas", "1");
-
-        if (busqueda.trim()) params.set("q", busqueda.trim());
-        if (filtroPrioridad) params.set("prioridad", filtroPrioridad);
-        if (filtroEstado) params.set("estado", filtroEstado);
-        if (filtroCentro) params.set("centro", filtroCentro);
-        if (filtroSucursal) params.set("sucursal", filtroSucursal);
-        if (filtroResponsable)
-          params.set("responsable", filtroResponsable);
-        params.set("rango", filtroRango);
-        params.set("orden", orden);
-
-        const url = `/api/secretaria/tareas/completadas?${params.toString()}`;
-
-        const res = await fetch(url, {
-          method: "GET",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-        });
-
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok || !data.success) {
-          console.error("Error al cargar tareas completadas:", data);
-          setErrorTareas(
-            data?.message ||
-              "No se pudieron cargar las tareas completadas."
-          );
-          setTareas([]);
-          return;
-        }
-
-        setTareas(data.tareas || []);
-      } catch (error) {
-        console.error("Error tareas completadas:", error);
-        setErrorTareas(
-          "Ocurrió un error inesperado al cargar las tareas completadas."
-        );
-        setTareas([]);
+        console.error("Error al cargar tareas:", error);
       } finally {
         setLoadingTareas(false);
       }
     };
 
     cargarTareas();
-  }, [
-    usuario,
-    busqueda,
-    filtroPrioridad,
-    filtroEstado,
-    filtroCentro,
-    filtroSucursal,
-    filtroResponsable,
-    filtroRango,
-    orden,
-  ]);
+  }, [usuario]);
 
-  // ========================================
+  // ================================
   // FUNCIONES
-  // ========================================
+  // ================================
 
   const cambiarTema = async (nuevoTema: TemaColor) => {
     setTemaActual(nuevoTema);
-    const key = `tema_tareas_${roleParam}`;
     if (typeof window !== "undefined") {
-      window.localStorage.setItem(key, nuevoTema);
+      localStorage.setItem("tema_tecnico", nuevoTema);
     }
+
     try {
       await fetch("/api/users/preferencias/tema", {
         method: "PUT",
@@ -609,8 +477,36 @@ const seccionActiva = useMemo(() => {
         credentials: "include",
         body: JSON.stringify({ tema_color: nuevoTema }),
       });
-    } catch (error) {
-      console.error("No se pudo guardar tema:", error);
+    } catch (err) {
+      console.error("No se pudo guardar el tema en BD:", err);
+    }
+  };
+
+  const cambiarDisponibilidad = async (
+    nuevoEstado: "disponible" | "ocupado" | "fuera_servicio"
+  ) => {
+    if (!usuario?.tecnico?.id_tecnico) return;
+
+    try {
+      const res = await fetch(
+        `/api/tecnico/${usuario.tecnico.id_tecnico}/disponibilidad`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify({ disponibilidad: nuevoEstado }),
+        }
+      );
+
+      if (!res.ok) {
+        alert("No se pudo actualizar la disponibilidad.");
+        return;
+      }
+
+      setDisponibilidad(nuevoEstado);
+    } catch (err) {
+      console.error("Error disponibilidad:", err);
+      alert("Error al actualizar disponibilidad.");
     }
   };
 
@@ -620,17 +516,259 @@ const seccionActiva = useMemo(() => {
         method: "POST",
         credentials: "include",
       });
+    } catch (err) {
+      console.error("Error logout:", err);
+    } finally {
       window.location.href = "/login";
-    } catch (error) {
-      console.error("Error al cerrar sesión:", error);
     }
   };
 
-  const obtenerSaludo = () => {
-    const hora = new Date().getHours();
-    if (hora < 12) return "Buenos días";
-    if (hora < 19) return "Buenas tardes";
-    return "Buenas noches";
+  const formatearFecha = (fecha: string | null) => {
+    if (!fecha) return "Sin fecha";
+    const d = new Date(fecha);
+    return new Intl.DateTimeFormat("es-CL", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    }).format(d);
+  };
+
+  const formatearFechaHora = (fecha: string) => {
+    const d = new Date(fecha);
+    return new Intl.DateTimeFormat("es-CL", {
+      day: "2-digit",
+      month: "short",
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(d);
+  };
+
+  const obtenerColorPrioridad = (prioridad: string) => {
+    const isDark = ["dark", "blue", "purple", "green"].includes(temaActual);
+    const map: Record<string, string> = {
+      critica: isDark
+        ? "bg-red-600/30 text-red-200 border-red-500/70 shadow-xl shadow-red-500/30"
+        : "bg-red-100 text-red-800 border-red-400 shadow-md",
+      urgente: isDark
+        ? "bg-orange-500/30 text-orange-200 border-orange-500/70 shadow-lg shadow-orange-500/20"
+        : "bg-orange-100 text-orange-800 border-orange-400 shadow-sm",
+      alta: isDark
+        ? "bg-amber-500/30 text-amber-200 border-amber-500/70 shadow-lg shadow-amber-500/20"
+        : "bg-amber-100 text-amber-800 border-amber-400 shadow-sm",
+      media: isDark
+        ? "bg-sky-500/30 text-sky-200 border-sky-500/70 shadow-lg shadow-sky-500/20"
+        : "bg-sky-100 text-sky-800 border-sky-400 shadow-sm",
+      baja: isDark
+        ? "bg-emerald-500/30 text-emerald-200 border-emerald-500/70 shadow-lg shadow-emerald-500/20"
+        : "bg-emerald-100 text-emerald-800 border-emerald-400 shadow-sm",
+    };
+
+    return (
+      map[prioridad.toLowerCase()] ||
+      (isDark
+        ? "bg-gray-500/30 text-gray-200 border-gray-500/70"
+        : "bg-gray-100 text-gray-800 border-gray-400")
+    );
+  };
+
+  const filtrarPorFecha = (tarea: Tarea) => {
+    if (filtroFecha === "todas") return true;
+    if (!tarea.fecha_completada) return false;
+
+    const fechaCompletada = new Date(tarea.fecha_completada);
+    const hoy = new Date();
+    hoy.setHours(0, 0, 0, 0);
+
+    switch (filtroFecha) {
+      case "hoy":
+        const inicioHoy = new Date(hoy);
+        const finHoy = new Date(hoy);
+        finHoy.setHours(23, 59, 59, 999);
+        return fechaCompletada >= inicioHoy && fechaCompletada <= finHoy;
+
+      case "semana":
+        const inicioSemana = new Date(hoy);
+        inicioSemana.setDate(hoy.getDate() - 7);
+        return fechaCompletada >= inicioSemana;
+
+      case "mes":
+        const inicioMes = new Date(hoy);
+        inicioMes.setDate(hoy.getDate() - 30);
+        return fechaCompletada >= inicioMes;
+
+      default:
+        return true;
+    }
+  };
+
+  const tareasFiltradas = useMemo(() => {
+    let resultado = [...tareas];
+
+    if (filtroPrioridad !== "todas") {
+      resultado = resultado.filter(
+        (t) => t.prioridad.toLowerCase() === filtroPrioridad.toLowerCase()
+      );
+    }
+
+    if (filtroCentro !== "todos") {
+      const idCentro = Number(filtroCentro);
+      resultado = resultado.filter((t) => t.centro?.id_centro === idCentro);
+    }
+
+    resultado = resultado.filter(filtrarPorFecha);
+
+    if (busqueda.trim() !== "") {
+      const term = busqueda.trim().toLowerCase();
+      resultado = resultado.filter((t) => {
+        const texto =
+          [
+            t.titulo,
+            t.descripcion,
+            t.tipo,
+            t.centro?.nombre,
+            t.creador?.nombre_completo,
+            t.responsable?.nombre_completo,
+            ...(t.tags || []),
+          ]
+            .filter(Boolean)
+            .join(" ")
+            .toLowerCase();
+        return texto.includes(term);
+      });
+    }
+
+    // Ordenar por fecha de completada (más recientes primero)
+    resultado.sort((a, b) => {
+      const fechaA = a.fecha_completada
+        ? new Date(a.fecha_completada).getTime()
+        : 0;
+      const fechaB = b.fecha_completada
+        ? new Date(b.fecha_completada).getTime()
+        : 0;
+      return fechaB - fechaA;
+    });
+
+    return resultado;
+  }, [tareas, filtroPrioridad, filtroCentro, filtroFecha, busqueda]);
+
+  const centrosDisponibles = useMemo(() => {
+    const mapa = new Map<number, { id_centro: number; nombre: string }>();
+    tareas.forEach((t) => {
+      if (t.centro) {
+        if (!mapa.has(t.centro.id_centro)) {
+          mapa.set(t.centro.id_centro, {
+            id_centro: t.centro.id_centro,
+            nombre: t.centro.nombre,
+          });
+        }
+      }
+    });
+    return Array.from(mapa.values());
+  }, [tareas]);
+
+  const kpis = useMemo(() => {
+    const total = tareas.length;
+    const hoy = tareas.filter((t) => {
+      if (!t.fecha_completada) return false;
+      const fecha = new Date(t.fecha_completada);
+      const hoyFecha = new Date();
+      return (
+        fecha.getDate() === hoyFecha.getDate() &&
+        fecha.getMonth() === hoyFecha.getMonth() &&
+        fecha.getFullYear() === hoyFecha.getFullYear()
+      );
+    }).length;
+
+    const semana = tareas.filter((t) => {
+      if (!t.fecha_completada) return false;
+      const fecha = new Date(t.fecha_completada);
+      const hace7Dias = new Date();
+      hace7Dias.setDate(hace7Dias.getDate() - 7);
+      return fecha >= hace7Dias;
+    }).length;
+
+    const mes = tareas.filter((t) => {
+      if (!t.fecha_completada) return false;
+      const fecha = new Date(t.fecha_completada);
+      const hace30Dias = new Date();
+      hace30Dias.setDate(hace30Dias.getDate() - 30);
+      return fecha >= hace30Dias;
+    }).length;
+
+    const tiemposResolucion = tareas
+      .filter((t) => t.tiempo_resolucion_horas)
+      .map((t) => t.tiempo_resolucion_horas!);
+
+    const tiempoPromedio =
+      tiemposResolucion.length > 0
+        ? tiemposResolucion.reduce((a, b) => a + b, 0) /
+          tiemposResolucion.length
+        : 0;
+
+    const criticas = tareas.filter((t) => t.prioridad === "critica").length;
+
+    return { total, hoy, semana, mes, tiempoPromedio, criticas };
+  }, [tareas]);
+
+  const recargarTareas = async () => {
+    if (!usuario) return;
+    setLoadingTareas(true);
+
+    try {
+      const res = await fetch(
+        `/api/tareas?usuario=${usuario.id_usuario}&rol=tecnico&estado=completada`,
+        {
+          method: "GET",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+        }
+      );
+
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.success) {
+        setTareas((data.tareas || []) as Tarea[]);
+      }
+    } catch (error) {
+      console.error("Error al recargar tareas:", error);
+    } finally {
+      setLoadingTareas(false);
+    }
+  };
+
+  const irADetalle = (tarea: Tarea) => {
+    router.push(`/tecnico/tareas/${tarea.id_tarea}`);
+  };
+
+  const confirmarEliminarTarea = (tarea: Tarea) => {
+    setTareaAEliminar(tarea);
+  };
+
+  const eliminarTarea = async () => {
+    if (!tareaAEliminar) return;
+
+    try {
+      setEliminando(true);
+      const res = await fetch(`/api/tareas/${tareaAEliminar.id_tarea}`, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+      });
+
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok || !data.success) {
+        alert("No se pudo eliminar la tarea");
+        return;
+      }
+
+      setTareas((prev) =>
+        prev.filter((t) => t.id_tarea !== tareaAEliminar.id_tarea)
+      );
+      setTareaAEliminar(null);
+    } catch (error) {
+      console.error("Error al eliminar tarea:", error);
+    } finally {
+      setEliminando(false);
+    }
   };
 
   const marcarNotificacionLeida = (idNotificacion: number) => {
@@ -641,247 +779,103 @@ const seccionActiva = useMemo(() => {
     );
   };
 
-  const actualizarEstadoTarea = async (
-    tarea: TareaCompletada,
-    nuevoEstado: TareaEstado
-  ) => {
-    try {
-      setEnActualizacionEstado(tarea.id_tarea);
-      const res = await fetch(`/api/tareas/${tarea.id_tarea}/estado`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify({ estado: nuevoEstado, rol: "secretaria" }),
-      });
+  // ================================
+  // RENDER LOADING
+  // ================================
 
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok || !data.success) {
-        console.error("Error actualizando estado:", data);
-        return;
-      }
-
-      setTareas((prev) =>
-        prev.map((t) =>
-          t.id_tarea === tarea.id_tarea
-            ? {
-                ...t,
-                estado: nuevoEstado,
-                fecha_resolucion:
-                  nuevoEstado === "resuelta" || nuevoEstado === "cerrada"
-                    ? new Date().toISOString()
-                    : t.fecha_resolucion,
-              }
-            : t
-        )
-      );
-    } catch (error) {
-      console.error("Error estado tarea:", error);
-    } finally {
-      setEnActualizacionEstado(null);
-    }
-  };
-
-  const prioridadBadgeClasses = (prioridad: TareaPrioridad) => {
-    switch (prioridad) {
-      case "critica":
-        return "bg-red-500/20 text-red-300 border-red-500/40";
-      case "alta":
-        return "bg-orange-500/20 text-orange-300 border-orange-500/40";
-      case "media":
-        return "bg-yellow-500/20 text-yellow-300 border-yellow-500/40";
-      case "baja":
-        return "bg-emerald-500/20 text-emerald-300 border-emerald-500/40";
-      default:
-        return "bg-slate-500/20 text-slate-300 border-slate-500/40";
-    }
-  };
-
-  const estadoBadgeClasses = (estado: TareaEstado) => {
-    switch (estado) {
-      case "pendiente":
-        return "bg-slate-500/20 text-slate-200 border-slate-500/40";
-      case "en_progreso":
-        return "bg-blue-500/20 text-blue-200 border-blue-500/40";
-      case "en_revision":
-        return "bg-purple-500/20 text-purple-200 border-purple-500/40";
-      case "en_espera":
-        return "bg-amber-500/20 text-amber-200 border-amber-500/40";
-      case "rechazada":
-        return "bg-red-500/20 text-red-200 border-red-500/40";
-      case "resuelta":
-        return "bg-emerald-500/20 text-emerald-200 border-emerald-500/40";
-      case "cerrada":
-        return "bg-gray-500/20 text-gray-200 border-gray-500/40";
-      default:
-        return "bg-slate-500/20 text-slate-200 border-slate-500/40";
-    }
-  };
-
-  const prioridadOrden = (p: TareaPrioridad): number => {
-    switch (p) {
-      case "critica":
-        return 1;
-      case "alta":
-        return 2;
-      case "media":
-        return 3;
-      case "baja":
-        return 4;
-      default:
-        return 99;
-    }
-  };
-
-  const ahora = new Date();
-
-  // ========================================
-  // MÉTRICAS RESUMEN
-  // ========================================
-
-  const {
-    totalCompletadas,
-    totalResueltas,
-    totalCerradas,
-    totalRechazadas,
-    completadasHoy,
-    promedioHorasResolucion,
-    porcentajeDentroPlazo,
-  } = useMemo(() => {
-    let total = tareas.length;
-    let resueltas = 0;
-    let cerradas = 0;
-    let rechazadas = 0;
-    let hoy = 0;
-
-    let totalHoras = 0;
-    let conTiempo = 0;
-
-    let conPlazo = 0;
-    let dentroPlazo = 0;
-
-    const hoyDate = new Date();
-
-    tareas.forEach((t) => {
-      if (t.estado === "resuelta") resueltas++;
-      if (t.estado === "cerrada") cerradas++;
-      if (t.estado === "rechazada") rechazadas++;
-
-      if (t.fecha_resolucion) {
-        const resol = new Date(t.fecha_resolucion);
-
-        if (
-          resol.getFullYear() === hoyDate.getFullYear() &&
-          resol.getMonth() === hoyDate.getMonth() &&
-          resol.getDate() === hoyDate.getDate()
-        ) {
-          hoy++;
-        }
-
-        const creacion = new Date(t.fecha_creacion);
-        const diffMs = resol.getTime() - creacion.getTime();
-        if (diffMs > 0) {
-          totalHoras += diffMs / (1000 * 60 * 60);
-          conTiempo++;
-        }
-
-        if (t.fecha_limite) {
-          const limite = new Date(t.fecha_limite);
-          conPlazo++;
-          if (resol.getTime() <= limite.getTime()) {
-            dentroPlazo++;
-          }
-        }
-      }
-    });
-
-    const promedio =
-      conTiempo > 0 ? parseFloat((totalHoras / conTiempo).toFixed(1)) : 0;
-    const porcentaje =
-      conPlazo > 0 ? Math.round((dentroPlazo / conPlazo) * 100) : 0;
-
-    return {
-      totalCompletadas: total,
-      totalResueltas: resueltas,
-      totalCerradas: cerradas,
-      totalRechazadas: rechazadas,
-      completadasHoy: hoy,
-      promedioHorasResolucion: promedio,
-      porcentajeDentroPlazo: porcentaje,
-    };
-  }, [tareas]);
-
-  // ========================================
-  // RENDER LOADING / SESIÓN
-  // ========================================
-
-  if (loadingUsuario) {
+  if (loadingSesion) {
     return (
       <div
-        className={`min-h-screen flex items-center justify-center bg-gradient-to-br ${tema.colores.fondo}`}
+        className={`min-h-screen flex items-center justify-center bg-gradient-to-br ${tema.colores.fondo} relative overflow-hidden`}
       >
-        <div className="text-center">
+        <div className="absolute inset-0 pointer-events-none">
+          <div className="absolute top-0 left-1/4 w-96 h-96 bg-gradient-to-br from-emerald-500/10 to-green-500/10 rounded-full blur-3xl animate-pulse" />
+          <div
+            className="absolute bottom-0 right-1/4 w-96 h-96 bg-gradient-to-br from-teal-500/10 to-cyan-500/10 rounded-full blur-3xl animate-pulse"
+            style={{ animationDelay: "1s" }}
+          />
+        </div>
+
+        <div className="text-center relative z-10">
           <div className="relative mb-8">
-            <div className="w-32 h-32 border-4 border-emerald-400 border-t-transparent rounded-full animate-spin" />
+            <div className="w-32 h-32 border-4 border-emerald-500/40 border-t-transparent rounded-full animate-spin" />
             <div
-              className={`absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-20 h-20 bg-gradient-to-br ${tema.colores.gradiente} rounded-full flex items-center justify-center animate-pulse`}
+              className={`absolute inset-3 rounded-full bg-gradient-to-br from-emerald-500 via-teal-500 to-green-500 flex items-center justify-center shadow-2xl`}
             >
-              <CheckCircle2 className="w-10 h-10 text-white" />
+              <CheckCircle2 className="w-12 h-12 text-white animate-pulse" />
             </div>
           </div>
-          <h2 className={`text-4xl font-black mb-4 ${tema.colores.texto}`}>
-            Cargando tareas completadas...
+          <h2
+            className={`text-5xl font-black mb-4 ${tema.colores.texto} bg-gradient-to-r from-emerald-500 via-teal-500 to-green-500 bg-clip-text text-transparent`}
+          >
+            Cargando Tareas Completadas
           </h2>
           <p
             className={`text-lg font-semibold ${tema.colores.textoSecundario} animate-pulse`}
           >
-            Preparando el historial premium de tareas resueltas
+            Preparando tu historial de éxitos...
           </p>
         </div>
       </div>
     );
   }
 
-  if (!usuario) {
+  if (!usuario || !usuario.tecnico) {
     return (
       <div
         className={`min-h-screen flex items-center justify-center bg-gradient-to-br ${tema.colores.fondo}`}
       >
         <div
-          className={`text-center max-w-md mx-auto p-8 rounded-3xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra}`}
+          className={`max-w-md w-full p-10 rounded-3xl ${tema.colores.card} ${tema.colores.borde} border-2 ${tema.colores.sombra} transform hover:scale-105 transition-all duration-300`}
         >
-          <div
-            className={`w-24 h-24 bg-gradient-to-br ${tema.colores.gradiente} rounded-3xl flex items-center justify-center mx-auto mb-6 animate-pulse`}
-          >
-            <AlertCircle className="w-12 h-12 text-white" />
+          <div className="flex flex-col items-center text-center gap-5">
+            <div
+              className={`w-24 h-24 rounded-2xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center mb-2 shadow-2xl animate-pulse`}
+            >
+              <AlertCircle className="w-12 h-12 text-white" />
+            </div>
+            <h2 className={`text-3xl font-black ${tema.colores.texto}`}>
+              Acceso restringido
+            </h2>
+            <p className={`text-sm ${tema.colores.textoSecundario}`}>
+              Este módulo es exclusivo para cuentas con rol <b>TÉCNICO</b>.
+            </p>
+            <Link
+              href="/login"
+              className={`mt-3 inline-flex items-center gap-2 px-8 py-4 rounded-2xl ${tema.colores.primario} text-white font-bold ${tema.colores.sombra} transform hover:scale-105 transition-all duration-300`}
+            >
+              <LogOut className="w-5 h-5" />
+              Ir al login
+            </Link>
           </div>
-          <h2 className={`text-3xl font-black mb-4 ${tema.colores.texto}`}>
-            Sesión no válida
-          </h2>
-          <p className={`text-lg mb-8 ${tema.colores.textoSecundario}`}>
-            Debes iniciar sesión para ver tu historial de tareas completadas.
-          </p>
-          <Link
-            href="/login"
-            className={`inline-flex items-center gap-3 px-8 py-4 ${tema.colores.primario} text-white rounded-2xl font-bold text-lg transition-all duration-300 hover:scale-105 ${tema.colores.sombra}`}
-          >
-            <LogOut className="w-5 h-5" />
-            Ir al Login
-          </Link>
         </div>
       </div>
     );
   }
 
-  // ========================================
-  // RENDER PRINCIPAL
-  // ========================================
+  // ================================
+  // RENDER PRINCIPAL ULTRA PREMIUM
+  // ================================
 
   return (
     <div
-      className={`min-h-screen transition-all duration-500 bg-gradient-to-br ${tema.colores.fondo}`}
+      className={`min-h-screen bg-gradient-to-br ${tema.colores.fondo} transition-all duration-700 relative overflow-hidden`}
     >
+      {/* Efectos de fondo */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-gradient-to-br from-emerald-500/10 to-green-500/10 rounded-full blur-3xl animate-pulse" />
+        <div
+          className="absolute bottom-0 right-1/4 w-96 h-96 bg-gradient-to-br from-teal-500/10 to-cyan-500/10 rounded-full blur-3xl animate-pulse"
+          style={{ animationDelay: "1s" }}
+        />
+        <div
+          className="absolute top-1/2 left-1/2 w-96 h-96 bg-gradient-to-br from-green-500/10 to-emerald-500/10 rounded-full blur-3xl animate-pulse"
+          style={{ animationDelay: "2s" }}
+        />
+      </div>
+
       {/* SIDEBAR */}
-           <SidebarTecnico
+      <SidebarTecnico
         usuario={usuario}
         tema={tema}
         sidebarAbierto={sidebarAbierto}
@@ -889,69 +883,74 @@ const seccionActiva = useMemo(() => {
         estadisticas={estadisticas}
       />
 
-
-      {/* HEADER */}
+      {/* HEADER ULTRA PREMIUM */}
       <header
-        className={`fixed top-0 right-0 z-40 transition-all duration-300 ${
+        className={`fixed top-0 right-0 z-40 transition-all duration-500 ${
           sidebarAbierto ? "left-72" : "left-20"
-        } ${tema.colores.header} ${tema.colores.borde} border-b ${
+        } ${tema.colores.header} ${tema.colores.borde} border-b-2 ${
           tema.colores.sombra
         }`}
       >
-        <div className="flex items-center justify-between px-8 py-4">
+        <div className="flex items-center justify-between px-8 py-5">
+          {/* Búsqueda */}
           <div className="flex-1 max-w-2xl">
-            <div className="relative">
+            <div className="relative group">
               <Search
-                className={`absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 ${tema.colores.textoSecundario}`}
+                className={`absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 ${tema.colores.textoSecundario} group-focus-within:text-emerald-500 transition-colors duration-300`}
               />
               <input
                 type="text"
-                placeholder="Buscar en tus tareas completadas (título, descripción, tags, centro...)"
                 value={busqueda}
                 onChange={(e) => setBusqueda(e.target.value)}
-                className={`w-full pl-12 pr-10 py-3 rounded-xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.texto} placeholder:${tema.colores.textoSecundario} focus:outline-none focus:ring-2 focus:ring-emerald-500/50 transition-all duration-300`}
+                placeholder="Buscar tareas completadas..."
+                className={`w-full pl-12 pr-12 py-3.5 rounded-2xl ${tema.colores.card} ${tema.colores.borde} border-2 text-sm ${tema.colores.texto} placeholder:${tema.colores.textoSecundario} focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all duration-300 shadow-lg`}
               />
               {busqueda && (
                 <button
-                  type="button"
                   onClick={() => setBusqueda("")}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1 rounded-lg hover:bg-white/10"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 rounded-xl hover:bg-rose-500/20 transition-all duration-200 group"
                 >
-                  <X className="w-4 h-4 text-gray-400" />
+                  <X className="w-4 h-4 text-rose-400 group-hover:rotate-90 transition-transform duration-300" />
                 </button>
               )}
             </div>
           </div>
 
+          {/* Acciones */}
           <div className="flex items-center gap-3 ml-6">
             {/* Temas */}
             <div className="relative group">
               <button
-                className={`p-3 rounded-xl font-semibold transition-all duration-300 ${tema.colores.secundario} ${tema.colores.texto}`}
+                className={`p-3 rounded-2xl ${tema.colores.secundario} ${tema.colores.texto} transform hover:scale-110 transition-all duration-300 shadow-lg`}
               >
-                <Sparkles className="w-5 h-5" />
+                <Sparkles className="w-5 h-5 animate-pulse" />
               </button>
               <div
-                className={`absolute right-0 mt-2 w-64 rounded-2xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 p-4 space-y-2`}
+                className={`absolute right-0 mt-3 w-72 rounded-3xl ${tema.colores.card} ${tema.colores.borde} border-2 ${tema.colores.sombra} opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 p-5 space-y-2`}
               >
-                <p className={`text-sm font-bold mb-3 ${tema.colores.texto}`}>
-                  Seleccionar tema
-                </p>
+                <div className="flex items-center gap-2 mb-4">
+                  <Sparkles className="w-5 h-5 text-indigo-400" />
+                  <p className={`text-sm font-bold ${tema.colores.texto}`}>
+                    Temas Premium
+                  </p>
+                </div>
                 {Object.entries(TEMAS).map(([key, t]) => (
                   <button
                     key={key}
                     onClick={() => cambiarTema(key as TemaColor)}
-                    className={`w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl font-semibold transition-all duration-300 ${
+                    className={`w-full flex items-center justify-between px-4 py-3 rounded-2xl text-xs font-bold transition-all duration-300 transform hover:scale-105 ${
                       temaActual === key
-                        ? `bg-gradient-to-r ${t.colores.gradiente} text-white`
+                        ? `bg-gradient-to-r ${t.colores.gradiente} text-white shadow-xl`
                         : `${tema.colores.hover} ${tema.colores.texto}`
                     }`}
                   >
-                    <div className="flex items-center gap-3">
+                    <span className="flex items-center gap-3">
                       <t.icono className="w-5 h-5" />
-                      <span>{t.nombre}</span>
-                    </div>
-                    {temaActual === key && <Check className="w-5 h-5" />}
+                      {t.nombre}
+                    </span>
+                    {temaActual === key && (
+                      <Check className="w-5 h-5 animate-bounce" />
+                    )}
                   </button>
                 ))}
               </div>
@@ -961,107 +960,70 @@ const seccionActiva = useMemo(() => {
             <div className="relative">
               <button
                 onClick={() => setNotificacionesAbiertas((v) => !v)}
-                className={`relative p-3 rounded-xl font-semibold transition-all duration-300 ${tema.colores.secundario} ${tema.colores.texto}`}
+                className={`relative p-3 rounded-2xl ${tema.colores.secundario} ${tema.colores.texto} transform hover:scale-110 transition-all duration-300 shadow-lg`}
               >
                 <Bell className="w-5 h-5" />
                 {notificaciones.filter((n) => !n.leida).length > 0 && (
-                  <span className="absolute top-1 right-1 w-5 h-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center animate-pulse">
-                    {notificaciones.filter((n) => !n.leida).length > 9
-                      ? "9+"
-                      : notificaciones.filter((n) => !n.leida).length}
-                  </span>
+                  <>
+                    <span className="absolute -top-1 -right-1 w-6 h-6 bg-gradient-to-r from-rose-500 to-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center animate-ping" />
+                    <span className="absolute -top-1 -right-1 w-6 h-6 bg-gradient-to-r from-rose-500 to-red-500 text-white text-[10px] font-black rounded-full flex items-center justify-center shadow-xl">
+                      {notificaciones.filter((n) => !n.leida).length}
+                    </span>
+                  </>
                 )}
               </button>
-              {notificacionesAbiertas && (
-                <div
-                  className={`absolute right-0 mt-2 w-96 rounded-2xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} max-h-96 overflow-y-auto`}
-                >
-                  <div
-                    className={`p-4 border-b ${tema.colores.borde} sticky top-0 ${tema.colores.card}`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <h3
-                        className={`text-lg font-black ${tema.colores.texto}`}
-                      >
-                        Notificaciones
-                      </h3>
-                      <button
-                        className={`text-sm font-semibold ${tema.colores.acento} hover:underline`}
-                        onClick={() =>
-                          setNotificaciones((prev) =>
-                            prev.map((n) => ({ ...n, leida: true }))
-                          )
-                        }
-                      >
-                        Marcar todas leídas
-                      </button>
-                    </div>
-                  </div>
+            </div>
 
-                  {notificaciones.length === 0 ? (
-                    <div className="p-8 text-center">
-                      <BellOff
-                        className={`w-12 h-12 mx-auto mb-3 ${tema.colores.textoSecundario}`}
-                      />
-                      <p
-                        className={`text-sm ${tema.colores.textoSecundario}`}
-                      >
-                        No tienes notificaciones nuevas
-                      </p>
-                    </div>
-                  ) : (
-                    <div className={`divide-y ${tema.colores.borde}`}>
-                      {notificaciones.map((notif) => (
-                        <div
-                          key={notif.id_notificacion}
-                          className={`p-4 ${tema.colores.hover} cursor-pointer ${
-                            !notif.leida ? "bg-emerald-500/5" : ""
-                          }`}
-                          onClick={() =>
-                            marcarNotificacionLeida(notif.id_notificacion)
-                          }
-                        >
-                          <p
-                            className={`text-sm font-bold mb-1 ${tema.colores.texto}`}
-                          >
-                            {notif.titulo}
-                          </p>
-                          <p
-                            className={`text-xs mb-2 ${tema.colores.textoSecundario}`}
-                          >
-                            {notif.descripcion}
-                          </p>
-                          <p
-                            className={`text-xs font-medium ${tema.colores.textoSecundario}`}
-                          >
-                            {new Date(
-                              notif.fecha_hora
-                            ).toLocaleString("es-CL")}
-                          </p>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              )}
+            {/* Disponibilidad */}
+            <div className="hidden md:flex items-center gap-2 p-1 rounded-2xl bg-black/10 backdrop-blur-sm">
+              <button
+                onClick={() => cambiarDisponibilidad("disponible")}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300 transform hover:scale-105 ${
+                  disponibilidad === "disponible"
+                    ? "bg-gradient-to-r from-emerald-600 to-green-600 text-white shadow-lg shadow-emerald-500/50"
+                    : `${tema.colores.texto} hover:bg-white/10`
+                }`}
+              >
+                ✓ Disponible
+              </button>
+              <button
+                onClick={() => cambiarDisponibilidad("ocupado")}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300 transform hover:scale-105 ${
+                  disponibilidad === "ocupado"
+                    ? "bg-gradient-to-r from-amber-600 to-orange-600 text-white shadow-lg shadow-amber-500/50"
+                    : `${tema.colores.texto} hover:bg-white/10`
+                }`}
+              >
+                ⏸ Ocupado
+              </button>
+              <button
+                onClick={() => cambiarDisponibilidad("fuera_servicio")}
+                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all duration-300 transform hover:scale-105 ${
+                  disponibilidad === "fuera_servicio"
+                    ? "bg-gradient-to-r from-rose-600 to-red-600 text-white shadow-lg shadow-rose-500/50"
+                    : `${tema.colores.texto} hover:bg-white/10`
+                }`}
+              >
+                ⊗ Fuera
+              </button>
             </div>
 
             {/* Perfil */}
             <div className="relative">
               <button
                 onClick={() => setPerfilAbierto((v) => !v)}
-                className={`flex items-center gap-3 px-4 py-2 rounded-xl transition-all duration-300 ${tema.colores.hover}`}
+                className={`flex items-center gap-3 px-4 py-2 rounded-2xl ${tema.colores.hover} transform hover:scale-105 transition-all duration-300 shadow-lg`}
               >
                 <div className="text-right hidden md:block">
                   <p className={`text-sm font-bold ${tema.colores.texto}`}>
                     {usuario.nombre} {usuario.apellido_paterno}
                   </p>
-                  <p className={`text-xs ${tema.colores.textoSecundario}`}>
-                    {roleLabel}
+                  <p className={`text-[10px] ${tema.colores.textoSecundario}`}>
+                    Técnico {usuario.tecnico?.tipo_tecnico}
                   </p>
                 </div>
                 <div
-                  className={`w-10 h-10 rounded-xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center text-white font-bold shadow-lg`}
+                  className={`w-10 h-10 rounded-2xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center text-white text-sm font-bold shadow-xl ring-2 ring-white/20`}
                 >
                   {usuario.foto_perfil_url ? (
                     <Image
@@ -1069,25 +1031,27 @@ const seccionActiva = useMemo(() => {
                       alt={usuario.nombre}
                       width={40}
                       height={40}
-                      className="rounded-xl object-cover"
+                      className="rounded-2xl object-cover"
                     />
                   ) : (
                     `${usuario.nombre[0]}${usuario.apellido_paterno[0]}`
                   )}
                 </div>
                 <ChevronDown
-                  className={`w-4 h-4 ${tema.colores.texto} transition-transform ${
+                  className={`w-4 h-4 ${
+                    tema.colores.texto
+                  } transition-transform duration-300 ${
                     perfilAbierto ? "rotate-180" : ""
                   }`}
                 />
               </button>
               {perfilAbierto && (
                 <div
-                  className={`absolute right-0 mt-2 w-80 rounded-2xl ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} p-4`}
+                  className={`absolute right-0 mt-3 w-80 rounded-3xl ${tema.colores.card} ${tema.colores.borde} border-2 ${tema.colores.sombra} p-5 animate-fadeIn`}
                 >
-                  <div className="flex items-center gap-4 mb-4 pb-4 border-b border-gray-700/40">
+                  <div className="flex items-center gap-4 mb-4 pb-4 border-b-2 border-white/10">
                     <div
-                      className={`w-16 h-16 rounded-xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center text-white font-bold text-xl shadow-lg`}
+                      className={`w-16 h-16 rounded-2xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center text-white text-xl font-bold shadow-2xl`}
                     >
                       {usuario.foto_perfil_url ? (
                         <Image
@@ -1095,7 +1059,7 @@ const seccionActiva = useMemo(() => {
                           alt={usuario.nombre}
                           width={64}
                           height={64}
-                          className="rounded-xl object-cover"
+                          className="rounded-2xl object-cover"
                         />
                       ) : (
                         `${usuario.nombre[0]}${usuario.apellido_paterno[0]}`
@@ -1103,39 +1067,45 @@ const seccionActiva = useMemo(() => {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p
-                        className={`text-lg font-black ${tema.colores.texto}`}
+                        className={`text-lg font-black ${tema.colores.texto} truncate`}
                       >
                         {usuario.nombre} {usuario.apellido_paterno}
                       </p>
                       <p
-                        className={`text-sm font-medium ${tema.colores.textoSecundario} mb-1`}
+                        className={`text-xs ${tema.colores.textoSecundario} truncate`}
                       >
-                        {roleLabel}
+                        {usuario.tecnico?.centro?.nombre ?? "Sin centro"}
                       </p>
+                      <div className="flex items-center gap-1 mt-1">
+                        <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                        <span className="text-[10px] text-emerald-400 font-semibold">
+                          En línea
+                        </span>
+                      </div>
                     </div>
                   </div>
 
                   <div className="space-y-1">
                     <Link
-                      href="/secretaria/perfil"
-                      className={`flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all duration-300 ${tema.colores.hover} ${tema.colores.texto}`}
+                      href="/tecnico/perfil"
+                      className={`flex items-center gap-3 px-4 py-3 rounded-2xl ${tema.colores.hover} ${tema.colores.texto} font-semibold transform hover:scale-105 transition-all duration-200`}
                     >
                       <User className="w-5 h-5" />
-                      <span>Mi Perfil</span>
+                      Mi Perfil
                     </Link>
                     <Link
-                      href="/secretaria/configuracion"
-                      className={`flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all duration-300 ${tema.colores.hover} ${tema.colores.texto}`}
+                      href="/tecnico/configuracion"
+                      className={`flex items-center gap-3 px-4 py-3 rounded-2xl ${tema.colores.hover} ${tema.colores.texto} font-semibold transform hover:scale-105 transition-all duration-200`}
                     >
                       <Settings className="w-5 h-5" />
-                      <span>Configuración</span>
+                      Configuración
                     </Link>
                     <button
                       onClick={cerrarSesion}
-                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-semibold transition-all duration-300 ${tema.colores.hover} text-red-400 hover:text-red-300`}
+                      className="flex w-full items-center gap-3 px-4 py-3 rounded-2xl text-rose-400 hover:bg-rose-500/20 font-semibold transform hover:scale-105 transition-all duration-200"
                     >
                       <LogOut className="w-5 h-5" />
-                      <span>Cerrar Sesión</span>
+                      Cerrar Sesión
                     </button>
                   </div>
                 </div>
@@ -1145,262 +1115,303 @@ const seccionActiva = useMemo(() => {
         </div>
       </header>
 
-      {/* CONTENIDO */}
+      {/* CONTENIDO PRINCIPAL */}
       <main
-        className={`transition-all duration-300 ${
+        className={`transition-all duration-500 ${
           sidebarAbierto ? "ml-72" : "ml-20"
-        } pt-24 p-8`}
+        } pt-28 p-8 relative z-10`}
       >
-        {/* Header de página */}
-        <div className="mb-8 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-          <div>
-            <h2
-              className={`text-4xl md:text-5xl font-black mb-2 ${tema.colores.texto} flex items-center gap-3`}
-            >
-              {obtenerSaludo()}, {usuario.nombre}
-              <span className="animate-wave inline-block">👏</span>
-            </h2>
-            <p
-              className={`text-lg font-semibold ${tema.colores.textoSecundario}`}
-            >
-              Historial de tareas completadas ·{" "}
-              <span className={tema.colores.acento}>Secretaría</span>
-            </p>
-            <p className={`text-sm mt-1 ${tema.colores.textoSecundario}`}>
-              {new Date().toLocaleDateString("es-CL", {
-                weekday: "long",
-                year: "numeric",
-                month: "long",
-                day: "numeric",
-              })}
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center gap-3">
+        {/* Breadcrumb y Título */}
+        <div className="mb-8">
+          <div className="flex items-center gap-2 text-sm mb-3">
             <Link
-              href="/secretaria/tareas/pendientes"
-              className={`flex items-center gap-2 px-4 py-3 rounded-xl font-bold text-sm ${tema.colores.secundario} ${tema.colores.texto} ${tema.colores.sombra} hover:scale-105 transition-all`}
+              href="/tecnico"
+              className={`flex items-center gap-1 font-semibold ${tema.colores.textoSecundario} hover:${tema.colores.acento} transition-colors duration-200`}
             >
-              <AlertTriangle className="w-4 h-4" />
-              Ver pendientes
+              <Home className="w-4 h-4" />
+              Dashboard
             </Link>
+            <ChevronRight className="w-4 h-4" />
             <Link
-              href="/secretaria/tareas/nueva"
-              className={`flex items-center gap-2 px-4 py-3 rounded-xl font-bold text-sm ${tema.colores.primario} text-white ${tema.colores.sombra} hover:scale-105 transition-all`}
+              href="/tecnico/tareas"
+              className={`font-semibold ${tema.colores.textoSecundario} hover:${tema.colores.acento} transition-colors duration-200`}
             >
-              <Plus className="w-4 h-4" />
-              Nueva tarea
+              Tareas
             </Link>
-          </div>
-        </div>
-
-        {/* Métricas */}
-        <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-5 gap-4 mb-6">
-          <div
-            className={`rounded-2xl p-4 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} flex items-center justify-between`}
-          >
-            <div>
-              <p className="text-xs uppercase tracking-wide text-gray-400">
-                Completadas totales
-              </p>
-              <p className="text-3xl font-black text-emerald-300 mt-1">
-                {totalCompletadas}
-              </p>
-              <p className="text-[11px] text-gray-400 mt-1">
-                Tareas con estado resuelta o cerrada
-              </p>
-            </div>
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center">
-              <CheckCircle2 className="w-5 h-5 text-emerald-300" />
-            </div>
+            <ChevronRight className="w-4 h-4" />
+            <span className={`font-bold ${tema.colores.texto}`}>
+              Completadas
+            </span>
           </div>
 
-          <div
-            className={`rounded-2xl p-4 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} flex items-center justify-between`}
-          >
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
-              <p className="text-xs uppercase tracking-wide text-gray-400">
-                Resueltas vs cerradas
-              </p>
-              <p className="text-xl font-black text-white mt-1">
-                {totalResueltas}{" "}
-                <span className="text-xs text-gray-300 font-semibold">
-                  resueltas
+              <h1
+                className={`text-5xl md:text-6xl font-black mb-2 ${tema.colores.texto} flex items-center gap-3`}
+              >
+                <span className="bg-gradient-to-r from-emerald-500 via-teal-500 to-green-500 bg-clip-text text-transparent">
+                  Tareas Completadas
                 </span>
-                {" · "}
-                {totalCerradas}{" "}
-                <span className="text-xs text-gray-300 font-semibold">
-                  cerradas
+                <span className="inline-flex items-center justify-center px-4 py-1.5 rounded-full bg-gradient-to-r from-emerald-600 to-green-600 text-white text-xs font-bold uppercase tracking-wider shadow-2xl shadow-emerald-500/50">
+                  <Trophy className="w-4 h-4 mr-1" />
+                  {kpis.total} Logros
                 </span>
+              </h1>
+              <p
+                className={`text-lg font-semibold ${tema.colores.textoSecundario} flex items-center gap-2`}
+              >
+                <Award className="w-5 h-5 text-emerald-400" />
+                Historial de tareas finalizadas exitosamente
               </p>
-              {totalRechazadas > 0 && (
-                <p className="text-[11px] text-red-200 mt-1">
-                  {totalRechazadas} rechazadas
-                </p>
-              )}
             </div>
-            <div className="w-10 h-10 rounded-xl bg-indigo-500/20 flex items-center justify-center">
-              <Target className="w-5 h-5 text-indigo-300" />
-            </div>
-          </div>
 
-          <div
-            className={`rounded-2xl p-4 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} flex items-center justify-between`}
-          >
-            <div>
-              <p className="text-xs uppercase tracking-wide text-gray-400">
-                Promedio resolución
-              </p>
-              <p className="text-3xl font-black text-cyan-300 mt-1">
-                {promedioHorasResolucion}
-                <span className="text-sm ml-1">h</span>
-              </p>
-              <p className="text-[11px] text-gray-400 mt-1">
-                Desde creación hasta resolución
-              </p>
-            </div>
-            <div className="w-10 h-10 rounded-xl bg-cyan-500/20 flex items-center justify-center">
-              <Clock className="w-5 h-5 text-cyan-300" />
-            </div>
-          </div>
-
-          <div
-            className={`rounded-2xl p-4 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} flex items-center justify-between`}
-          >
-            <div>
-              <p className="text-xs uppercase tracking-wide text-gray-400">
-                Dentro de plazo
-              </p>
-              <p className="text-3xl font-black text-emerald-300 mt-1">
-                {porcentajeDentroPlazo}
-                <span className="text-sm ml-1">%</span>
-              </p>
-              <p className="text-[11px] text-gray-400 mt-1">
-                Tareas resueltas antes de la fecha límite
-              </p>
-            </div>
-            <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center">
-              <CalendarCheck className="w-5 h-5 text-emerald-300" />
-            </div>
-          </div>
-
-          <div
-            className={`rounded-2xl p-4 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra} flex items-center justify-between`}
-          >
-            <div>
-              <p className="text-xs uppercase tracking-wide text-gray-400">
-                Hoy completadas
-              </p>
-              <p className="text-3xl font-black text-pink-300 mt-1">
-                {completadasHoy}
-              </p>
-              <p className="text-[11px] text-gray-400 mt-1">
-                Tareas cerradas en la fecha actual
-              </p>
-            </div>
-            <div className="w-10 h-10 rounded-xl bg-pink-500/20 flex items-center justify-center">
-              <Award className="w-5 h-5 text-pink-300" />
+            <div className="flex items-center gap-3">
+              <Link
+                href="/tecnico/tareas"
+                className={`flex items-center gap-2 px-5 py-3 rounded-2xl ${tema.colores.secundario} ${tema.colores.texto} font-bold text-sm shadow-lg hover:scale-105 transition-all duration-300`}
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Volver
+              </Link>
+              <button
+                onClick={recargarTareas}
+                disabled={loadingTareas}
+                className={`flex items-center gap-2 px-5 py-3 rounded-2xl ${tema.colores.secundario} ${tema.colores.texto} font-bold text-sm shadow-lg hover:scale-105 transition-all duration-300 disabled:opacity-50`}
+              >
+                <RefreshCw
+                  className={`w-4 h-4 ${loadingTareas ? "animate-spin" : ""}`}
+                />
+                Actualizar
+              </button>
+              <Link
+                href="/tecnico/tareas/nueva"
+                className={`flex items-center gap-2 px-6 py-3 rounded-2xl ${tema.colores.primario} text-white font-bold text-sm shadow-xl hover:scale-105 transition-all duration-300`}
+              >
+                <Plus className="w-5 h-5" />
+                Nueva Tarea
+              </Link>
             </div>
           </div>
         </div>
 
-        {/* Filtros */}
+        {/* KPIs Ultra Premium */}
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-6 mb-8">
+          {/* Total */}
+          <div
+            className={`rounded-3xl p-6 ${tema.colores.card} ${tema.colores.borde} border-2 ${tema.colores.sombra} hover:scale-105 hover:-translate-y-2 transition-all duration-500 group relative overflow-hidden`}
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-green-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-green-500 flex items-center justify-center shadow-2xl group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
+                  <CheckCircle2 className="w-7 h-7 text-white" />
+                </div>
+              </div>
+              <div
+                className={`text-4xl font-black mb-2 ${tema.colores.texto} group-hover:scale-110 transition-transform duration-300`}
+              >
+                {kpis.total}
+              </div>
+              <div
+                className={`text-xs font-bold uppercase tracking-wider ${tema.colores.textoSecundario}`}
+              >
+                Total Completadas
+              </div>
+            </div>
+          </div>
+
+          {/* Hoy */}
+          <div
+            className={`rounded-3xl p-6 ${tema.colores.card} ${tema.colores.borde} border-2 ${tema.colores.sombra} hover:scale-105 hover:-translate-y-2 transition-all duration-500 group relative overflow-hidden`}
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-sky-500/10 to-blue-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-sky-500 to-blue-500 flex items-center justify-center shadow-2xl group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
+                  <Calendar className="w-7 h-7 text-white" />
+                </div>
+              </div>
+              <div
+                className={`text-4xl font-black mb-2 ${tema.colores.texto} group-hover:scale-110 transition-transform duration-300`}
+              >
+                {kpis.hoy}
+              </div>
+              <div
+                className={`text-xs font-bold uppercase tracking-wider ${tema.colores.textoSecundario}`}
+              >
+                📅 Hoy
+              </div>
+            </div>
+          </div>
+
+          {/* Semana */}
+          <div
+            className={`rounded-3xl p-6 ${tema.colores.card} ${tema.colores.borde} border-2 ${tema.colores.sombra} hover:scale-105 hover:-translate-y-2 transition-all duration-500 group relative overflow-hidden`}
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-teal-500/10 to-cyan-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center shadow-2xl group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
+                  <TrendingUp className="w-7 h-7 text-white" />
+                </div>
+              </div>
+              <div
+                className={`text-4xl font-black mb-2 ${tema.colores.texto} group-hover:scale-110 transition-transform duration-300`}
+              >
+                {kpis.semana}
+              </div>
+              <div
+                className={`text-xs font-bold uppercase tracking-wider ${tema.colores.textoSecundario}`}
+              >
+                📊 Esta Semana
+              </div>
+            </div>
+          </div>
+
+          {/* Mes */}
+          <div
+            className={`rounded-3xl p-6 ${tema.colores.card} ${tema.colores.borde} border-2 ${tema.colores.sombra} hover:scale-105 hover:-translate-y-2 transition-all duration-500 group relative overflow-hidden`}
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-pink-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-2xl group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
+                  <BarChart3 className="w-7 h-7 text-white" />
+                </div>
+              </div>
+              <div
+                className={`text-4xl font-black mb-2 ${tema.colores.texto} group-hover:scale-110 transition-transform duration-300`}
+              >
+                {kpis.mes}
+              </div>
+              <div
+                className={`text-xs font-bold uppercase tracking-wider ${tema.colores.textoSecundario}`}
+              >
+                📈 Este Mes
+              </div>
+            </div>
+          </div>
+
+          {/* Tiempo Promedio */}
+          <div
+            className={`rounded-3xl p-6 ${tema.colores.card} ${tema.colores.borde} border-2 ${tema.colores.sombra} hover:scale-105 hover:-translate-y-2 transition-all duration-500 group relative overflow-hidden`}
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 to-orange-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-2xl group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
+                  <Clock className="w-7 h-7 text-white" />
+                </div>
+              </div>
+              <div
+                className={`text-4xl font-black mb-2 ${tema.colores.texto} group-hover:scale-110 transition-transform duration-300`}
+              >
+                {kpis.tiempoPromedio.toFixed(1)}h
+              </div>
+              <div
+                className={`text-xs font-bold uppercase tracking-wider ${tema.colores.textoSecundario}`}
+              >
+                ⏱ Tiempo Promedio
+              </div>
+            </div>
+          </div>
+
+          {/* Críticas Completadas */}
+          <div
+            className={`rounded-3xl p-6 ${tema.colores.card} ${tema.colores.borde} border-2 ${tema.colores.sombra} hover:scale-105 hover:-translate-y-2 transition-all duration-500 group relative overflow-hidden`}
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-rose-500/10 to-red-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-rose-500 to-red-500 flex items-center justify-center shadow-2xl group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
+                  <Trophy className="w-7 h-7 text-white" />
+                </div>
+              </div>
+              <div
+                className={`text-4xl font-black mb-2 ${tema.colores.texto} group-hover:scale-110 transition-transform duration-300`}
+              >
+                {kpis.criticas}
+              </div>
+              <div
+                className={`text-xs font-bold uppercase tracking-wider ${tema.colores.textoSecundario}`}
+              >
+                🏆 Críticas Resueltas
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Filtros Ultra Premium */}
         <div
-          className={`rounded-2xl p-5 mb-6 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra}`}
+          className={`rounded-3xl p-6 mb-8 ${tema.colores.card} ${tema.colores.borde} border-2 ${tema.colores.sombra} transform hover:shadow-2xl transition-all duration-300`}
         >
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-4">
+          <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
               <div
-                className={`w-10 h-10 rounded-xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center`}
+                className={`w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-500 to-green-500 flex items-center justify-center shadow-xl`}
               >
-                <Filter className="w-5 h-5 text-white" />
+                <Filter className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h3
-                  className={`text-lg font-black ${tema.colores.texto}`}
-                >
-                  Filtros de historial
+                <h3 className={`text-xl font-black ${tema.colores.texto}`}>
+                  Filtros Avanzados
                 </h3>
                 <p
                   className={`text-xs font-semibold ${tema.colores.textoSecundario}`}
                 >
-                  Filtra por prioridad, estado final, centro, responsable y
-                  periodo de tiempo.
+                  Refina tu historial de tareas completadas
                 </p>
               </div>
             </div>
-
-            <div className="flex items-center gap-2 text-xs text-gray-300">
-              <span>Ordenar por:</span>
-              <select
-                value={orden}
-                onChange={(e) =>
-                  setOrden(
-                    e.target.value as "resolucion" | "creacion" | "prioridad"
-                  )
-                }
-                className="px-3 py-1 rounded-xl bg-white/5 border border-white/10 text-xs"
-              >
-                <option value="resolucion">Resolución (más recientes)</option>
-                <option value="creacion">Creación</option>
-                <option value="prioridad">Prioridad</option>
-              </select>
-            </div>
+            <button
+              onClick={() => {
+                setFiltroPrioridad("todas");
+                setFiltroCentro("todos");
+                setFiltroFecha("todas");
+              }}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-bold ${tema.colores.secundario} ${tema.colores.texto} hover:scale-105 transition-all duration-300 shadow-lg`}
+            >
+              <X className="w-4 h-4" />
+              Limpiar Filtros
+            </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-6 gap-3">
-            <div>
-              <label className="text-[11px] uppercase tracking-wide text-gray-400">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="space-y-2">
+              <label
+                className={`text-xs font-bold uppercase tracking-wide ${tema.colores.textoSecundario} flex items-center gap-1`}
+              >
+                <Flame className="w-3 h-3" />
                 Prioridad
               </label>
               <select
                 value={filtroPrioridad}
-                onChange={(e) =>
-                  setFiltroPrioridad(e.target.value as "" | TareaPrioridad)
-                }
-                className="mt-1 w-full px-3 py-2 rounded-xl text-xs bg-white/5 border border-white/10 text-gray-100"
+                onChange={(e) => setFiltroPrioridad(e.target.value)}
+                className={`w-full px-4 py-3 rounded-2xl text-sm ${tema.colores.card} ${tema.colores.borde} border-2 ${tema.colores.texto} focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all duration-300 cursor-pointer shadow-lg hover:shadow-xl`}
               >
-                <option value="">Todas</option>
-                <option value="critica">Crítica</option>
-                <option value="alta">Alta</option>
-                <option value="media">Media</option>
-                <option value="baja">Baja</option>
+                <option value="todas">Todas las Prioridades</option>
+                <option value="critica">🔴 Crítica</option>
+                <option value="urgente">🟠 Urgente</option>
+                <option value="alta">🟡 Alta</option>
+                <option value="media">🔵 Media</option>
+                <option value="baja">🟢 Baja</option>
               </select>
             </div>
 
-            <div>
-              <label className="text-[11px] uppercase tracking-wide text-gray-400">
-                Estado final
-              </label>
-              <select
-                value={filtroEstado}
-                onChange={(e) =>
-                  setFiltroEstado(e.target.value as "" | TareaEstado)
-                }
-                className="mt-1 w-full px-3 py-2 rounded-xl text-xs bg-white/5 border border-white/10 text-gray-100"
+            <div className="space-y-2">
+              <label
+                className={`text-xs font-bold uppercase tracking-wide ${tema.colores.textoSecundario} flex items-center gap-1`}
               >
-                <option value="">Todos</option>
-                <option value="resuelta">Resuelta</option>
-                <option value="cerrada">Cerrada</option>
-                <option value="rechazada">Rechazada</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="text-[11px] uppercase tracking-wide text-gray-400">
+                <Building2 className="w-3 h-3" />
                 Centro
               </label>
               <select
                 value={filtroCentro}
-                onChange={(e) => {
-                  setFiltroCentro(e.target.value);
-                  setFiltroSucursal("");
-                }}
-                disabled={loadingOpciones}
-                className="mt-1 w-full px-3 py-2 rounded-xl text-xs bg-white/5 border border-white/10 text-gray-100"
+                onChange={(e) => setFiltroCentro(e.target.value)}
+                className={`w-full px-4 py-3 rounded-2xl text-sm ${tema.colores.card} ${tema.colores.borde} border-2 ${tema.colores.texto} focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all duration-300 cursor-pointer shadow-lg hover:shadow-xl`}
               >
-                <option value="">Todos</option>
-                {opciones?.centros?.map((c) => (
+                <option value="todos">Todos los Centros</option>
+                {centrosDisponibles.map((c) => (
                   <option key={c.id_centro} value={c.id_centro}>
                     {c.nombre}
                   </option>
@@ -1408,487 +1419,549 @@ const seccionActiva = useMemo(() => {
               </select>
             </div>
 
-            <div>
-
-                
-              <label className="text-[11px] uppercase tracking-wide text-gray-400">
-                Sucursal
+            <div className="space-y-2">
+              <label
+                className={`text-xs font-bold uppercase tracking-wide ${tema.colores.textoSecundario} flex items-center gap-1`}
+              >
+                <Calendar className="w-3 h-3" />
+                Período
               </label>
               <select
-              
-                value={filtroSucursal}
-                onChange={(e) => setFiltroSucursal(e.target.value)}
-                disabled={loadingOpciones}
-                className="mt-1 w-full px-3 py-2 rounded-xl text-xs bg-white/5 border border-white/10 text-gray-100"
+                value={filtroFecha}
+                onChange={(e) => setFiltroFecha(e.target.value)}
+                className={`w-full px-4 py-3 rounded-2xl text-sm ${tema.colores.card} ${tema.colores.borde} border-2 ${tema.colores.texto} focus:outline-none focus:ring-2 focus:ring-emerald-500/50 focus:border-emerald-500 transition-all duration-300 cursor-pointer shadow-lg hover:shadow-xl`}
               >
-                <option value="">Todas</option>
-                {opciones?.sucursales
-                  ?.filter((s) =>
-                    filtroCentro
-                      ? s.id_centro === Number(filtroCentro)
-                      : true
-                  )
-                  .map((s) => (
-                    <option key={s.id_sucursal} value={s.id_sucursal}>
-                      {s.nombre}
-                    </option>
-                  ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="text-[11px] uppercase tracking-wide text-gray-400">
-                Responsable
-              </label>
-              <select
-                value={filtroResponsable}
-                onChange={(e) => setFiltroResponsable(e.target.value)}
-                disabled={loadingOpciones}
-                className="mt-1 w-full px-3 py-2 rounded-xl text-xs bg-white/5 border border-white/10 text-gray-100"
-              >
-                <option value="">Todos</option>
-                <option value={usuario.id_usuario}>Yo misma/o</option>
-                {opciones?.posibles_responsables?.map((u) => (
-                  <option key={u.id_usuario} value={u.id_usuario}>
-                    {u.nombre_completo} · {u.rol}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="text-[11px] uppercase tracking-wide text-gray-400">
-                Periodo
-              </label>
-              <select
-                value={filtroRango}
-                onChange={(e) => setFiltroRango(e.target.value as any)}
-                className="mt-1 w-full px-3 py-2 rounded-xl text-xs bg-white/5 border border-white/10 text-gray-100"
-              >
-                <option value="hoy">Hoy</option>
-                <option value="7d">Últimos 7 días</option>
-                <option value="30d">Últimos 30 días</option>
-                <option value="anio">Este año</option>
-                <option value="todos">Todo el historial</option>
+                <option value="todas">Todas las Fechas</option>
+                <option value="hoy">📅 Hoy</option>
+                <option value="semana">📊 Última Semana</option>
+                <option value="mes">📈 Último Mes</option>
               </select>
             </div>
           </div>
         </div>
 
-        {/* LISTADO */}
+        {/* Lista de Tareas Completadas Ultra Premium */}
         <div
-          className={`rounded-2xl p-5 ${tema.colores.card} ${tema.colores.borde} border ${tema.colores.sombra}`}
+          className={`rounded-3xl p-8 ${tema.colores.card} ${tema.colores.borde} border-2 ${tema.colores.sombra} transform hover:shadow-2xl transition-all duration-300`}
         >
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between mb-4 gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/20 flex items-center justify-center">
-                <Trophy className="w-5 h-5 text-emerald-300" />
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-4">
+              <div
+                className={`w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-green-500 flex items-center justify-center shadow-2xl`}
+              >
+                <ClipboardCheck className="w-7 h-7 text-white" />
               </div>
               <div>
                 <h3
-                  className={`text-lg font-black ${tema.colores.texto}`}
+                  className={`text-2xl font-black ${tema.colores.texto} flex items-center gap-2`}
                 >
-                  Historial de tareas completadas
+                  Historial de Éxitos
+                  <span
+                    className={`text-xs px-4 py-1.5 rounded-full ${tema.colores.secundario} ${tema.colores.texto} font-bold shadow-lg`}
+                  >
+                    {tareasFiltradas.length} tareas
+                  </span>
                 </h3>
                 <p
-                  className={`text-xs font-semibold ${tema.colores.textoSecundario}`}
+                  className={`text-sm font-semibold ${tema.colores.textoSecundario} mt-1`}
                 >
-                  Visualiza las tareas que ya fueron resueltas o cerradas,
-                  incluyendo tiempos de resolución y centros involucrados.
+                  Registro completo de todas tus tareas finalizadas
                 </p>
               </div>
             </div>
 
-            <div className="flex flex-wrap items-center gap-2 text-xs">
+            <div className="flex items-center gap-2">
               <button
-                type="button"
-                className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 text-gray-100 hover:bg-white/10"
+                onClick={() => window.print()}
+                className={`flex items-center gap-2 px-4 py-2 rounded-2xl ${tema.colores.secundario} ${tema.colores.texto} text-xs font-bold hover:scale-105 transition-all duration-300 shadow-lg`}
               >
-                <Download className="w-3 h-3" />
-                Exportar listado
+                <FileText className="w-4 h-4" />
+                Imprimir
               </button>
               <button
-                type="button"
-                className="flex items-center gap-1 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 text-gray-100 hover:bg-white/10"
+                onClick={() =>
+                  window.open(
+                    "/api/tareas/export-excel?estado=completada",
+                    "_blank"
+                  )
+                }
+                className={`flex items-center gap-2 px-4 py-2 rounded-2xl ${tema.colores.secundario} ${tema.colores.texto} text-xs font-bold hover:scale-105 transition-all duration-300 shadow-lg`}
               >
-                <FileText className="w-3 h-3" />
-                Generar reporte
+                <FileSpreadsheet className="w-4 h-4" />
+                Excel
               </button>
             </div>
           </div>
 
           {loadingTareas ? (
-            <div className="py-16 flex flex-col items-center justify-center gap-3">
-              <Activity className="w-8 h-8 text-emerald-300 animate-spin" />
-              <p className="text-sm text-gray-300">
-                Cargando tu historial de tareas completadas...
-              </p>
+            <div className="space-y-4">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div
+                  key={i}
+                  className="p-6 rounded-2xl bg-white/5 animate-pulse"
+                >
+                  <div className="flex items-start gap-4">
+                    <div className="w-12 h-12 rounded-xl bg-gray-500/20" />
+                    <div className="flex-1 space-y-3">
+                      <div className="h-5 w-3/4 bg-gray-500/20 rounded-xl" />
+                      <div className="h-4 w-full bg-gray-500/20 rounded-xl" />
+                      <div className="flex gap-2">
+                        <div className="h-6 w-20 bg-gray-500/20 rounded-full" />
+                        <div className="h-6 w-20 bg-gray-500/20 rounded-full" />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
-          ) : errorTareas ? (
-            <div className="py-16 flex flex-col items-center justify-center gap-3">
-              <AlertCircle className="w-8 h-8 text-red-300" />
-              <p className="text-sm text-red-200">{errorTareas}</p>
-            </div>
-          ) : tareas.length === 0 ? (
-            <div className="py-16 flex flex-col items-center justify-center gap-3">
-              <Archive className="w-10 h-10 text-gray-300" />
-              <p className="text-sm text-gray-200">
-                No hay tareas completadas según los filtros aplicados.
+          ) : tareasFiltradas.length === 0 ? (
+            <div className="py-20 text-center">
+              <div
+                className={`w-28 h-28 mx-auto mb-6 rounded-3xl bg-gradient-to-br from-emerald-500 to-green-500 flex items-center justify-center shadow-2xl animate-pulse`}
+              >
+                <Trophy className="w-14 h-14 text-white" />
+              </div>
+              <p className={`text-2xl font-black ${tema.colores.texto} mb-3`}>
+                Sin tareas completadas
               </p>
-              <p className="text-xs text-gray-400">
-                Ajusta el periodo o los filtros para ver más resultados.
+              <p className={`${tema.colores.textoSecundario} mb-8 text-lg`}>
+                No hay tareas completadas que coincidan con los filtros
               </p>
+              <Link
+                href="/tecnico/tareas/pendientes"
+                className={`inline-flex items-center gap-3 px-8 py-4 rounded-2xl ${tema.colores.primario} text-white font-bold ${tema.colores.sombra} hover:scale-105 transition-all duration-300 shadow-2xl`}
+              >
+                <CheckSquare2 className="w-5 h-5" />
+                Ver Tareas Pendientes
+              </Link>
             </div>
           ) : (
-            <>
-              <div className="flex items-center justify-between mb-3">
-                <p className="text-xs text-gray-400">
-                  {tareas.length} resultados en el rango seleccionado
-                </p>
-              </div>
+            <div className="space-y-4">
+              {tareasFiltradas.map((tarea, idx) => (
+                <div
+                  key={tarea.id_tarea}
+                  className={`p-6 rounded-2xl ${tema.colores.card} ${tema.colores.borde} border-2 ${tema.colores.hover} transition-all duration-300 transform hover:scale-[1.02] hover:-translate-y-1 group cursor-pointer relative overflow-hidden`}
+                  style={{
+                    animationDelay: `${idx * 50}ms`,
+                  }}
+                  onClick={() => irADetalle(tarea)}
+                >
+                  {/* Efecto de éxito */}
+                  <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-emerald-500/10 to-green-500/10 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
-              <div className="space-y-3 max-h-[650px] overflow-y-auto custom-scrollbar pr-2">
-                {tareas
-                  .slice()
-                  .sort((a, b) => {
-                    if (orden === "prioridad") {
-                      return (
-                        prioridadOrden(a.prioridad) -
-                        prioridadOrden(b.prioridad)
-                      );
-                    }
-                    if (orden === "creacion") {
-                      return (
-                        new Date(b.fecha_creacion).getTime() -
-                        new Date(a.fecha_creacion).getTime()
-                      );
-                    }
-                    // resolución
-                    const aDate = a.fecha_resolucion
-                      ? new Date(a.fecha_resolucion).getTime()
-                      : 0;
-                    const bDate = b.fecha_resolucion
-                      ? new Date(b.fecha_resolucion).getTime()
-                      : 0;
-                    return bDate - aDate;
-                  })
-                  .map((tarea) => {
-                    const tieneLimite = !!tarea.fecha_limite;
-                    const tieneResolucion = !!tarea.fecha_resolucion;
+                  <div className="flex items-start gap-4 relative z-10">
+                    {/* Icono de Completada */}
+                    <div
+                      className={`w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-green-500 flex items-center justify-center shadow-2xl group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 flex-shrink-0`}
+                    >
+                      <CheckCircle2 className="w-7 h-7 text-white" />
+                    </div>
 
-                    let completadaFueraPlazo = false;
-                    let completadaDentroPlazo = false;
-
-                    if (tieneLimite && tieneResolucion) {
-                      const limite = new Date(tarea.fecha_limite!);
-                      const resol = new Date(tarea.fecha_resolucion!);
-                      if (resol.getTime() <= limite.getTime()) {
-                        completadaDentroPlazo = true;
-                      } else {
-                        completadaFueraPlazo = true;
-                      }
-                    }
-
-                    let tiempoResolucionTexto = "";
-                    if (tarea.fecha_creacion && tarea.fecha_resolucion) {
-                      const cre = new Date(tarea.fecha_creacion);
-                      const res = new Date(tarea.fecha_resolucion);
-                      const diffMs = res.getTime() - cre.getTime();
-                      if (diffMs > 0) {
-                        const horas = diffMs / (1000 * 60 * 60);
-                        if (horas < 24) {
-                          tiempoResolucionTexto =
-                            horas.toFixed(1).replace(".0", "") + " h";
-                        } else {
-                          const dias = Math.floor(horas / 24);
-                          const horasRest = Math.round(horas % 24);
-                          tiempoResolucionTexto = `${dias} d${
-                            dias !== 1 ? "s" : ""
-                          } ${horasRest} h`;
-                        }
-                      }
-                    } else if (tarea.tiempo_resolucion_horas != null) {
-                      const horas = tarea.tiempo_resolucion_horas;
-                      if (horas < 24) {
-                        tiempoResolucionTexto =
-                          horas.toFixed(1).replace(".0", "") + " h";
-                      } else {
-                        const dias = Math.floor(horas / 24);
-                        const horasRest = Math.round(horas % 24);
-                        tiempoResolucionTexto = `${dias} d${
-                          dias !== 1 ? "s" : ""
-                        } ${horasRest} h`;
-                      }
-                    }
-
-                    const asignacionFinalizada =
-                      tarea.estado_asignacion === "finalizado";
-
-                    return (
-                      <div
-                        key={tarea.id_tarea}
-                        className={`rounded-2xl p-4 border ${tema.colores.borde} bg-white/5 hover:bg-white/10 transition-all duration-300 flex flex-col md:flex-row md:items-center gap-4`}
-                      >
-                        {/* Prioridad y estado */}
-                        <div className="flex flex-col items-start gap-2 w-full md:w-52">
-                          <span
-                            className={`px-3 py-1 rounded-full text-[11px] font-bold border ${prioridadBadgeClasses(
-                              tarea.prioridad
-                            )}`}
+                    {/* Contenido */}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-start justify-between gap-3 mb-3">
+                        <div className="flex-1 min-w-0">
+                          <h4
+                            className={`text-xl font-black ${tema.colores.texto} mb-2 group-hover:text-emerald-400 transition-colors duration-200`}
                           >
+                            {tarea.titulo}
+                          </h4>
+                          <p
+                            className={`text-sm ${tema.colores.textoSecundario} line-clamp-2 mb-3`}
+                          >
+                            {tarea.descripcion}
+                          </p>
+                        </div>
+
+                        {/* Badges */}
+                        <div className="flex flex-col gap-2">
+                          <span
+                            className={`px-4 py-2 rounded-2xl text-xs font-black border-2 ${obtenerColorPrioridad(
+                              tarea.prioridad
+                            )} transform group-hover:scale-110 transition-all duration-300 whitespace-nowrap`}
+                          >
+                            <Flame className="w-3 h-3 inline mr-1" />
                             {tarea.prioridad.toUpperCase()}
                           </span>
-                          <span
-                            className={`px-3 py-1 rounded-full text-[11px] font-bold border ${estadoBadgeClasses(
-                              tarea.estado
-                            )}`}
-                          >
-                            {tarea.estado.replace("_", " ").toUpperCase()}
+                          <span className="px-4 py-2 rounded-2xl text-xs font-black border-2 bg-emerald-500/20 text-emerald-300 border-emerald-500/60 shadow-lg shadow-emerald-500/20 whitespace-nowrap">
+                            <CheckCircle2 className="w-3 h-3 inline mr-1" />
+                            COMPLETADA
                           </span>
-
-                          {asignacionFinalizada && (
-                            <span className="px-3 py-1 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-200 border border-emerald-400/50 flex items-center gap-1">
-                              <CheckCircle2 className="w-3 h-3" />
-                              Asignación finalizada
-                            </span>
-                          )}
-
-                          {completadaFueraPlazo && (
-                            <span className="mt-1 flex items-center gap-1 text-[11px] text-red-300 font-semibold">
-                              <AlertOctagonIcon className="w-3 h-3" />
-                              Completada fuera de plazo
-                            </span>
-                          )}
-                          {completadaDentroPlazo && (
-                            <span className="mt-1 flex items-center gap-1 text-[11px] text-emerald-200 font-semibold">
-                              <CalendarCheck className="w-3 h-3" />
-                              Completada dentro de plazo
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Detalle */}
-                        <div className="flex-1 min-w-0">
-                          <div className="flex flex-wrap items-center gap-2 mb-1">
-                            <Link
-                              href={`/secretaria/tareas/${tarea.id_tarea}`}
-                              className="text-sm md:text-base font-bold text-white hover:underline truncate"
-                            >
-                              {tarea.titulo}
-                            </Link>
-                            {tarea.tipo_tarea === "secretaria" && (
-                              <span className="px-2 py-0.5 rounded-full text-[10px] bg-indigo-500/30 text-indigo-100 border border-indigo-400/60">
-                                Secretaría
-                              </span>
-                            )}
-                            {tarea.tipo_tarea === "tecnico" && (
-                              <span className="px-2 py-0.5 rounded-full text-[10px] bg-emerald-500/30 text-emerald-100 border border-emerald-400/60">
-                                Técnico
-                              </span>
-                            )}
-                            {tarea.tipo_tarea === "administrativo" && (
-                              <span className="px-2 py-0.5 rounded-full text-[10px] bg-cyan-500/30 text-cyan-100 border border-cyan-400/60">
-                                Administrativo
-                              </span>
-                            )}
-                            {tarea.tipo_tarea === "sistema" && (
-                              <span className="px-2 py-0.5 rounded-full text-[10px] bg-slate-500/30 text-slate-100 border border-slate-400/60">
-                                Sistema
-                              </span>
-                            )}
-                            {tarea.rol_asignado && (
-                              <span className="px-2 py-0.5 rounded-full text-[10px] bg-white/10 text-gray-100 border border-white/20">
-                                Rol asignado: {tarea.rol_asignado}
-                              </span>
-                            )}
-                          </div>
-
-                          {tarea.descripcion && (
-                            <p className="text-xs text-gray-200 line-clamp-2 mb-2">
-                              {tarea.descripcion}
-                            </p>
-                          )}
-
-                          <div className="flex flex-wrap items-center gap-3 text-[11px] text-gray-300">
-                            {tarea.centro && (
-                              <span className="flex items-center gap-1">
-                                <Home className="w-3 h-3" />
-                                {tarea.centro.nombre}
-                              </span>
-                            )}
-                            {tarea.sucursal && (
-                              <span className="flex items-center gap-1">
-                                <Users className="w-3 h-3" />
-                                {tarea.sucursal.nombre}
-                              </span>
-                            )}
-                            <span className="flex items-center gap-1">
-                              <UserCheck className="w-3 h-3" />
-                              {tarea.responsable?.nombre_completo ||
-                                "Sin responsable"}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <User className="w-3 h-3" />
-                              Creador:{" "}
-                              {tarea.creador?.nombre_completo || "Sistema"}
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Clock className="w-3 h-3" />
-                              Creada:{" "}
-                              {new Date(
-                                tarea.fecha_creacion
-                              ).toLocaleString("es-CL")}
-                            </span>
-                            {tarea.fecha_resolucion && (
-                              <span className="flex items-center gap-1">
-                                <CalendarCheck className="w-3 h-3" />
-                                Resuelta:{" "}
-                                {new Date(
-                                  tarea.fecha_resolucion
-                                ).toLocaleString("es-CL")}
-                              </span>
-                            )}
-                            {tarea.fecha_limite && (
-                              <span className="flex items-center gap-1">
-                                <Calendar className="w-3 h-3" />
-                                Límite:{" "}
-                                {new Date(
-                                  tarea.fecha_limite
-                                ).toLocaleString("es-CL")}
-                              </span>
-                            )}
-                            {tiempoResolucionTexto && (
-                              <span className="flex items-center gap-1">
-                                <Activity className="w-3 h-3" />
-                                Tiempo resolución: {tiempoResolucionTexto}
-                              </span>
-                            )}
-                          </div>
-
-                          {tarea.tags && tarea.tags.length > 0 && (
-                            <div className="mt-2 flex flex-wrap gap-1.5">
-                              {tarea.tags.slice(0, 6).map((tag, idx) => (
-                                <span
-                                  key={`${tarea.id_tarea}-tag-${idx}`}
-                                  className="px-2 py-0.5 rounded-full text-[10px] bg-white/5 border border-white/10 text-gray-100"
-                                >
-                                  #{tag}
-                                </span>
-                              ))}
-                              {tarea.tags.length > 6 && (
-                                <span className="text-[10px] text-gray-400">
-                                  +{tarea.tags.length - 6} más
-                                </span>
-                              )}
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Stats y acciones */}
-                        <div className="flex flex-col items-end gap-3 w-full md:w-72">
-                          <div className="flex flex-wrap justify-end gap-2 text-[11px] text-gray-300">
-                            {typeof tarea.subtareas_totales === "number" && (
-                              <span className="px-2 py-1 rounded-xl bg-white/5 border border-white/10 flex items-center gap-1">
-                                <CheckSquare2 className="w-3 h-3" />
-                                {tarea.subtareas_completadas ?? 0}/
-                                {tarea.subtareas_totales} subtareas
-                              </span>
-                            )}
-                            {typeof tarea.comentarios_totales === "number" && (
-                              <span className="px-2 py-1 rounded-xl bg-white/5 border border-white/10 flex items-center gap-1">
-                                <MessageSquare className="w-3 h-3" />
-                                {tarea.comentarios_totales} comentarios
-                              </span>
-                            )}
-                            {typeof tarea.adjuntos_totales === "number" && (
-                              <span className="px-2 py-1 rounded-xl bg-white/5 border border-white/10 flex items-center gap-1">
-                                <PaperclipIconSmall />
-                                {tarea.adjuntos_totales} adjuntos
-                              </span>
-                            )}
-                          </div>
-
-                          <div className="flex flex-wrap justify-end gap-2">
-                            <Link
-                              href={`/secretaria/tareas/${tarea.id_tarea}`}
-                              className="px-3 py-1.5 rounded-xl text-[11px] font-semibold bg-white/5 border border-white/10 text-gray-100 hover:bg-white/10"
-                            >
-                              Ver detalle
-                            </Link>
-
-                            {tarea.estado === "resuelta" && (
-                              <button
-                                type="button"
-                                disabled={
-                                  enActualizacionEstado === tarea.id_tarea
-                                }
-                                onClick={() =>
-                                  actualizarEstadoTarea(tarea, "cerrada")
-                                }
-                                className="px-3 py-1.5 rounded-xl text-[11px] font-semibold bg-gray-500/30 border border-gray-400/60 text-gray-50 hover:bg-gray-500/40 disabled:opacity-60"
-                              >
-                                {enActualizacionEstado === tarea.id_tarea ? (
-                                  <span className="flex items-center gap-1">
-                                    <Activity className="w-3 h-3 animate-spin" />
-                                    Cerrando...
-                                  </span>
-                                ) : (
-                                  "Cerrar tarea"
-                                )}
-                              </button>
-                            )}
-
-                            {(tarea.estado === "resuelta" ||
-                              tarea.estado === "cerrada") && (
-                              <button
-                                type="button"
-                                disabled={
-                                  enActualizacionEstado === tarea.id_tarea
-                                }
-                                onClick={() =>
-                                  actualizarEstadoTarea(tarea, "en_revision")
-                                }
-                                className="px-3 py-1.5 rounded-xl text-[11px] font-semibold bg-indigo-500/30 border border-indigo-400/60 text-indigo-50 hover:bg-indigo-500/40 disabled:opacity-60"
-                              >
-                                {enActualizacionEstado === tarea.id_tarea ? (
-                                  <span className="flex items-center gap-1">
-                                    <Activity className="w-3 h-3 animate-spin" />
-                                    Reabriendo...
-                                  </span>
-                                ) : (
-                                  "Reabrir tarea"
-                                )}
-                              </button>
-                            )}
-                          </div>
                         </div>
                       </div>
-                    );
-                  })}
-              </div>
-            </>
+
+                      {/* Metadata */}
+                      <div className="flex flex-wrap items-center gap-3 mb-4">
+                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 border border-white/20">
+                          <User className="w-3 h-3 text-indigo-400" />
+                          <span className="text-xs font-semibold">
+                            {tarea.responsable.nombre_completo}
+                          </span>
+                        </div>
+                        {tarea.centro && (
+                          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 border border-white/20">
+                            <Building2 className="w-3 h-3 text-sky-400" />
+                            <span className="text-xs font-semibold">
+                              {tarea.centro.nombre}
+                            </span>
+                          </div>
+                        )}
+                        {tarea.fecha_completada && (
+                          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/30">
+                            <CheckCircle2 className="w-3 h-3 text-emerald-400" />
+                            <span className="text-xs font-semibold text-emerald-300">
+                              Completada: {formatearFecha(tarea.fecha_completada)}
+                            </span>
+                          </div>
+                        )}
+                        {tarea.tiempo_resolucion_horas && (
+                          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/30">
+                            <Clock className="w-3 h-3 text-amber-400" />
+                            <span className="text-xs font-semibold text-amber-300">
+                              {tarea.tiempo_resolucion_horas.toFixed(1)}h
+                            </span>
+                          </div>
+                        )}
+                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 border border-white/20">
+                          <ClipboardList className="w-3 h-3 text-purple-400" />
+                          <span className="text-xs font-semibold">
+                            {tarea.tipo}
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Tags */}
+                      {tarea.tags && tarea.tags.length > 0 && (
+                        <div className="flex flex-wrap gap-2 mb-4">
+                          {tarea.tags.slice(0, 5).map((tag) => (
+                            <span
+                              key={tag}
+                              className="px-3 py-1 rounded-full text-[10px] font-bold bg-white/5 border border-white/20"
+                            >
+                              #{tag}
+                            </span>
+                          ))}
+                          {tarea.tags.length > 5 && (
+                            <span className="px-3 py-1 rounded-full text-[10px] font-bold bg-white/5 border border-white/20">
+                              +{tarea.tags.length - 5} más
+                            </span>
+                          )}
+                        </div>
+                      )}
+
+                     {/* Acciones */}
+<div className="flex items-center gap-2">
+  <button
+    onClick={(e) => {
+      e.stopPropagation();
+      irADetalle(tarea);
+    }}
+    className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl ${tema.colores.primario} text-white text-sm font-bold hover:scale-105 transition-all duration-300 shadow-xl`}
+  >
+    <Eye className="w-4 h-4" />
+    Ver Detalle
+  </button>
+
+  <button
+    onClick={(e) => {
+      e.stopPropagation();
+      // Compartir o celebrar
+    }}
+    className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white text-sm font-bold hover:scale-105 transition-all duration-300 shadow-xl`}
+  >
+    <ThumbsUp className="w-4 h-4" />
+    Celebrar
+  </button>
+
+  {/* MENÚ REEMPLAZADO POR BOTONES DIRECTOS */}
+  <div className="flex items-center gap-2">
+
+    <button
+      onClick={(e) => {
+        e.stopPropagation();
+        irADetalle(tarea);
+      }}
+      className={`flex items-center gap-3 px-5 py-2.5 rounded-2xl ${tema.colores.secundario} ${tema.colores.texto} text-sm font-bold hover:scale-105 transition-all duration-300 shadow-lg`}
+    >
+      <Eye className="w-4 h-4" />
+      Ver Detalle Completo
+    </button>
+
+    <button
+      onClick={(e) => {
+        e.stopPropagation();
+        // Descargar reporte
+      }}
+      className={`flex items-center gap-3 px-5 py-2.5 rounded-2xl ${tema.colores.secundario} ${tema.colores.texto} text-sm font-bold hover:scale-105 transition-all duration-300 shadow-lg`}
+    >
+      <Download className="w-4 h-4" />
+      Descargar Reporte
+    </button>
+
+    <button
+      onClick={(e) => {
+        e.stopPropagation();
+        // Compartir / destacar
+      }}
+      className={`flex items-center gap-3 px-5 py-2.5 rounded-2xl ${tema.colores.secundario} ${tema.colores.texto} text-sm font-bold hover:scale-105 transition-all duration-300 shadow-lg`}
+    >
+      <Star className="w-4 h-4" />
+      Marcar como Destacada
+    </button>
+
+    <button
+      onClick={(e) => {
+        e.stopPropagation();
+        confirmarEliminarTarea(tarea);
+      }}
+      disabled={!tarea.puede_eliminar}
+      className="flex items-center gap-3 px-5 py-2.5 rounded-2xl text-rose-400 hover:bg-rose-500/20 text-sm font-bold hover:scale-105 transition-all duration-300 shadow-lg disabled:opacity-40 disabled:cursor-not-allowed"
+    >
+      <Trash className="w-4 h-4" />
+      Eliminar del Historial
+    </button>
+
+  </div>
+</div>
+
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
           )}
         </div>
+
+        {/* Panel de Logros y Estadísticas */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+          {/* Logros Destacados */}
+          <div
+            className={`rounded-3xl p-6 ${tema.colores.card} ${tema.colores.borde} border-2 ${tema.colores.sombra} transform hover:shadow-2xl transition-all duration-300`}
+          >
+            <div className="flex items-center gap-3 mb-6">
+              <div
+                className={`w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-xl`}
+              >
+                <Trophy className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h3 className={`text-xl font-black ${tema.colores.texto}`}>
+                  Logros Destacados
+                </h3>
+                <p
+                  className={`text-xs font-semibold ${tema.colores.textoSecundario}`}
+                >
+                  Tus mejores resultados
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              <div className="flex items-center justify-between p-4 rounded-2xl bg-gradient-to-r from-emerald-500/10 to-green-500/10 border border-emerald-500/30">
+                <div className="flex items-center gap-3">
+                  <Medal className="w-8 h-8 text-emerald-400" />
+                  <div>
+                    <p className={`text-sm font-bold ${tema.colores.texto}`}>
+                      Racha de Completadas
+                    </p>
+                    <p className="text-xs text-emerald-300">
+                      {kpis.semana} tareas esta semana
+                    </p>
+                  </div>
+                </div>
+                <Star className="w-6 h-6 text-amber-400" />
+              </div>
+
+              <div className="flex items-center justify-between p-4 rounded-2xl bg-gradient-to-r from-sky-500/10 to-blue-500/10 border border-sky-500/30">
+                <div className="flex items-center gap-3">
+                  <Target className="w-8 h-8 text-sky-400" />
+                  <div>
+                    <p className={`text-sm font-bold ${tema.colores.texto}`}>
+                      Eficiencia
+                    </p>
+                    <p className="text-xs text-sky-300">
+                      {kpis.tiempoPromedio.toFixed(1)}h promedio
+                    </p>
+                  </div>
+                </div>
+                <Award className="w-6 h-6 text-sky-400" />
+              </div>
+
+              <div className="flex items-center justify-between p-4 rounded-2xl bg-gradient-to-r from-rose-500/10 to-red-500/10 border border-rose-500/30">
+                <div className="flex items-center gap-3">
+                  <Flame className="w-8 h-8 text-rose-400" />
+                  <div>
+                    <p className={`text-sm font-bold ${tema.colores.texto}`}>
+                      Tareas Críticas
+                    </p>
+                    <p className="text-xs text-rose-300">
+                      {kpis.criticas} resueltas
+                    </p>
+                  </div>
+                </div>
+                <Trophy className="w-6 h-6 text-amber-400" />
+              </div>
+            </div>
+          </div>
+
+          {/* Gráfico de Rendimiento */}
+          <div
+            className={`rounded-3xl p-6 ${tema.colores.card} ${tema.colores.borde} border-2 ${tema.colores.sombra} transform hover:shadow-2xl transition-all duration-300`}
+          >
+            <div className="flex items-center gap-3 mb-6">
+              <div
+                className={`w-12 h-12 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-xl`}
+              >
+                <TrendingUp className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h3 className={`text-xl font-black ${tema.colores.texto}`}>
+                  Rendimiento
+                </h3>
+                <p
+                  className={`text-xs font-semibold ${tema.colores.textoSecundario}`}
+                >
+                  Análisis de productividad
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className={`text-sm font-bold ${tema.colores.texto}`}>
+                    Tareas Hoy
+                  </span>
+                  <span className="text-sm font-black text-emerald-400">
+                    {kpis.hoy}
+                  </span>
+                </div>
+                <div className="h-3 rounded-full bg-black/20 overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-emerald-500 to-green-500 rounded-full transition-all duration-1000"
+                    style={{
+                      width: `${Math.min((kpis.hoy / kpis.total) * 100, 100)}%`,
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className={`text-sm font-bold ${tema.colores.texto}`}>
+                    Esta Semana
+                  </span>
+                  <span className="text-sm font-black text-sky-400">
+                    {kpis.semana}
+                  </span>
+                </div>
+                <div className="h-3 rounded-full bg-black/20 overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-sky-500 to-blue-500 rounded-full transition-all duration-1000"
+                    style={{
+                      width: `${Math.min((kpis.semana / kpis.total) * 100, 100)}%`,
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <span className={`text-sm font-bold ${tema.colores.texto}`}>
+                    Este Mes
+                  </span>
+                  <span className="text-sm font-black text-purple-400">
+                    {kpis.mes}
+                  </span>
+                </div>
+                <div className="h-3 rounded-full bg-black/20 overflow-hidden">
+                  <div
+                    className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full transition-all duration-1000"
+                    style={{
+                      width: `${Math.min((kpis.mes / kpis.total) * 100, 100)}%`,
+                    }}
+                  />
+                </div>
+              </div>
+
+              <div className="pt-4 border-t-2 border-white/10">
+                <div className="flex items-center justify-between">
+                  <span className={`text-sm font-bold ${tema.colores.texto}`}>
+                    Total Completadas
+                  </span>
+                  <span className="text-2xl font-black bg-gradient-to-r from-emerald-500 to-green-500 bg-clip-text text-transparent">
+                    {kpis.total}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Modal Eliminar */}
+        {tareaAEliminar && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-md animate-fadeIn">
+            <div
+              className={`w-full max-w-lg rounded-3xl ${tema.colores.card} ${tema.colores.borde} border-2 ${tema.colores.sombra} p-8 animate-scaleIn`}
+            >
+              <div className="flex items-center gap-4 mb-6">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-rose-500 to-red-500 flex items-center justify-center shadow-2xl">
+                  <Trash className="w-7 h-7 text-white" />
+                </div>
+                <h3 className={`text-2xl font-black ${tema.colores.texto}`}>
+                  Eliminar del Historial
+                </h3>
+              </div>
+              <p className={`text-base mb-6 ${tema.colores.textoSecundario}`}>
+                ¿Estás seguro de que deseas eliminar la tarea{" "}
+                <span className={`font-black ${tema.colores.texto}`}>
+                  "{tareaAEliminar.titulo}"
+                </span>{" "}
+                del historial? Esta acción no se puede deshacer.
+              </p>
+              <div className="flex items-center justify-end gap-3">
+                <button
+                  onClick={() => setTareaAEliminar(null)}
+                  disabled={eliminando}
+                  className={`px-6 py-3 rounded-2xl text-sm font-bold ${tema.colores.secundario} ${tema.colores.texto} hover:scale-105 transition-all duration-300 disabled:opacity-50 shadow-lg`}
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={eliminarTarea}
+                  disabled={eliminando}
+                  className="px-6 py-3 rounded-2xl text-sm font-bold bg-gradient-to-r from-rose-600 to-red-600 hover:from-rose-500 hover:to-red-500 text-white flex items-center gap-2 disabled:opacity-50 hover:scale-105 transition-all duration-300 shadow-2xl"
+                >
+                  {eliminando && <Loader2 className="w-4 h-4 animate-spin" />}
+                  Eliminar Definitivamente
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
 
-      {/* FOOTER */}
+      {/* FOOTER ULTRA PREMIUM */}
       <footer
-        className={`transition-all duration-300 ${
+        className={`transition-all duration-500 ${
           sidebarAbierto ? "ml-72" : "ml-20"
-        } ${tema.colores.card} ${tema.colores.borde} border-t py-6 mt-12`}
+        } ${tema.colores.card} ${tema.colores.borde} border-t-2 py-8 mt-12 relative z-10`}
       >
         <div className="max-w-[1920px] mx-auto px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <p
-              className={`text-sm font-semibold ${tema.colores.textoSecundario}`}
+          <div className="flex items-center gap-3">
+            <div
+              className={`w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-green-500 flex items-center justify-center shadow-xl`}
             >
-              © 2025 AnyssaMed · Historial de Tareas INFOGES.
-            </p>
-            <span
-              className={`px-3 py-1 rounded-full text-xs font-bold bg-gradient-to-r ${tema.colores.gradiente} text-white`}
-            >
-              v1.0.0 COMPLETADAS
-            </span>
+              <Trophy className="w-5 h-5 text-white" />
+            </div>
+            <div>
+              <p className={`text-sm font-bold ${tema.colores.texto}`}>
+                © 2025 AnyssaMed
+              </p>
+              <p className={`text-xs ${tema.colores.textoSecundario}`}>
+                Módulo Ultra Premium de Tareas Completadas
+              </p>
+            </div>
           </div>
           <div className="flex items-center gap-6">
             <Link
@@ -1905,7 +1978,7 @@ const seccionActiva = useMemo(() => {
             </Link>
             <button
               onClick={cerrarSesion}
-              className="text-sm font-bold text-red-400 hover:text-red-300 transition-colors"
+              className="text-sm font-bold text-rose-400 hover:text-rose-300 transition-colors"
             >
               Cerrar Sesión
             </button>
@@ -1913,100 +1986,117 @@ const seccionActiva = useMemo(() => {
         </div>
       </footer>
 
-      {/* ESTILOS GLOBALES */}
+      {/* ESTILOS GLOBALES ULTRA PREMIUM */}
       <style jsx global>{`
-        @keyframes wave {
+        @keyframes fadeIn {
+          from {
+            opacity: 0;
+          }
+          to {
+            opacity: 1;
+          }
+        }
+
+        @keyframes scaleIn {
+          from {
+            opacity: 0;
+            transform: scale(0.9);
+          }
+          to {
+            opacity: 1;
+            transform: scale(1);
+          }
+        }
+
+        @keyframes gradient {
           0%,
           100% {
-            transform: rotate(0deg);
+            background-position: 0% 50%;
+          }
+          50% {
+            background-position: 100% 50%;
+          }
+        }
+
+        .animate-fadeIn {
+          animation: fadeIn 0.3s ease-out;
+        }
+
+        .animate-scaleIn {
+          animation: scaleIn 0.3s ease-out;
+        }
+
+        .animate-gradient {
+          background-size: 200% 200%;
+          animation: gradient 3s ease infinite;
+        }
+
+        /* Animación de entrada para tareas */
+        .space-y-4 > div {
+          animation: fadeIn 0.3s ease-out backwards;
+        }
+
+        /* Scrollbar personalizado */
+        ::-webkit-scrollbar {
+          width: 10px;
+          height: 10px;
+        }
+
+        ::-webkit-scrollbar-track {
+          background: rgba(0, 0, 0, 0.1);
+          border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb {
+          background: linear-gradient(
+            135deg,
+            rgba(16, 185, 129, 0.8),
+            rgba(5, 150, 105, 0.8)
+          );
+          border-radius: 10px;
+          border: 2px solid transparent;
+          background-clip: padding-box;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+          background: linear-gradient(
+            135deg,
+            rgba(16, 185, 129, 1),
+            rgba(5, 150, 105, 1)
+          );
+        }
+
+        /* Transiciones suaves */
+        * {
+          transition-property: background-color, border-color, color, fill,
+            stroke, opacity, box-shadow, transform;
+          transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Efecto de brillo en hover */
+        .group:hover .shadow-2xl {
+          box-shadow: 0 25px 50px -12px rgba(16, 185, 129, 0.25);
+        }
+
+        /* Efecto de celebración */
+        @keyframes celebrate {
+          0%,
+          100% {
+            transform: scale(1) rotate(0deg);
           }
           25% {
-            transform: rotate(20deg);
+            transform: scale(1.1) rotate(-5deg);
           }
           75% {
-            transform: rotate(-20deg);
+            transform: scale(1.1) rotate(5deg);
           }
         }
 
-        .animate-wave {
-          animation: wave 1s ease-in-out infinite;
-        }
-
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 8px;
-          height: 8px;
-        }
-
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: ${["dark", "blue", "purple", "green"].includes(
-            temaActual
-          )
-            ? "rgba(31, 41, 55, 0.5)"
-            : "rgba(243, 244, 246, 0.5)"};
-          border-radius: 10px;
-        }
-
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: ${["dark", "blue", "purple", "green"].includes(
-            temaActual
-          )
-            ? "rgba(16, 185, 129, 0.5)"
-            : "rgba(16, 185, 129, 0.7)"};
-          border-radius: 10px;
-        }
-
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-          background: ${["dark", "blue", "purple", "green"].includes(
-            temaActual
-          )
-            ? "rgba(16, 185, 129, 0.7)"
-            : "rgba(16, 185, 129, 0.9)"};
+        .group:hover .trophy-icon {
+          animation: celebrate 0.5s ease-in-out;
         }
       `}</style>
     </div>
   );
 }
 
-// Iconos pequeñitos auxiliares
-function AlertOctagonIcon(props: any) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      {...props}
-      stroke="currentColor"
-      fill="none"
-    >
-      <path
-        d="M7.86 2h8.28L22 7.86v8.28L16.14 22H7.86L2 16.14V7.86z"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-      <path
-        d="M12 8v4M12 16h.01"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
-function PaperclipIconSmall(props: any) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      {...props}
-      stroke="currentColor"
-      fill="none"
-      className={`w-3 h-3 ${props.className || ""}`}
-    >
-      <path
-        d="M21.44 11.05l-7.78 7.78a5 5 0 01-7.07-7.07l7.78-7.78a3 3 0 014.24 4.24l-7.78 7.78a1 1 0 01-1.41-1.41l7.07-7.07"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}

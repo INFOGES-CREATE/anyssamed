@@ -1,4 +1,4 @@
-// src/app/(dashboard)/tecnico/tareas/pendientes/page.tsx
+// src/app/(dashboard)/tecnico/tareas/programadas/page.tsx
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
@@ -17,6 +17,11 @@ import {
   Bell,
   BellOff,
   Calendar,
+  CalendarCheck,
+  CalendarClock,
+  CalendarDays,
+  CalendarPlus,
+  CalendarRange,
   Check,
   CheckCircle2,
   CheckSquare2,
@@ -34,20 +39,24 @@ import {
   Flame,
   Home,
   Layers,
+  Lightbulb,
   Loader2,
   LogOut,
   MapPin,
-  MoreVertical,
   Moon,
+  MoreVertical,
+  Play,
   Plus,
   RefreshCw,
+  Repeat,
   Search,
   Settings,
   Shield,
   Sparkles,
-  Square,
+  Star,
   Sun,
   Target,
+  Timer,
   Trash,
   TrendingUp,
   User,
@@ -56,6 +65,9 @@ import {
   Zap,
   Radio,
   Building2,
+  BarChart3,
+  Pause,
+  FastForward,
 } from "lucide-react";
 
 // ================================
@@ -153,10 +165,14 @@ interface Tarea {
   };
   fecha_creacion: string;
   fecha_limite: string | null;
+  fecha_programada: string | null;
+  es_recurrente: boolean;
+  frecuencia_recurrencia?: string;
   tags: string[];
   puede_editar?: boolean;
   puede_cambiar_estado?: boolean;
   puede_eliminar?: boolean;
+  dias_restantes?: number;
 }
 
 interface EstadisticasTecnico {
@@ -302,7 +318,7 @@ const TEMAS: Record<TemaColor, ConfiguracionTema> = {
 // COMPONENTE PRINCIPAL
 // ================================
 
-export default function TareasPendientesPage() {
+export default function TareasProgramadasPage() {
   const router = useRouter();
 
   const [usuario, setUsuario] = useState<UsuarioSesion | null>(null);
@@ -331,11 +347,14 @@ export default function TareasPendientesPage() {
   const [busqueda, setBusqueda] = useState("");
   const [filtroPrioridad, setFiltroPrioridad] = useState<string>("todas");
   const [filtroCentro, setFiltroCentro] = useState<string>("todos");
-  const [soloVencidas, setSoloVencidas] = useState(false);
+  const [filtroTiempo, setFiltroTiempo] = useState<string>("todas"); // hoy, semana, mes, todas
+  const [soloRecurrentes, setSoloRecurrentes] = useState(false);
 
   const [tareaMenuAbierta, setTareaMenuAbierta] = useState<number | null>(null);
   const [tareaAEliminar, setTareaAEliminar] = useState<Tarea | null>(null);
   const [eliminando, setEliminando] = useState(false);
+
+  const [vistaCalendario, setVistaCalendario] = useState(false);
 
   // ================================
   // EFECTOS
@@ -428,7 +447,7 @@ export default function TareasPendientesPage() {
       try {
         setLoadingTareas(true);
         const res = await fetch(
-          `/api/tareas?usuario=${usuario.id_usuario}&rol=tecnico&estado=pendiente`,
+          `/api/tareas?usuario=${usuario.id_usuario}&rol=tecnico&programadas=true`,
           {
             method: "GET",
             headers: { "Content-Type": "application/json" },
@@ -564,9 +583,31 @@ export default function TareasPendientesPage() {
     );
   };
 
-  const esVencida = (fechaLimite: string | null) => {
-    if (!fechaLimite) return false;
-    return new Date(fechaLimite) < new Date();
+  const calcularDiasRestantes = (fechaProgramada: string | null) => {
+    if (!fechaProgramada) return null;
+    const hoy = new Date();
+    const fecha = new Date(fechaProgramada);
+    const diff = fecha.getTime() - hoy.getTime();
+    return Math.ceil(diff / (1000 * 60 * 60 * 24));
+  };
+
+  const filtrarPorTiempo = (tarea: Tarea) => {
+    if (filtroTiempo === "todas") return true;
+    if (!tarea.fecha_programada) return false;
+
+    const diasRestantes = calcularDiasRestantes(tarea.fecha_programada);
+    if (diasRestantes === null) return false;
+
+    switch (filtroTiempo) {
+      case "hoy":
+        return diasRestantes === 0;
+      case "semana":
+        return diasRestantes >= 0 && diasRestantes <= 7;
+      case "mes":
+        return diasRestantes >= 0 && diasRestantes <= 30;
+      default:
+        return true;
+    }
   };
 
   const tareasFiltradas = useMemo(() => {
@@ -583,9 +624,11 @@ export default function TareasPendientesPage() {
       resultado = resultado.filter((t) => t.centro?.id_centro === idCentro);
     }
 
-    if (soloVencidas) {
-      resultado = resultado.filter((t) => esVencida(t.fecha_limite));
+    if (soloRecurrentes) {
+      resultado = resultado.filter((t) => t.es_recurrente);
     }
+
+    resultado = resultado.filter(filtrarPorTiempo);
 
     if (busqueda.trim() !== "") {
       const term = busqueda.trim().toLowerCase();
@@ -607,40 +650,19 @@ export default function TareasPendientesPage() {
       });
     }
 
-    // Ordenar por prioridad y fecha límite
+    // Ordenar por fecha programada (más próximas primero)
     resultado.sort((a, b) => {
-      const prioridadPeso = (p: TareaPrioridad) => {
-        switch (p) {
-          case "critica":
-            return 5;
-          case "urgente":
-            return 4;
-          case "alta":
-            return 3;
-          case "media":
-            return 2;
-          case "baja":
-          default:
-            return 1;
-        }
-      };
-
-      const diffPrioridad =
-        prioridadPeso(b.prioridad) - prioridadPeso(a.prioridad);
-      if (diffPrioridad !== 0) return diffPrioridad;
-
-      const fechaA = a.fecha_limite
-        ? new Date(a.fecha_limite).getTime()
+      const fechaA = a.fecha_programada
+        ? new Date(a.fecha_programada).getTime()
         : Number.MAX_SAFE_INTEGER;
-      const fechaB = b.fecha_limite
-        ? new Date(b.fecha_limite).getTime()
+      const fechaB = b.fecha_programada
+        ? new Date(b.fecha_programada).getTime()
         : Number.MAX_SAFE_INTEGER;
-
       return fechaA - fechaB;
     });
 
     return resultado;
-  }, [tareas, filtroPrioridad, filtroCentro, soloVencidas, busqueda]);
+  }, [tareas, filtroPrioridad, filtroCentro, soloRecurrentes, filtroTiempo, busqueda]);
 
   const centrosDisponibles = useMemo(() => {
     const mapa = new Map<number, { id_centro: number; nombre: string }>();
@@ -659,21 +681,25 @@ export default function TareasPendientesPage() {
 
   const kpis = useMemo(() => {
     const total = tareas.length;
-    const criticas = tareas.filter((t) => t.prioridad === "critica").length;
-    const urgentes = tareas.filter((t) => t.prioridad === "urgente").length;
-    const vencidas = tareas.filter((t) => esVencida(t.fecha_limite)).length;
     const hoy = tareas.filter((t) => {
-      if (!t.fecha_limite) return false;
-      const hoy = new Date();
-      const limite = new Date(t.fecha_limite);
-      return (
-        limite.getDate() === hoy.getDate() &&
-        limite.getMonth() === hoy.getMonth() &&
-        limite.getFullYear() === hoy.getFullYear()
-      );
+      const dias = calcularDiasRestantes(t.fecha_programada);
+      return dias === 0;
     }).length;
 
-    return { total, criticas, urgentes, vencidas, hoy };
+    const semana = tareas.filter((t) => {
+      const dias = calcularDiasRestantes(t.fecha_programada);
+      return dias !== null && dias >= 0 && dias <= 7;
+    }).length;
+
+    const mes = tareas.filter((t) => {
+      const dias = calcularDiasRestantes(t.fecha_programada);
+      return dias !== null && dias >= 0 && dias <= 30;
+    }).length;
+
+    const recurrentes = tareas.filter((t) => t.es_recurrente).length;
+    const criticas = tareas.filter((t) => t.prioridad === "critica").length;
+
+    return { total, hoy, semana, mes, recurrentes, criticas };
   }, [tareas]);
 
   const recargarTareas = async () => {
@@ -682,7 +708,7 @@ export default function TareasPendientesPage() {
 
     try {
       const res = await fetch(
-        `/api/tareas?usuario=${usuario.id_usuario}&rol=tecnico&estado=pendiente`,
+        `/api/tareas?usuario=${usuario.id_usuario}&rol=tecnico&programadas=true`,
         {
           method: "GET",
           headers: { "Content-Type": "application/json" },
@@ -781,31 +807,31 @@ export default function TareasPendientesPage() {
         className={`min-h-screen flex items-center justify-center bg-gradient-to-br ${tema.colores.fondo} relative overflow-hidden`}
       >
         <div className="absolute inset-0 pointer-events-none">
-          <div className="absolute top-0 left-1/4 w-96 h-96 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 rounded-full blur-3xl animate-pulse" />
+          <div className="absolute top-0 left-1/4 w-96 h-96 bg-gradient-to-br from-sky-500/10 to-blue-500/10 rounded-full blur-3xl animate-pulse" />
           <div
-            className="absolute bottom-0 right-1/4 w-96 h-96 bg-gradient-to-br from-pink-500/10 to-rose-500/10 rounded-full blur-3xl animate-pulse"
+            className="absolute bottom-0 right-1/4 w-96 h-96 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 rounded-full blur-3xl animate-pulse"
             style={{ animationDelay: "1s" }}
           />
         </div>
 
         <div className="text-center relative z-10">
           <div className="relative mb-8">
-            <div className="w-32 h-32 border-4 border-indigo-500/40 border-t-transparent rounded-full animate-spin" />
+            <div className="w-32 h-32 border-4 border-sky-500/40 border-t-transparent rounded-full animate-spin" />
             <div
-              className={`absolute inset-3 rounded-full bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center shadow-2xl`}
+              className={`absolute inset-3 rounded-full bg-gradient-to-br from-sky-500 via-blue-500 to-indigo-500 flex items-center justify-center shadow-2xl`}
             >
-              <Square className="w-12 h-12 text-white animate-pulse" />
+              <CalendarClock className="w-12 h-12 text-white animate-pulse" />
             </div>
           </div>
           <h2
-            className={`text-5xl font-black mb-4 ${tema.colores.texto} bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 bg-clip-text text-transparent`}
+            className={`text-5xl font-black mb-4 ${tema.colores.texto} bg-gradient-to-r from-sky-500 via-blue-500 to-indigo-500 bg-clip-text text-transparent`}
           >
-            Cargando Tareas Pendientes
+            Cargando Tareas Programadas
           </h2>
           <p
             className={`text-lg font-semibold ${tema.colores.textoSecundario} animate-pulse`}
           >
-            Preparando tu lista de tareas...
+            Preparando tu calendario de tareas...
           </p>
         </div>
       </div>
@@ -855,10 +881,14 @@ export default function TareasPendientesPage() {
     >
       {/* Efectos de fondo */}
       <div className="fixed inset-0 pointer-events-none overflow-hidden">
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-gradient-to-br from-amber-500/10 to-orange-500/10 rounded-full blur-3xl animate-pulse" />
+        <div className="absolute top-0 left-1/4 w-96 h-96 bg-gradient-to-br from-sky-500/10 to-blue-500/10 rounded-full blur-3xl animate-pulse" />
         <div
           className="absolute bottom-0 right-1/4 w-96 h-96 bg-gradient-to-br from-indigo-500/10 to-purple-500/10 rounded-full blur-3xl animate-pulse"
           style={{ animationDelay: "1s" }}
+        />
+        <div
+          className="absolute top-1/2 left-1/2 w-96 h-96 bg-gradient-to-br from-cyan-500/10 to-teal-500/10 rounded-full blur-3xl animate-pulse"
+          style={{ animationDelay: "2s" }}
         />
       </div>
 
@@ -884,14 +914,14 @@ export default function TareasPendientesPage() {
           <div className="flex-1 max-w-2xl">
             <div className="relative group">
               <Search
-                className={`absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 ${tema.colores.textoSecundario} group-focus-within:text-amber-500 transition-colors duration-300`}
+                className={`absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 ${tema.colores.textoSecundario} group-focus-within:text-sky-500 transition-colors duration-300`}
               />
               <input
                 type="text"
                 value={busqueda}
                 onChange={(e) => setBusqueda(e.target.value)}
-                placeholder="Buscar tareas pendientes..."
-                className={`w-full pl-12 pr-12 py-3.5 rounded-2xl ${tema.colores.card} ${tema.colores.borde} border-2 text-sm ${tema.colores.texto} placeholder:${tema.colores.textoSecundario} focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 transition-all duration-300 shadow-lg`}
+                placeholder="Buscar tareas programadas..."
+                className={`w-full pl-12 pr-12 py-3.5 rounded-2xl ${tema.colores.card} ${tema.colores.borde} border-2 text-sm ${tema.colores.texto} placeholder:${tema.colores.textoSecundario} focus:outline-none focus:ring-2 focus:ring-sky-500/50 focus:border-sky-500 transition-all duration-300 shadow-lg`}
               />
               {busqueda && (
                 <button
@@ -1128,7 +1158,7 @@ export default function TareasPendientesPage() {
             </Link>
             <ChevronRight className="w-4 h-4" />
             <span className={`font-bold ${tema.colores.texto}`}>
-              Pendientes
+              Programadas
             </span>
           </div>
 
@@ -1137,18 +1167,19 @@ export default function TareasPendientesPage() {
               <h1
                 className={`text-5xl md:text-6xl font-black mb-2 ${tema.colores.texto} flex items-center gap-3`}
               >
-                <span className="bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 bg-clip-text text-transparent">
-                  Tareas Pendientes
+                <span className="bg-gradient-to-r from-sky-500 via-blue-500 to-indigo-500 bg-clip-text text-transparent">
+                  Tareas Programadas
                 </span>
-                <span className="inline-flex items-center justify-center px-4 py-1.5 rounded-full bg-gradient-to-r from-amber-600 to-orange-600 text-white text-xs font-bold uppercase tracking-wider shadow-xl shadow-amber-500/50 animate-pulse">
-                  ⏱ {kpis.total} Activas
+                <span className="inline-flex items-center justify-center px-4 py-1.5 rounded-full bg-gradient-to-r from-sky-600 to-blue-600 text-white text-xs font-bold uppercase tracking-wider shadow-2xl shadow-sky-500/50 animate-pulse">
+                  <CalendarClock className="w-4 h-4 mr-1" />
+                  {kpis.total} Planificadas
                 </span>
               </h1>
               <p
                 className={`text-lg font-semibold ${tema.colores.textoSecundario} flex items-center gap-2`}
               >
-                <Clock className="w-5 h-5 text-amber-400 animate-pulse" />
-                Tareas que requieren tu atención inmediata
+                <Timer className="w-5 h-5 text-sky-400 animate-pulse" />
+                Calendario inteligente de tareas futuras y recurrentes
               </p>
             </div>
 
@@ -1170,6 +1201,26 @@ export default function TareasPendientesPage() {
                 />
                 Actualizar
               </button>
+              <button
+                onClick={() => setVistaCalendario((v) => !v)}
+                className={`flex items-center gap-2 px-5 py-3 rounded-2xl ${
+                  vistaCalendario
+                    ? "bg-gradient-to-r from-sky-600 to-blue-600 text-white shadow-xl"
+                    : `${tema.colores.secundario} ${tema.colores.texto} shadow-lg`
+                } font-bold text-sm hover:scale-105 transition-all duration-300`}
+              >
+                {vistaCalendario ? (
+                  <>
+                    <ClipboardList className="w-4 h-4" />
+                    Vista Lista
+                  </>
+                ) : (
+                  <>
+                    <CalendarDays className="w-4 h-4" />
+                    Vista Calendario
+                  </>
+                )}
+              </button>
               <Link
                 href="/tecnico/tareas/nueva"
                 className={`flex items-center gap-2 px-6 py-3 rounded-2xl ${tema.colores.primario} text-white font-bold text-sm shadow-xl hover:scale-105 transition-all duration-300`}
@@ -1182,16 +1233,16 @@ export default function TareasPendientesPage() {
         </div>
 
         {/* KPIs Ultra Premium */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-6 mb-8">
+        <div className="grid grid-cols-2 md:grid-cols-6 gap-6 mb-8">
           {/* Total */}
           <div
             className={`rounded-3xl p-6 ${tema.colores.card} ${tema.colores.borde} border-2 ${tema.colores.sombra} hover:scale-105 hover:-translate-y-2 transition-all duration-500 group relative overflow-hidden`}
           >
-            <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 to-orange-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <div className="absolute inset-0 bg-gradient-to-br from-sky-500/10 to-blue-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
             <div className="relative z-10">
               <div className="flex items-center justify-between mb-4">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-2xl group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
-                  <Square className="w-7 h-7 text-white" />
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-sky-500 to-blue-500 flex items-center justify-center shadow-2xl group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
+                  <CalendarRange className="w-7 h-7 text-white" />
                 </div>
               </div>
               <div
@@ -1202,79 +1253,7 @@ export default function TareasPendientesPage() {
               <div
                 className={`text-xs font-bold uppercase tracking-wider ${tema.colores.textoSecundario}`}
               >
-                Total Pendientes
-              </div>
-            </div>
-          </div>
-
-          {/* Críticas */}
-          <div
-            className={`rounded-3xl p-6 ${tema.colores.card} ${tema.colores.borde} border-2 ${tema.colores.sombra} hover:scale-105 hover:-translate-y-2 transition-all duration-500 group relative overflow-hidden`}
-          >
-            <div className="absolute inset-0 bg-gradient-to-br from-red-500/10 to-rose-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            <div className="relative z-10">
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-red-600 to-rose-600 flex items-center justify-center shadow-2xl group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 animate-pulse">
-                  <AlertCircle className="w-7 h-7 text-white" />
-                </div>
-              </div>
-              <div
-                className={`text-4xl font-black mb-2 ${tema.colores.texto} group-hover:scale-110 transition-transform duration-300 animate-pulse`}
-              >
-                {kpis.criticas}
-              </div>
-              <div
-                className={`text-xs font-bold uppercase tracking-wider ${tema.colores.textoSecundario}`}
-              >
-                🔥 Críticas
-              </div>
-            </div>
-          </div>
-
-          {/* Urgentes */}
-          <div
-            className={`rounded-3xl p-6 ${tema.colores.card} ${tema.colores.borde} border-2 ${tema.colores.sombra} hover:scale-105 hover:-translate-y-2 transition-all duration-500 group relative overflow-hidden`}
-          >
-            <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 to-amber-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            <div className="relative z-10">
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-orange-500 to-amber-500 flex items-center justify-center shadow-2xl group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
-                  <Flame className="w-7 h-7 text-white" />
-                </div>
-              </div>
-              <div
-                className={`text-4xl font-black mb-2 ${tema.colores.texto} group-hover:scale-110 transition-transform duration-300`}
-              >
-                {kpis.urgentes}
-              </div>
-              <div
-                className={`text-xs font-bold uppercase tracking-wider ${tema.colores.textoSecundario}`}
-              >
-                ⚡ Urgentes
-              </div>
-            </div>
-          </div>
-
-          {/* Vencidas */}
-          <div
-            className={`rounded-3xl p-6 ${tema.colores.card} ${tema.colores.borde} border-2 ${tema.colores.sombra} hover:scale-105 hover:-translate-y-2 transition-all duration-500 group relative overflow-hidden`}
-          >
-            <div className="absolute inset-0 bg-gradient-to-br from-rose-500/10 to-red-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-            <div className="relative z-10">
-              <div className="flex items-center justify-between mb-4">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-rose-500 to-red-500 flex items-center justify-center shadow-2xl group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 animate-pulse">
-                  <AlertTriangle className="w-7 h-7 text-white" />
-                </div>
-              </div>
-              <div
-                className={`text-4xl font-black mb-2 ${tema.colores.texto} group-hover:scale-110 transition-transform duration-300`}
-              >
-                {kpis.vencidas}
-              </div>
-              <div
-                className={`text-xs font-bold uppercase tracking-wider ${tema.colores.textoSecundario}`}
-              >
-                ⏰ Vencidas
+                Total Programadas
               </div>
             </div>
           </div>
@@ -1283,11 +1262,11 @@ export default function TareasPendientesPage() {
           <div
             className={`rounded-3xl p-6 ${tema.colores.card} ${tema.colores.borde} border-2 ${tema.colores.sombra} hover:scale-105 hover:-translate-y-2 transition-all duration-500 group relative overflow-hidden`}
           >
-            <div className="absolute inset-0 bg-gradient-to-br from-sky-500/10 to-blue-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <div className="absolute inset-0 bg-gradient-to-br from-emerald-500/10 to-green-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
             <div className="relative z-10">
               <div className="flex items-center justify-between mb-4">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-sky-500 to-blue-500 flex items-center justify-center shadow-2xl group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
-                  <Calendar className="w-7 h-7 text-white" />
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-green-500 flex items-center justify-center shadow-2xl group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 animate-pulse">
+                  <CalendarCheck className="w-7 h-7 text-white" />
                 </div>
               </div>
               <div
@@ -1302,6 +1281,102 @@ export default function TareasPendientesPage() {
               </div>
             </div>
           </div>
+
+          {/* Esta Semana */}
+          <div
+            className={`rounded-3xl p-6 ${tema.colores.card} ${tema.colores.borde} border-2 ${tema.colores.sombra} hover:scale-105 hover:-translate-y-2 transition-all duration-500 group relative overflow-hidden`}
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-teal-500/10 to-cyan-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center shadow-2xl group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
+                  <CalendarDays className="w-7 h-7 text-white" />
+                </div>
+              </div>
+              <div
+                className={`text-4xl font-black mb-2 ${tema.colores.texto} group-hover:scale-110 transition-transform duration-300`}
+              >
+                {kpis.semana}
+              </div>
+              <div
+                className={`text-xs font-bold uppercase tracking-wider ${tema.colores.textoSecundario}`}
+              >
+                📊 Esta Semana
+              </div>
+            </div>
+          </div>
+
+          {/* Este Mes */}
+          <div
+            className={`rounded-3xl p-6 ${tema.colores.card} ${tema.colores.borde} border-2 ${tema.colores.sombra} hover:scale-105 hover:-translate-y-2 transition-all duration-500 group relative overflow-hidden`}
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-purple-500/10 to-pink-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-2xl group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
+                  <Calendar className="w-7 h-7 text-white" />
+                </div>
+              </div>
+              <div
+                className={`text-4xl font-black mb-2 ${tema.colores.texto} group-hover:scale-110 transition-transform duration-300`}
+              >
+                {kpis.mes}
+              </div>
+              <div
+                className={`text-xs font-bold uppercase tracking-wider ${tema.colores.textoSecundario}`}
+              >
+                📈 Este Mes
+              </div>
+            </div>
+          </div>
+
+          {/* Recurrentes */}
+          <div
+            className={`rounded-3xl p-6 ${tema.colores.card} ${tema.colores.borde} border-2 ${tema.colores.sombra} hover:scale-105 hover:-translate-y-2 transition-all duration-500 group relative overflow-hidden`}
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-amber-500/10 to-orange-500/10 opacity-0 group-hover:opacity-100 transition-opacity  duration-500" />
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-2xl group-hover:scale-110 group-hover:rotate-3 transition-all duration-500">
+                  <Repeat className="w-7 h-7 text-white animate-spin" style={{ animationDuration: "3s" }} />
+                </div>
+              </div>
+              <div
+                className={`text-4xl font-black mb-2 ${tema.colores.texto} group-hover:scale-110 transition-transform duration-300`}
+              >
+                {kpis.recurrentes}
+              </div>
+              <div
+                className={`text-xs font-bold uppercase tracking-wider ${tema.colores.textoSecundario}`}
+              >
+                🔄 Recurrentes
+              </div>
+            </div>
+          </div>
+
+          {/* Críticas */}
+          <div
+            className={`rounded-3xl p-6 ${tema.colores.card} ${tema.colores.borde} border-2 ${tema.colores.sombra} hover:scale-105 hover:-translate-y-2 transition-all duration-500 group relative overflow-hidden`}
+          >
+            <div className="absolute inset-0 bg-gradient-to-br from-rose-500/10 to-red-500/10 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+            <div className="relative z-10">
+              <div className="flex items-center justify-between mb-4">
+                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-rose-500 to-red-500 flex items-center justify-center shadow-2xl group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 animate-pulse">
+                  <AlertTriangle className="w-7 h-7 text-white" />
+                </div>
+              </div>
+              <div
+                className={`text-4xl font-black mb-2 ${tema.colores.texto} group-hover:scale-110 transition-transform duration-300`}
+              >
+                {kpis.criticas}
+              </div>
+              <div
+                className={`text-xs font-bold uppercase tracking-wider ${tema.colores.textoSecundario}`}
+              >
+                🔥 Críticas
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Filtros Ultra Premium */}
@@ -1311,18 +1386,18 @@ export default function TareasPendientesPage() {
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-3">
               <div
-                className={`w-12 h-12 rounded-2xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center shadow-xl`}
+                className={`w-12 h-12 rounded-2xl bg-gradient-to-br from-sky-500 to-blue-500 flex items-center justify-center shadow-xl`}
               >
                 <Filter className="w-6 h-6 text-white" />
               </div>
               <div>
                 <h3 className={`text-xl font-black ${tema.colores.texto}`}>
-                  Filtros Rápidos
+                  Filtros Inteligentes
                 </h3>
                 <p
                   className={`text-xs font-semibold ${tema.colores.textoSecundario}`}
                 >
-                  Refina tu búsqueda de tareas pendientes
+                  Organiza tu calendario de tareas programadas
                 </p>
               </div>
             </div>
@@ -1330,16 +1405,17 @@ export default function TareasPendientesPage() {
               onClick={() => {
                 setFiltroPrioridad("todas");
                 setFiltroCentro("todos");
-                setSoloVencidas(false);
+                setFiltroTiempo("todas");
+                setSoloRecurrentes(false);
               }}
-              className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl  text-sm font-bold ${tema.colores.secundario} ${tema.colores.texto} hover:scale-105 transition-all duration-300 shadow-lg`}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl text-sm font-bold ${tema.colores.secundario} ${tema.colores.texto} hover:scale-105 transition-all duration-300 shadow-lg`}
             >
               <X className="w-4 h-4" />
               Limpiar Filtros
             </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="space-y-2">
               <label
                 className={`text-xs font-bold uppercase tracking-wide ${tema.colores.textoSecundario} flex items-center gap-1`}
@@ -1350,7 +1426,7 @@ export default function TareasPendientesPage() {
               <select
                 value={filtroPrioridad}
                 onChange={(e) => setFiltroPrioridad(e.target.value)}
-                className={`w-full px-4 py-3 rounded-2xl text-sm ${tema.colores.card} ${tema.colores.borde} border-2 ${tema.colores.texto} focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 transition-all duration-300 cursor-pointer shadow-lg hover:shadow-xl`}
+                className={`w-full px-4 py-3 rounded-2xl text-sm ${tema.colores.card} ${tema.colores.borde} border-2 ${tema.colores.texto} focus:outline-none focus:ring-2 focus:ring-sky-500/50 focus:border-sky-500 transition-all duration-300 cursor-pointer shadow-lg hover:shadow-xl`}
               >
                 <option value="todas">Todas las Prioridades</option>
                 <option value="critica">🔴 Crítica</option>
@@ -1371,7 +1447,7 @@ export default function TareasPendientesPage() {
               <select
                 value={filtroCentro}
                 onChange={(e) => setFiltroCentro(e.target.value)}
-                className={`w-full px-4 py-3 rounded-2xl text-sm ${tema.colores.card} ${tema.colores.borde} border-2 ${tema.colores.texto} focus:outline-none focus:ring-2 focus:ring-amber-500/50 focus:border-amber-500 transition-all duration-300 cursor-pointer shadow-lg hover:shadow-xl`}
+                className={`w-full px-4 py-3 rounded-2xl text-sm ${tema.colores.card} ${tema.colores.borde} border-2 ${tema.colores.texto} focus:outline-none focus:ring-2 focus:ring-sky-500/50 focus:border-sky-500 transition-all duration-300 cursor-pointer shadow-lg hover:shadow-xl`}
               >
                 <option value="todos">Todos los Centros</option>
                 {centrosDisponibles.map((c) => (
@@ -1386,35 +1462,54 @@ export default function TareasPendientesPage() {
               <label
                 className={`text-xs font-bold uppercase tracking-wide ${tema.colores.textoSecundario} flex items-center gap-1`}
               >
-                <AlertTriangle className="w-3 h-3" />
-                Filtro Especial
+                <CalendarClock className="w-3 h-3" />
+                Período
+              </label>
+              <select
+                value={filtroTiempo}
+                onChange={(e) => setFiltroTiempo(e.target.value)}
+                className={`w-full px-4 py-3 rounded-2xl text-sm ${tema.colores.card} ${tema.colores.borde} border-2 ${tema.colores.texto} focus:outline-none focus:ring-2 focus:ring-sky-500/50 focus:border-sky-500 transition-all duration-300 cursor-pointer shadow-lg hover:shadow-xl`}
+              >
+                <option value="todas">Todas las Fechas</option>
+                <option value="hoy">📅 Hoy</option>
+                <option value="semana">📊 Esta Semana</option>
+                <option value="mes">📈 Este Mes</option>
+              </select>
+            </div>
+
+            <div className="space-y-2">
+              <label
+                className={`text-xs font-bold uppercase tracking-wide ${tema.colores.textoSecundario} flex items-center gap-1`}
+              >
+                <Repeat className="w-3 h-3" />
+                Tipo
               </label>
               <div
                 className={`flex items-center justify-between p-4 rounded-2xl ${
-                  soloVencidas
-                    ? "bg-rose-500/20 border-2 border-rose-500/50"
+                  soloRecurrentes
+                    ? "bg-amber-500/20 border-2 border-amber-500/50"
                     : "bg-black/5 border-2 border-transparent"
                 } transition-all duration-300 cursor-pointer`}
-                onClick={() => setSoloVencidas((v) => !v)}
+                onClick={() => setSoloRecurrentes((v) => !v)}
               >
                 <div>
                   <p className={`text-sm font-bold ${tema.colores.texto}`}>
-                    ⏰ Solo Vencidas
+                    🔄 Solo Recurrentes
                   </p>
                   <p className="text-xs text-gray-400">
-                    Mostrar únicamente tareas vencidas
+                    Tareas que se repiten
                   </p>
                 </div>
                 <button
                   className={`w-14 h-7 rounded-full flex items-center px-1 transition-all duration-300 ${
-                    soloVencidas
-                      ? "bg-gradient-to-r from-rose-600 to-red-600 shadow-lg shadow-rose-500/50"
+                    soloRecurrentes
+                      ? "bg-gradient-to-r from-amber-600 to-orange-600 shadow-lg shadow-amber-500/50"
                       : "bg-slate-500/40"
                   }`}
                 >
                   <div
                     className={`w-5 h-5 rounded-full bg-white shadow-lg transform transition-transform duration-300 ${
-                      soloVencidas ? "translate-x-7" : "translate-x-0"
+                      soloRecurrentes ? "translate-x-7" : "translate-x-0"
                     }`}
                   />
                 </button>
@@ -1423,22 +1518,22 @@ export default function TareasPendientesPage() {
           </div>
         </div>
 
-        {/* Lista de Tareas Ultra Premium */}
+        {/* Lista de Tareas Programadas Ultra Premium */}
         <div
           className={`rounded-3xl p-8 ${tema.colores.card} ${tema.colores.borde} border-2 ${tema.colores.sombra} transform hover:shadow-2xl transition-all duration-300`}
         >
           <div className="flex items-center justify-between mb-6">
             <div className="flex items-center gap-4">
               <div
-                className={`w-14 h-14 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-2xl`}
+                className={`w-14 h-14 rounded-2xl bg-gradient-to-br from-sky-500 to-blue-500 flex items-center justify-center shadow-2xl`}
               >
-                <ClipboardList className="w-7 h-7 text-white" />
+                <CalendarRange className="w-7 h-7 text-white" />
               </div>
               <div>
                 <h3
                   className={`text-2xl font-black ${tema.colores.texto} flex items-center gap-2`}
                 >
-                  Lista de Tareas Pendientes
+                  Calendario de Tareas
                   <span
                     className={`text-xs px-4 py-1.5 rounded-full ${tema.colores.secundario} ${tema.colores.texto} font-bold shadow-lg`}
                   >
@@ -1448,7 +1543,7 @@ export default function TareasPendientesPage() {
                 <p
                   className={`text-sm font-semibold ${tema.colores.textoSecundario} mt-1`}
                 >
-                  Tareas que requieren tu atención y acción inmediata
+                  Planificación inteligente de tus próximas actividades
                 </p>
               </div>
             </div>
@@ -1463,7 +1558,10 @@ export default function TareasPendientesPage() {
               </button>
               <button
                 onClick={() =>
-                  window.open("/api/tareas/export-excel?estado=pendiente", "_blank")
+                  window.open(
+                    "/api/tareas/export-excel?programadas=true",
+                    "_blank"
+                  )
                 }
                 className={`flex items-center gap-2 px-4 py-2 rounded-2xl ${tema.colores.secundario} ${tema.colores.texto} text-xs font-bold hover:scale-105 transition-all duration-300 shadow-lg`}
               >
@@ -1497,158 +1595,184 @@ export default function TareasPendientesPage() {
           ) : tareasFiltradas.length === 0 ? (
             <div className="py-20 text-center">
               <div
-                className={`w-28 h-28 mx-auto mb-6 rounded-3xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center shadow-2xl animate-pulse`}
+                className={`w-28 h-28 mx-auto mb-6 rounded-3xl bg-gradient-to-br from-sky-500 to-blue-500 flex items-center justify-center shadow-2xl animate-pulse`}
               >
-                <CheckCircle2 className="w-14 h-14 text-white" />
+                <CalendarPlus className="w-14 h-14 text-white" />
               </div>
-              <p
-                className={`text-2xl font-black ${tema.colores.texto} mb-3`}
-              >
-                ¡Excelente trabajo!
+              <p className={`text-2xl font-black ${tema.colores.texto} mb-3`}>
+                Sin tareas programadas
               </p>
               <p className={`${tema.colores.textoSecundario} mb-8 text-lg`}>
-                No tienes tareas pendientes en este momento
+                No hay tareas programadas que coincidan con los filtros
               </p>
               <Link
-                href="/tecnico/tareas"
+                href="/tecnico/tareas/nueva"
                 className={`inline-flex items-center gap-3 px-8 py-4 rounded-2xl ${tema.colores.primario} text-white font-bold ${tema.colores.sombra} hover:scale-105 transition-all duration-300 shadow-2xl`}
               >
-                <CheckSquare2 className="w-5 h-5" />
-                Ver Todas las Tareas
+                <CalendarPlus className="w-5 h-5" />
+                Programar Nueva Tarea
               </Link>
             </div>
           ) : (
             <div className="space-y-4">
-              {tareasFiltradas.map((tarea, idx) => (
-                <div
-                  key={tarea.id_tarea}
-                  className={`p-6 rounded-2xl ${tema.colores.card} ${tema.colores.borde} border-2 ${tema.colores.hover} transition-all duration-300 transform hover:scale-[1.02] hover:-translate-y-1 group cursor-pointer`}
-                  style={{
-                    animationDelay: `${idx * 50}ms`,
-                  }}
-                  onClick={() => irADetalle(tarea)}
-                >
-                  <div className="flex items-start gap-4">
-                    {/* Icono de Prioridad */}
-                    <div
-                      className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${
-                        tarea.prioridad === "critica"
-                          ? "from-red-600 to-rose-600 animate-pulse"
-                          : tarea.prioridad === "urgente"
-                          ? "from-orange-500 to-amber-500"
-                          : tarea.prioridad === "alta"
-                          ? "from-amber-500 to-yellow-500"
-                          : tarea.prioridad === "media"
-                          ? "from-sky-500 to-blue-500"
-                          : "from-emerald-500 to-green-500"
-                      } flex items-center justify-center shadow-2xl group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 flex-shrink-0`}
-                    >
-                      {tarea.prioridad === "critica" ? (
-                        <AlertCircle className="w-7 h-7 text-white" />
-                      ) : tarea.prioridad === "urgente" ? (
-                        <Flame className="w-7 h-7 text-white" />
-                      ) : (
-                        <Square className="w-7 h-7 text-white" />
-                      )}
-                    </div>
+              {tareasFiltradas.map((tarea, idx) => {
+                const diasRestantes = calcularDiasRestantes(tarea.fecha_programada);
+                
+                return (
+                  <div
+                    key={tarea.id_tarea}
+                    className={`p-6 rounded-2xl ${tema.colores.card} ${tema.colores.borde} border-2 ${tema.colores.hover} transition-all duration-300 transform hover:scale-[1.02] hover:-translate-y-1 group cursor-pointer relative overflow-hidden`}
+                    style={{
+                      animationDelay: `${idx * 50}ms`,
+                    }}
+                    onClick={() => irADetalle(tarea)}
+                  >
+                    {/* Efecto de fondo */}
+                    <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-sky-500/10 to-blue-500/10 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
 
-                    {/* Contenido */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-3 mb-3">
-                        <div className="flex-1 min-w-0">
-                          <h4
-                            className={`text-xl font-black ${tema.colores.texto} mb-2 group-hover:text-amber-400 transition-colors duration-200`}
-                          >
-                            {tarea.titulo}
-                          </h4>
-                          <p
-                            className={`text-sm ${tema.colores.textoSecundario} line-clamp-2 mb-3`}
-                          >
-                            {tarea.descripcion}
-                          </p>
-                        </div>
-
-                        {/* Badges */}
-                        <div className="flex flex-col gap-2">
-                          <span
-                            className={`px-4 py-2 rounded-2xl text-xs font-black border-2 ${obtenerColorPrioridad(
-                              tarea.prioridad
-                            )} transform group-hover:scale-110 transition-all duration-300 whitespace-nowrap`}
-                          >
-                            <Flame className="w-3 h-3 inline mr-1" />
-                            {tarea.prioridad.toUpperCase()}
-                          </span>
-                          {esVencida(tarea.fecha_limite) && (
-                            <span className="px-4 py-2 rounded-2xl text-xs font-black border-2 bg-rose-500/20 text-rose-300 border-rose-500/60 shadow-lg shadow-rose-500/20 animate-pulse whitespace-nowrap">
-                              <AlertTriangle className="w-3 h-3 inline mr-1" />
-                              VENCIDA
-                            </span>
-                          )}
-                        </div>
+                    <div className="flex items-start gap-4 relative z-10">
+                      {/* Icono de Programada */}
+                      <div
+                        className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${
+                          diasRestantes !== null && diasRestantes === 0
+                            ? "from-emerald-500 to-green-500 animate-pulse"
+                            : diasRestantes !== null && diasRestantes <= 3
+                            ? "from-amber-500 to-orange-500"
+                            : "from-sky-500 to-blue-500"
+                        } flex items-center justify-center shadow-2xl group-hover:scale-110 group-hover:rotate-3 transition-all duration-500 flex-shrink-0`}
+                      >
+                        {tarea.es_recurrente ? (
+                          <Repeat className="w-7 h-7 text-white animate-spin" style={{ animationDuration: "3s" }} />
+                        ) : (
+                          <CalendarClock className="w-7 h-7 text-white" />
+                        )}
                       </div>
 
-                      {/* Metadata */}
-                      <div className="flex flex-wrap items-center gap-3 mb-4">
-                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 border border-white/20">
-                          <User className="w-3 h-3 text-indigo-400" />
-                          <span className="text-xs font-semibold">
-                            {tarea.responsable.nombre_completo}
-                          </span>
-                        </div>
-                        {tarea.centro && (
-                          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 border border-white/20">
-                            <Building2 className="w-3 h-3 text-sky-400" />
-                            <span className="text-xs font-semibold">
-                              {tarea.centro.nombre}
-                            </span>
-                          </div>
-                        )}
-                        {tarea.fecha_limite && (
-                          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 border border-white/20">
-                            <Calendar className="w-3 h-3 text-amber-400" />
-                            <span className="text-xs font-semibold">
-                              Límite: {formatearFecha(tarea.fecha_limite)}
-                            </span>
-                          </div>
-                        )}
-                        <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 border border-white/20">
-                          <ClipboardList className="w-3 h-3 text-purple-400" />
-                          <span className="text-xs font-semibold">
-                            {tarea.tipo}
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Tags */}
-                      {tarea.tags && tarea.tags.length > 0 && (
-                        <div className="flex flex-wrap gap-2 mb-4">
-                          {tarea.tags.slice(0, 5).map((tag) => (
-                            <span
-                              key={tag}
-                              className="px-3 py-1 rounded-full text-[10px] font-bold bg-white/5 border border-white/20"
+                      {/* Contenido */}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-start justify-between gap-3 mb-3">
+                          <div className="flex-1 min-w-0">
+                            <h4
+                              className={`text-xl font-black ${tema.colores.texto} mb-2 group-hover:text-sky-400 transition-colors duration-200`}
                             >
-                              #{tag}
-                            </span>
-                          ))}
-                          {tarea.tags.length > 5 && (
-                            <span className="px-3 py-1 rounded-full text-[10px] font-bold bg-white/5 border border-white/20">
-                              +{tarea.tags.length - 5} más
-                            </span>
-                          )}
-                        </div>
-                      )}
+                              {tarea.titulo}
+                            </h4>
+                            <p
+                              className={`text-sm ${tema.colores.textoSecundario} line-clamp-2 mb-3`}
+                            >
+                              {tarea.descripcion}
+                            </p>
+                          </div>
 
-                     {/* Acciones */}
+                          {/* Badges */}
+                          <div className="flex flex-col gap-2">
+                            <span
+                              className={`px-4 py-2 rounded-2xl text-xs font-black border-2 ${obtenerColorPrioridad(
+                                tarea.prioridad
+                              )} transform group-hover:scale-110 transition-all duration-300 whitespace-nowrap`}
+                            >
+                              <Flame className="w-3 h-3 inline mr-1" />
+                              {tarea.prioridad.toUpperCase()}
+                            </span>
+                            {diasRestantes !== null && (
+                              <span
+                                className={`px-4 py-2 rounded-2xl text-xs font-black border-2 ${
+                                  diasRestantes === 0
+                                    ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/60 shadow-lg shadow-emerald-500/20 animate-pulse"
+                                    : diasRestantes < 0
+                                    ? "bg-rose-500/20 text-rose-300 border-rose-500/60 shadow-lg shadow-rose-500/20"
+                                    : diasRestantes <= 3
+                                    ? "bg-amber-500/20 text-amber-300 border-amber-500/60 shadow-lg shadow-amber-500/20"
+                                    : "bg-sky-500/20 text-sky-300 border-sky-500/60 shadow-lg shadow-sky-500/20"
+                                } whitespace-nowrap`}
+                              >
+                                <Timer className="w-3 h-3 inline mr-1" />
+                                {diasRestantes === 0
+                                  ? "HOY"
+                                  : diasRestantes < 0
+                                  ? `${Math.abs(diasRestantes)}d VENCIDA`
+                                  : `${diasRestantes}d restantes`}
+                              </span>
+                            )}
+                            {tarea.es_recurrente && (
+                              <span className="px-4 py-2 rounded-2xl text-xs font-black border-2 bg-amber-500/20 text-amber-300 border-amber-500/60 shadow-lg shadow-amber-500/20 whitespace-nowrap">
+                                <Repeat className="w-3 h-3 inline mr-1" />
+                                RECURRENTE
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Metadata */}
+                        <div className="flex flex-wrap items-center gap-3 mb-4">
+                          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 border border-white/20">
+                            <User className="w-3 h-3 text-indigo-400" />
+                            <span className="text-xs font-semibold">
+                              {tarea.responsable.nombre_completo}
+                            </span>
+                          </div>
+                          {tarea.centro && (
+                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 border border-white/20">
+                              <Building2 className="w-3 h-3 text-sky-400" />
+                              <span className="text-xs font-semibold">
+                                {tarea.centro.nombre}
+                              </span>
+                            </div>
+                          )}
+                          {tarea.fecha_programada && (
+                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-sky-500/10 border border-sky-500/30">
+                              <CalendarClock className="w-3 h-3 text-sky-400" />
+                              <span className="text-xs font-semibold text-sky-300">
+                                Programada: {formatearFecha(tarea.fecha_programada)}
+                              </span>
+                            </div>
+                          )}
+                          {tarea.es_recurrente && tarea.frecuencia_recurrencia && (
+                            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-500/30">
+                              <Repeat className="w-3 h-3 text-amber-400" />
+                              <span className="text-xs font-semibold text-amber-300">
+                                {tarea.frecuencia_recurrencia}
+                              </span>
+                            </div>
+                          )}
+                          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 border border-white/20">
+                            <ClipboardList className="w-3 h-3 text-purple-400" />
+                            <span className="text-xs font-semibold">
+                              {tarea.tipo}
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Tags */}
+                        {tarea.tags && tarea.tags.length > 0 && (
+                          <div className="flex flex-wrap gap-2 mb-4">
+                            {tarea.tags.slice(0, 5).map((tag) => (
+                              <span
+                                key={tag}
+                                className="px-3 py-1 rounded-full text-[10px] font-bold bg-white/5 border border-white/20"
+                              >
+                                #{tag}
+                              </span>
+                            ))}
+                            {tarea.tags.length > 5 && (
+                              <span className="px-3 py-1 rounded-full text-[10px] font-bold bg-white/5 border border-white/20">
+                                +{tarea.tags.length - 5} más
+                              </span>
+                            )}
+                          </div>
+                        )}
+
+{/* Acciones */}
 <div className="flex items-center gap-2">
   <button
     onClick={(e) => {
       e.stopPropagation();
       iniciarTarea(tarea);
     }}
-    className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl ${tema.colores.primario} text-white text-sm font-bold hover:scale-105 transition-all duration-300 shadow-xl`}
+    className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 text-white text-sm font-bold hover:scale-105 transition-all duration-300 shadow-xl`}
   >
-    <Activity className="w-4 h-4" />
-    Iniciar Tarea
+    <Play className="w-4 h-4" />
+    Iniciar Ahora
   </button>
 
   <button
@@ -1662,18 +1786,8 @@ export default function TareasPendientesPage() {
     Ver Detalle
   </button>
 
-  {/* REEMPLAZO DEL MENÚ — AHORA BOTONES DIRECTOS */}
-  <div className="flex items-center gap-2">
-    <button
-      onClick={(e) => {
-        e.stopPropagation();
-        irADetalle(tarea);
-      }}
-      className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl ${tema.colores.secundario} ${tema.colores.texto} text-sm font-bold hover:scale-105 transition-all duration-300 shadow-lg`}
-    >
-      <Eye className="w-4 h-4" />
-      Ver Detalle Completo
-    </button>
+  {/* AQUÍ ESTABA EL MENÚ — AHORA SON BOTONES REALES */}
+  <div className="relative flex items-center gap-2">
 
     <button
       onClick={(e) => {
@@ -1682,23 +1796,27 @@ export default function TareasPendientesPage() {
       }}
       disabled={!tarea.puede_editar}
       className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl 
-        ${tema.colores.secundario} ${tema.colores.texto} text-sm font-bold
+        ${tema.colores.secundario} ${tema.colores.texto} text-sm font-bold 
         hover:scale-105 transition-all duration-300 shadow-lg
         disabled:opacity-40 disabled:cursor-not-allowed`}
     >
       <Edit className="w-4 h-4" />
-      Editar
+      Editar Programación
     </button>
+
+    
 
     <button
       onClick={(e) => {
         e.stopPropagation();
-        iniciarTarea(tarea);
+        // Posponer tarea
       }}
-      className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl ${tema.colores.primario} text-white text-sm font-bold hover:scale-105 transition-all duration-300 shadow-xl`}
+      className={`flex items-center gap-2 px-5 py-2.5 rounded-2xl 
+        ${tema.colores.secundario} ${tema.colores.texto} text-sm font-bold 
+        hover:scale-105 transition-all duration-300 shadow-lg`}
     >
-      <Activity className="w-4 h-4" />
-      Iniciar Ahora
+      <Pause className="w-4 h-4" />
+      Posponer
     </button>
 
     <button
@@ -1713,17 +1831,161 @@ export default function TareasPendientesPage() {
         disabled:opacity-40 disabled:cursor-not-allowed"
     >
       <Trash className="w-4 h-4" />
-      Eliminar Tarea
+      Cancelar Programación
     </button>
+
   </div>
 </div>
 
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           )}
+        </div>
+
+        {/* Panel de Próximas Tareas */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
+          {/* Próximas 7 Días */}
+          <div
+            className={`rounded-3xl p-6 ${tema.colores.card} ${tema.colores.borde} border-2 ${tema.colores.sombra} transform hover:shadow-2xl transition-all duration-300`}
+          >
+            <div className="flex items-center gap-3 mb-6">
+              <div
+                className={`w-12 h-12 rounded-2xl bg-gradient-to-br from-teal-500 to-cyan-500 flex items-center justify-center shadow-xl`}
+              >
+                <FastForward className="w-6 h-6 text-white" />
+              </div>
+              <div>
+                <h3 className={`text-xl font-black ${tema.colores.texto}`}>
+                  Próximos 7 Días
+                </h3>
+                <p
+                  className={`text-xs font-semibold ${tema.colores.textoSecundario}`}
+                >
+                  Tareas más inmediatas
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              {tareasFiltradas
+                .filter((t) => {
+                  const dias = calcularDiasRestantes(t.fecha_programada);
+                  return dias !== null && dias >= 0 && dias <= 7;
+                })
+                .slice(0, 5)
+                .map((tarea) => {
+                  const dias = calcularDiasRestantes(tarea.fecha_programada);
+                  return (
+                    <div
+                      key={tarea.id_tarea}
+                      className={`flex items-center justify-between p-4 rounded-2xl ${tema.colores.hover} border-2 ${tema.colores.borde} cursor-pointer transform hover:scale-105 transition-all duration-300`}
+                      onClick={() => irADetalle(tarea)}
+                    >
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <CalendarCheck className="w-5 h-5 text-sky-400 flex-shrink-0" />
+                        <div className="min-w-0 flex-1">
+                          <p
+                            className={`text-sm font-bold ${tema.colores.texto} truncate`}
+                          >
+                            {tarea.titulo}
+                          </p>
+                          <p className="text-xs text-sky-300">
+                            {formatearFecha(tarea.fecha_programada)}
+                          </p>
+                        </div>
+                      </div>
+                      <span
+                        className={`px-3 py-1 rounded-full text-xs font-black ${
+                          dias === 0
+                            ? "bg-emerald-500/20 text-emerald-300"
+                            : dias && dias <= 3
+                            ? "bg-amber-500/20 text-amber-300"
+                            : "bg-sky-500/20 text-sky-300"
+                        } whitespace-nowrap`}
+                      >
+                        {dias === 0 ? "HOY" : `${dias}d`}
+                      </span>
+                    </div>
+                  );
+                })}
+              {tareasFiltradas.filter((t) => {
+                const dias = calcularDiasRestantes(t.fecha_programada);
+                return dias !== null && dias >= 0 && dias <= 7;
+              }).length === 0 && (
+                <div className="text-center py-8">
+                  <Lightbulb className="w-12 h-12 mx-auto mb-3 text-gray-400" />
+                  <p className={`text-sm ${tema.colores.textoSecundario}`}>
+                    No hay tareas programadas para los próximos 7 días
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Tareas Recurrentes */}
+          <div
+            className={`rounded-3xl p-6 ${tema.colores.card} ${tema.colores.borde} border-2 ${tema.colores.sombra} transform hover:shadow-2xl transition-all duration-300`}
+          >
+            <div className="flex items-center gap-3 mb-6">
+              <div
+                className={`w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-500 flex items-center justify-center shadow-xl`}
+              >
+                <Repeat className="w-6 h-6 text-white animate-spin" style={{ animationDuration: "3s" }} />
+              </div>
+              <div>
+                <h3 className={`text-xl font-black ${tema.colores.texto}`}>
+                  Tareas Recurrentes
+                </h3>
+                <p
+                  className={`text-xs font-semibold ${tema.colores.textoSecundario}`}
+                >
+                  Actividades que se repiten
+                </p>
+              </div>
+            </div>
+
+            <div className="space-y-3">
+              {tareasFiltradas
+                .filter((t) => t.es_recurrente)
+                .slice(0, 5)
+                .map((tarea) => (
+                  <div
+                    key={tarea.id_tarea}
+                    className={`flex items-center justify-between p-4 rounded-2xl ${tema.colores.hover} border-2 ${tema.colores.borde} cursor-pointer transform hover:scale-105 transition-all duration-300`}
+                    onClick={() => irADetalle(tarea)}
+                  >
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <Repeat className="w-5 h-5 text-amber-400 flex-shrink-0" />
+                      <div className="min-w-0 flex-1">
+                        <p
+                          className={`text-sm font-bold ${tema.colores.texto} truncate`}
+                        >
+                          {tarea.titulo}
+                        </p>
+                        <p className="text-xs text-amber-300">
+                          {tarea.frecuencia_recurrencia || "Recurrente"}
+                        </p>
+                      </div>
+                    </div>
+                    <span className="px-3 py-1 rounded-full text-xs font-black bg-amber-500/20 text-amber-300 whitespace-nowrap">
+                      🔄 AUTO
+                    </span>
+                  </div>
+                ))}
+              {tareasFiltradas.filter((t) => t.es_recurrente).length === 0 && (
+                <div className="text-center py-8">
+                  <Repeat className="w-12 h-12 mx-auto mb-3 text-gray-400" />
+                  <p className={`text-sm ${tema.colores.textoSecundario}`}>
+                    No hay tareas recurrentes configuradas
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
         </div>
 
         {/* Modal Eliminar */}
@@ -1737,11 +1999,11 @@ export default function TareasPendientesPage() {
                   <Trash className="w-7 h-7 text-white" />
                 </div>
                 <h3 className={`text-2xl font-black ${tema.colores.texto}`}>
-                  Eliminar Tarea
+                  Cancelar Programación
                 </h3>
               </div>
               <p className={`text-base mb-6 ${tema.colores.textoSecundario}`}>
-                ¿Estás seguro de que deseas eliminar la tarea{" "}
+                ¿Estás seguro de que deseas cancelar la programación de la tarea{" "}
                 <span className={`font-black ${tema.colores.texto}`}>
                   "{tareaAEliminar.titulo}"
                 </span>
@@ -1778,16 +2040,16 @@ export default function TareasPendientesPage() {
         <div className="max-w-[1920px] mx-auto px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <div
-              className={`w-10 h-10 rounded-xl bg-gradient-to-br ${tema.colores.gradiente} flex items-center justify-center shadow-xl`}
+              className={`w-10 h-10 rounded-xl bg-gradient-to-br from-sky-500 to-blue-500 flex items-center justify-center shadow-xl`}
             >
-              <Zap className="w-5 h-5 text-white" />
+              <CalendarClock className="w-5 h-5 text-white" />
             </div>
             <div>
               <p className={`text-sm font-bold ${tema.colores.texto}`}>
                 © 2025 AnyssaMed
               </p>
               <p className={`text-xs ${tema.colores.textoSecundario}`}>
-                Módulo Ultra Premium de Tareas Pendientes
+                Módulo Ultra Premium de Tareas Programadas
               </p>
             </div>
           </div>
@@ -1878,8 +2140,8 @@ export default function TareasPendientesPage() {
         ::-webkit-scrollbar-thumb {
           background: linear-gradient(
             135deg,
-            rgba(245, 158, 11, 0.8),
-            rgba(249, 115, 22, 0.8)
+            rgba(14, 165, 233, 0.8),
+            rgba(59, 130, 246, 0.8)
           );
           border-radius: 10px;
           border: 2px solid transparent;
@@ -1889,8 +2151,8 @@ export default function TareasPendientesPage() {
         ::-webkit-scrollbar-thumb:hover {
           background: linear-gradient(
             135deg,
-            rgba(245, 158, 11, 1),
-            rgba(249, 115, 22, 1)
+            rgba(14, 165, 233, 1),
+            rgba(59, 130, 246, 1)
           );
         }
 
@@ -1903,7 +2165,22 @@ export default function TareasPendientesPage() {
 
         /* Efecto de brillo en hover */
         .group:hover .shadow-2xl {
-          box-shadow: 0 25px 50px -12px rgba(245, 158, 11, 0.25);
+          box-shadow: 0 25px 50px -12px rgba(14, 165, 233, 0.25);
+        }
+
+        /* Animación de calendario */
+        @keyframes calendar-pulse {
+          0%,
+          100% {
+            transform: scale(1);
+          }
+          50% {
+            transform: scale(1.05);
+          }
+        }
+
+        .group:hover .calendar-icon {
+          animation: calendar-pulse 1s ease-in-out infinite;
         }
       `}</style>
     </div>
